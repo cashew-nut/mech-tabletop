@@ -110,6 +110,13 @@ for (const m of maps) {
     if (h.terrain && !TERRAIN.includes(h.terrain)) fail(w, `unknown terrain "${h.terrain}"`);
     if (h.elevation !== undefined && ![0, 1, 2].includes(h.elevation)) fail(w, `elevation must be 0, 1 or 2`);
   }
+  // Every scenario must be playable on every map.
+  const blocked = new Set(m.hexes.filter((h) => h.terrain === 'blocking').map((h) => `${h.col},${h.row}`));
+  for (const s of scenarioFile.scenarios) {
+    for (const o of [...s.objectives, ...(s.surveyor ? [s.surveyor] : [])]) {
+      if (blocked.has(`${o.col},${o.row}`)) fail(`map "${m.id}"`, `scenario "${s.id}" puts a token on blocking terrain at (${o.col}, ${o.row})`);
+    }
+  }
 }
 
 // Lances

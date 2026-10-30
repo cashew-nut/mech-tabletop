@@ -66,6 +66,28 @@
       "rules": "The centre objective is worth 2 VP."
     },
     {
+      "id": "twin-wells",
+      "name": "Twin Wells",
+      "objectives": [
+        {
+          "col": 2,
+          "row": 6,
+          "vp": 2
+        },
+        {
+          "col": 7,
+          "row": 6,
+          "vp": 1
+        },
+        {
+          "col": 13,
+          "row": 6,
+          "vp": 2
+        }
+      ],
+      "rules": "Two aether wells on the flanks are worth 2 VP each; the centre is worth 1. Splitting the lance pays, but leaves each half outnumbered."
+    },
+    {
       "id": "surveyor-escort",
       "name": "Surveyor Escort",
       "objectives": [],
