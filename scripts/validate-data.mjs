@@ -93,9 +93,22 @@ indexById(scenarioFile.scenarios, 'scenarios.json');
 const { width, height } = scenarioFile.map;
 for (const s of scenarioFile.scenarios) {
   for (const o of s.objectives) {
-    if (o.q < 0 || o.q >= width || o.r < 0 || o.r >= height) {
-      fail(`scenario "${s.id}"`, `objective (${o.q}, ${o.r}) is off the ${width}x${height} map`);
+    if (o.col < 0 || o.col >= width || o.row < 0 || o.row >= height) {
+      fail(`scenario "${s.id}"`, `objective (${o.col}, ${o.row}) is off the ${width}x${height} map`);
     }
+  }
+}
+
+// Maps
+const TERRAIN = ['open', 'rough', 'light', 'heavy', 'blocking'];
+const { maps } = load('maps.json');
+indexById(maps, 'maps.json');
+for (const m of maps) {
+  for (const h of m.hexes) {
+    const w = `map "${m.id}"`;
+    if (h.col < 0 || h.col >= m.width || h.row < 0 || h.row >= m.height) fail(w, `hex (${h.col}, ${h.row}) is off the map`);
+    if (h.terrain && !TERRAIN.includes(h.terrain)) fail(w, `unknown terrain "${h.terrain}"`);
+    if (h.elevation !== undefined && ![0, 1, 2].includes(h.elevation)) fail(w, `elevation must be 0, 1 or 2`);
   }
 }
 
@@ -163,7 +176,7 @@ for (const file of readdirSync(lanceDir).filter((f) => f.endsWith('.json'))) {
   }
 }
 
-console.log(`chassis: ${chassis.length}, equipment: ${equipment.length}, traits: ${drivers.traits.length}, companies: ${companies.length}, scenarios: ${scenarioFile.scenarios.length}`);
+console.log(`chassis: ${chassis.length}, equipment: ${equipment.length}, traits: ${drivers.traits.length}, companies: ${companies.length}, scenarios: ${scenarioFile.scenarios.length}, maps: ${maps.length}`);
 console.log('lances:');
 console.log(summary.join('\n'));
 

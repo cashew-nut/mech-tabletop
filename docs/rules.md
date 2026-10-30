@@ -59,7 +59,7 @@ A Trial lasts **6 rounds**. Each round has three phases.
 ### 6.1 Initiative
 
 Each side rolls a d6 and adds the highest Command among its war-walkers still in play.
-Reroll ties. The winner chooses who activates first this round.
+Reroll ties. The winner activates first this round.
 
 ### 6.2 Activations
 
@@ -82,6 +82,7 @@ of activating, once per round.
 1. If the war-walker has 3 or more Overpressure, roll on the Fault table (7.5).
 2. It gains Pressure equal to its Boiler rating, adjusted by Faults, Ion hits and items.
 3. It may **Open the Throttle**: gain up to 2 extra Pressure, taking 1 Overpressure per point.
+   This is declared before the Fault roll; a Gauge failure cancels it.
 
 ### 7.2 Spending Pressure
 
@@ -98,9 +99,18 @@ Spend Pressure on these actions in any order and any number of times, as long as
 | Ram | 2 | Melee attack, see 8.6. |
 | Bank | 1 | Move 1 Pressure into Reserve. Reserve holds at most 2. |
 
-Rough terrain costs 2 hexes of movement per hex entered. A war-walker cannot enter a hex
-holding another war-walker, a wreck or heavy cover unless an item says so. Moving up one
-elevation level costs 1 extra hex of movement.
+Terrain:
+
+| Terrain | Movement cost | Line of sight | Cover for a target in it |
+| --- | --- | --- | --- |
+| Open | 1 | Clear | None |
+| Light cover (scrub, scaffolding) | 1 | Clear, but a target behind it gets light cover | +1 TN |
+| Rough (rubble, slag) | 2 | Clear | None |
+| Heavy cover (ruins, pipe stacks) | 2 | Blocked through it, not into it | +2 TN |
+| Blocking (buildings, cliffs) | Impassable | Blocked | n/a |
+
+A war-walker cannot enter a hex holding another war-walker, a wreck or blocking terrain.
+Moving up one elevation level costs 1 extra hex of movement.
 
 Unspent Pressure is lost at the end of the activation.
 
@@ -139,8 +149,9 @@ are the **left and right side arcs**.
 
 Weapons fire only at targets in the front arc. Draw a line from the centre of the attacker's
 hex to the centre of the target's hex. Line of sight is blocked if the line passes through a
-heavy cover hex, a wreck, smoke, or terrain higher than both attacker and target. A line that
-runs exactly along a hex edge is blocked only if both hexes on that edge block it.
+heavy cover or blocking hex, a wreck, smoke, or terrain higher than both attacker and target.
+War-walkers do not block line of sight. A line that runs exactly along a hex edge is blocked
+only if both hexes on that edge block it.
 
 ### 8.2 Range
 
@@ -150,7 +161,7 @@ runs exactly along a hex edge is blocked only if both hexes on that edge block i
 | Medium | 4-7 hexes | +1 |
 | Long | 8-12 hexes | +2 |
 
-A weapon can fire up to its listed maximum band. Melee weapons need the target adjacent and in
+A weapon can fire up to its listed maximum band; beyond 12 hexes nothing can fire. Melee weapons need the target adjacent and in
 the front arc.
 
 ### 8.3 Rolling to hit
@@ -162,8 +173,9 @@ TN cannot go below 2.
 | Situation | TN |
 | --- | --- |
 | Range band | +0 / +1 / +2 |
-| Target in light cover (in or behind a light cover or smoke edge) | +1 |
-| Target in heavy cover (in a heavy cover hex, partly visible) | +2 |
+| Target in or behind light cover, or in smoke | +1 |
+| Target in a heavy cover hex | +2 (does not stack with light cover) |
+| Indirect fire | +1 |
 | Target moved 4 or more hexes in its last activation | +1 |
 | Target is Bracing | +1 |
 | Attacker moved this activation (not melee) | +1 |
@@ -219,8 +231,7 @@ cannot Ram if you are prone.
 
 ### 9.1 Wrecks
 
-A wreck token blocks movement and line of sight and counts as heavy cover for an adjacent
-war-walker shooting past it.
+A wreck token blocks movement and line of sight.
 
 ### 9.2 Smoke
 
@@ -248,7 +259,8 @@ Victory points (VP):
 - When an enemy war-walker is destroyed, score VP equal to its points cost divided by 4,
   rounded up.
 
-After round 6 the side with more VP wins the Charter. A tie is a draw.
+After round 6 the side with more VP wins the Charter. A tie is a draw. If a lance is wiped out,
+the Trial ends at once and the other side wins.
 
 ## 11. Scenarios
 
@@ -256,7 +268,7 @@ After round 6 the side with more VP wins the Charter. A tie is a draw.
 | --- | --- | --- |
 | Hold the Field | 3 objectives in a line across the centre row, 4 hexes apart. | None. |
 | Refinery Seizure | 5 objectives: one in the centre, four 3 hexes from it diagonally. | The centre objective is worth 2 VP. |
-| Surveyor Escort | The attacker's surveyor token starts in their deployment zone. | The surveyor moves 2 hexes when a friendly war-walker adjacent to it spends 1 Pressure. The attacker scores 6 VP if it leaves the far edge. Destroying it (3 hits at TN 4, no armour) gives the defender 4 VP. No objectives. |
+| Surveyor Escort (not yet in the engine) | The attacker's surveyor token starts in their deployment zone. | The surveyor moves 2 hexes when a friendly war-walker adjacent to it spends 1 Pressure. The attacker scores 6 VP if it leaves the far edge. Destroying it (3 hits at TN 4, no armour) gives the defender 4 VP. No objectives. |
 
 ## 12. Companies
 
@@ -264,7 +276,7 @@ After round 6 the side with more VP wins the Charter. A tie is a draw.
 | --- | --- | --- |
 | Halvorsen Ironworks | Heavy industry | Ablative Plating costs 1 point less. |
 | Meridian Lantern Company | Aether refining | Once per round, one war-walker may remove 1 Overpressure for free at the start of its activation. |
-| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying. Spotter Drones cost 1 point less. |
+| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying (not yet in the engine). Spotter Drones cost 1 point less. |
 
 ## 13. Reference: chassis
 

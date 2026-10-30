@@ -1,0 +1,38 @@
+{
+  "maps": [
+    {
+      "id": "open-field",
+      "name": "Open Field",
+      "width": 16,
+      "height": 12,
+      "hexes": []
+    },
+    {
+      "id": "foundry-flats",
+      "name": "Foundry Flats",
+      "width": 16,
+      "height": 12,
+      "hexes": [
+        { "col": 2, "row": 4, "terrain": "light" },
+        { "col": 3, "row": 4, "terrain": "light" },
+        { "col": 12, "row": 7, "terrain": "light" },
+        { "col": 13, "row": 7, "terrain": "light" },
+        { "col": 5, "row": 5, "terrain": "heavy" },
+        { "col": 10, "row": 6, "terrain": "heavy" },
+        { "col": 7, "row": 3, "terrain": "blocking" },
+        { "col": 8, "row": 8, "terrain": "blocking" },
+        { "col": 6, "row": 8, "terrain": "rough" },
+        { "col": 7, "row": 8, "terrain": "rough" },
+        { "col": 9, "row": 3, "terrain": "rough" },
+        { "col": 0, "row": 6, "elevation": 1 },
+        { "col": 1, "row": 6, "elevation": 1 },
+        { "col": 1, "row": 5, "elevation": 1 },
+        { "col": 15, "row": 5, "elevation": 1 },
+        { "col": 14, "row": 5, "elevation": 1 },
+        { "col": 14, "row": 6, "elevation": 1 },
+        { "col": 7, "row": 6, "elevation": 1 },
+        { "col": 8, "row": 5, "elevation": 1 }
+      ]
+    }
+  ]
+}
