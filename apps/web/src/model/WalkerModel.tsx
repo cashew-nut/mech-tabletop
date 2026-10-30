@@ -38,9 +38,8 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     el.appendChild(renderer.domElement);
     const stage = createStage(renderer);
-    const s = stage.scene;
-    const camera = new THREE.PerspectiveCamera(35, 1, 1, 1000);
-    camera.position.set(70, 60, 90);
+        const camera = new THREE.PerspectiveCamera(35, 1, 1, 4000);
+    camera.position.set(80, 40, 100);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 22, 0);
     controls.enableDamping = true;
@@ -53,6 +52,7 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
       const w = el.clientWidth;
       const h = Math.max(260, Math.min(420, w * 0.75));
       renderer.setSize(w, h);
+      stage.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
@@ -63,13 +63,14 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
     const loop = () => {
       frame = requestAnimationFrame(loop);
       controls.update();
-      renderer.render(s, camera);
+      stage.render(camera);
     };
     loop();
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
       controls.dispose();
+      stage.dispose();
       renderer.dispose();
       el.removeChild(renderer.domElement);
       scene.current = null;
