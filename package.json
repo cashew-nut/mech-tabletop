@@ -1,0 +1,10 @@
+{
+  "name": "brass-charter",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Brass Charter: a turn-based war-walker skirmish game",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-data.mjs"
+  }
+}
