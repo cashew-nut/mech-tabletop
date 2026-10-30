@@ -5,13 +5,16 @@
   "description": "Brass Charter: a turn-based war-walker skirmish game",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "validate": "node scripts/validate-data.mjs",
-    "typecheck": "tsc -p packages/rules --noEmit",
+    "typecheck": "tsc -p packages/rules --noEmit && tsc -p apps/web --noEmit",
     "test": "vitest run",
-    "check": "npm run validate && npm run typecheck && npm test"
+    "check": "npm run validate && npm run typecheck && npm test",
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
