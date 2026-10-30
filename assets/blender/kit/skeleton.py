@@ -254,10 +254,10 @@ def build_frame(faction, frame, standins=True, location=(0, 0, 0)):
 def to_joint(part, faction, frame, component, side="L"):
     """Move a part modelled in place on the walker into its joint's space, so
     its origin is the joint (that is how the web and STL builder attach it)."""
+    # Move the children, not the root: export_glb() writes the root at the
+    # origin, so an offset on the root itself would be lost.
     off = Skeleton(faction, frame).socket(component, side)
-    # Shift the children, not the root: export puts the root at the origin,
-    # so an offset on the root itself would be lost.
     bpy.context.view_layer.update()
-    for child in part.children:
-        child.matrix_world = Matrix.Translation(-off) @ child.matrix_world
+    for c in part.children:
+        c.matrix_world = Matrix.Translation(-off) @ c.matrix_world
     return part
