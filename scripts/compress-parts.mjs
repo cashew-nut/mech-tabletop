@@ -4,12 +4,15 @@
 // Base colour and ORM use ETC1S (small); normal maps use UASTC, which keeps their relief clean.
 // Needs the `basisu` encoder: set BASISU=/path/to/basisu, put it on PATH, or
 // `npm i --no-save basisu` (prebuilt binaries). Already-compressed GLBs are skipped.
+// Vertex data is quantised too (KHR_mesh_quantization: 16-bit positions and UVs,
+// 8-bit normals), which roughly halves the geometry. three.js and Blender read it natively.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
-import { ALL_EXTENSIONS, KHRTextureBasisu } from '@gltf-transform/extensions';
+import { ALL_EXTENSIONS, KHRMeshQuantization, KHRTextureBasisu } from '@gltf-transform/extensions';
+import { quantize } from '@gltf-transform/functions';
 
 const PARTS = resolve('apps/web/public/parts');
 
@@ -43,7 +46,8 @@ try {
     const doc = await io.read(file);
     const root = doc.getRoot();
     const textures = root.listTextures().filter((t) => t.getMimeType() !== 'image/ktx2');
-    if (!textures.length) continue;
+    const quantised = root.listExtensionsUsed().some((e) => e.extensionName === KHRMeshQuantization.EXTENSION_NAME);
+    if (!textures.length && quantised) continue;
     // How each texture is used decides its colour space and codec.
     const role = new Map();
     for (const m of root.listMaterials()) {
@@ -65,7 +69,8 @@ try {
       tex.setImage(new Uint8Array(readFileSync(dst))).setMimeType('image/ktx2');
       if (tex.getURI()) tex.setURI(tex.getURI().replace(/\.(png|jpe?g)$/i, '.ktx2'));
     }
-    doc.createExtension(KHRTextureBasisu).setRequired(true);
+    if (textures.length) doc.createExtension(KHRTextureBasisu).setRequired(true);
+    if (!quantised && root.listMeshes().length) await doc.transform(quantize({ quantizePosition: 16, quantizeNormal: 8, quantizeTexcoord: 16 }));
     await io.write(file, doc);
     console.log(`${file.replace(`${resolve('.')}/`, '')}: ${(before / 1024).toFixed(0)} KB -> ${(statSync(file).size / 1024).toFixed(0)} KB`);
   }
