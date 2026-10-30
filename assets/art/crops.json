@@ -667,6 +667,16 @@
     342
    ],
    "note": "hero legs: thin gold-bound digitigrade legs"
+  },
+  "helm_foundries": {
+   "board": "three-factions-board.png",
+   "box": [
+    715,
+    95,
+    815,
+    195
+   ],
+   "note": "Foundries hero's hooded head, three-quarter from the left"
   }
  }
 }
