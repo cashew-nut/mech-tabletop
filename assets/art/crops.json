@@ -637,6 +637,36 @@
     1312,
     888
    ]
+  },
+  "legs_covenant": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    180,
+    180,
+    560,
+    530
+   ],
+   "note": "hero legs: cuisse, knee cop, greave"
+  },
+  "legs_foundries": {
+   "board": "three-factions-board.png",
+   "box": [
+    640,
+    170,
+    1000,
+    342
+   ],
+   "note": "hero legs: rams, knee drum, block feet"
+  },
+  "legs_reliquary": {
+   "board": "three-factions-board.png",
+   "box": [
+    1150,
+    150,
+    1500,
+    342
+   ],
+   "note": "hero legs: thin gold-bound digitigrade legs"
   }
  }
 }
