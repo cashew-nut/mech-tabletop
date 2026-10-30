@@ -6,6 +6,7 @@ import type { WalkerInput } from '@brass-charter/rules';
 import { COMPANY_COLOURS, buildWalkerModel, loadPartLibrary, type PartLibrary } from './assemble';
 import { exportGlb, exportStl } from './exporters';
 import { BASE_MM } from './parts';
+import { createStage, type Stage } from './stage';
 
 interface Props {
   walker: WalkerInput;
@@ -15,7 +16,7 @@ interface Props {
 
 export default function WalkerModel({ walker, company, onPaint }: Props) {
   const host = useRef<HTMLDivElement>(null);
-  const scene = useRef<{ scene: THREE.Scene; model: THREE.Object3D | null; renderer: THREE.WebGLRenderer } | null>(null);
+  const scene = useRef<{ stage: Stage; model: THREE.Object3D | null; renderer: THREE.WebGLRenderer } | null>(null);
   const [lib, setLib] = useState<PartLibrary | null>(null);
   const [failed, setFailed] = useState(false);
   const colour = walker.paint ?? COMPANY_COLOURS[company] ?? '#7a2e22';
@@ -36,14 +37,8 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     el.appendChild(renderer.domElement);
-    const s = new THREE.Scene();
-    s.background = new THREE.Color('#2a2622');
-    s.add(new THREE.HemisphereLight('#fff4dc', '#3a332c', 1.6));
-    const sun = new THREE.DirectionalLight('#ffffff', 2.2);
-    sun.position.set(40, 80, 60);
-    s.add(sun);
-    const grid = new THREE.GridHelper(120, 12, '#5a4e40', '#3d352d');
-    s.add(grid);
+    const stage = createStage(renderer);
+    const s = stage.scene;
     const camera = new THREE.PerspectiveCamera(35, 1, 1, 1000);
     camera.position.set(70, 60, 90);
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -52,7 +47,7 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
     controls.autoRotate = true;
     controls.autoRotateSpeed = 1.2;
     controls.addEventListener('start', () => (controls.autoRotate = false));
-    scene.current = { scene: s, model: null, renderer };
+    scene.current = { stage, model: null, renderer };
 
     const resize = () => {
       const w = el.clientWidth;
@@ -85,10 +80,11 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
   useEffect(() => {
     const s = scene.current;
     if (!s) return;
-    if (s.model) s.scene.remove(s.model);
+    if (s.model) s.stage.scene.remove(s.model);
     try {
       s.model = buildWalkerModel(walker, colour, lib);
-      s.scene.add(s.model);
+      s.stage.scene.add(s.model);
+      s.stage.fit(s.model);
     } catch (e) {
       console.error(e);
     }
@@ -120,7 +116,7 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
       </div>
       {failed ? <p className="hint">3D view needs WebGL, which this browser has turned off.</p> : <div ref={host} className="model-canvas" />}
       <p className="hint">
-        Drag to orbit, scroll to zoom. Parts are placeholders until Blender models are added; the STL prints at tabletop scale on a{' '}
+        Drag to orbit, scroll to zoom. Parts are procedural until Blender models are added; the STL prints at tabletop scale on a{' '}
         {BASE_MM[walker.chassis]} mm base.
       </p>
     </section>
