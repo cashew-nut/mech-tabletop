@@ -35,5 +35,15 @@ def equipment_defs():
 
 
 def script_args():
-    """Arguments after `--` on the Blender command line."""
-    return sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    """Arguments after `--` on the Blender command line, or after the script
+    name when run with the pip `bpy` module (`python script.py args`)."""
+    if "--" in sys.argv:
+        return sys.argv[sys.argv.index("--") + 1:]
+    if sys.argv and sys.argv[0].endswith(".py"):
+        return sys.argv[1:]
+    return []
+
+
+def chassis_frames():
+    """{class id: frame id} from chassis.json (each class names its frame)."""
+    return {c["id"]: c.get("frame", c["id"]) for c in load("chassis.json")["chassis"]}

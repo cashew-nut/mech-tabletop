@@ -8,7 +8,22 @@ boilers, rivets, pipes, gauges, pistons and the brass, iron and hull
 materials). These scripts let you replace them one part at a time with models
 made in Blender, and turn any lance into a printable STL.
 
-Tested with Blender 5.2 (the `bpy` module). Every script runs headless:
+There are two routes. The **kit** (`kit/`, see [kit/README.md](kit/README.md))
+is the one the concept-art rebuild uses: each faction hangs scripted,
+baked parts on a shared frame skeleton, one component at a time, and the web
+falls back to the procedural walker until a class's kit is complete. The
+older single-piece route below (`chassis_<class>` and `item_<id>` roots in a
+hand-made `parts.blend`) still works, and items use it either way.
+
+```sh
+# Kit: skeletons, material test plates, a review render, then KTX2.
+~/bvenv/bin/python assets/blender/build_frames.py
+~/bvenv/bin/python assets/blender/test_plates.py covenant --out renders/foundation
+~/bvenv/bin/python assets/blender/render_part.py covenant_frame_titan --art class_paladin
+node scripts/compress-parts.mjs
+```
+
+Tested with Blender 5.2 (the `bpy` module, or a full Blender). Every script runs headless:
 
 ```sh
 # 1. Make a starter file: a blocky version of every chassis and item,
@@ -49,9 +64,14 @@ These match the web builder, so a part made here drops straight in.
 ## Files
 
 - `common.py`: shared paths, data loading and the scale table.
+- `kit/`: the kit library (materials, shapes, skeletons, bake, export, review renders). Start with its README.
+- `build_frames.py`: builds and exports the twelve frame skeletons into `frames.blend` and `parts/kit/`.
+- `test_plates.py`: a test plate per faction in every material role, rendered beside the board swatches.
+- `render_part.py`: Cycles renders of any part beside a named crop of the art (`assets/art/crops.json`).
+- `parts/<package>/`: each component package's part scripts and `.blend` sources.
 - `starter_parts.py`: writes a starter `parts.blend` from `data/`.
-- `export_parts.py`: exports `chassis_*` and `item_*` roots as GLB and updates the manifest.
-- `build_walker.py`: assembles one walker from the exported GLBs and saves an STL.
+- `export_parts.py`: exports `chassis_*`, `item_*` and kit roots as GLB and updates the manifest.
+- `build_walker.py`: assembles one walker from the exported GLBs (kit first) and saves an STL.
 
 Parts you have not modelled yet keep using the procedural web parts, so the
 manifest can grow one entry at a time. Commit the `.blend` and the exported GLBs

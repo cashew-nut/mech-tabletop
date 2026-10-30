@@ -1,10 +1,12 @@
 // Standalone turntable for judging the walker models: render.html?chassis=brute&angle=35&set=b&paint=%231f5c63
+// kit=force shows a class's kit body even with parts missing (stand-ins fill in), kit=off the procedural one.
+// part=covenant_helm_titan shows one Blender part from the manifest on its own.
 // Used by scripts/render-walkers.mjs to save preview images without the full app.
 // backdrop=covenant|foundries|reliquary picks the world; elev=0.12 drops the camera for a low hero shot.
 // lineup=8 stands that many walkers in a row; bench=120 then times that many frames into data-bench.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
-import { buildWalkerModel, loadPartLibrary } from './assemble';
+import { buildWalkerModel, ensureKitParts, loadPartLibrary, type KitMode } from './assemble';
 import { createStage, type Backdrop } from './stage';
 
 const SHOWCASE: Record<string, WalkerInput['loadout']> = {
@@ -37,14 +39,22 @@ const stage = createStage(renderer, (q.get('backdrop') as Backdrop) ?? 'covenant
 stage.setSize(w, h);
 const { scene, fit } = stage;
 
-const lib = await loadPartLibrary();
+const lib = await loadPartLibrary(renderer);
+const kit = (q.get('kit') as KitMode) ?? 'auto';
 const build = (id: string) =>
-  buildWalkerModel({ name: id, chassis: id, driver: { command: 0, trait: null }, loadout: (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[id] ?? {} } as WalkerInput, q.get('paint') ?? '#7a2e22', lib);
+  buildWalkerModel({ name: id, chassis: id, driver: { command: 0, trait: null }, loadout: (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[id] ?? {} } as WalkerInput, q.get('paint') ?? '#7a2e22', lib, kit);
 const lineup = Number(q.get('lineup') ?? 1);
 const model = new THREE.Group();
 const ids = Object.keys(SHOWCASE);
-for (let i = 0; i < lineup; i++) {
-  const m = build(lineup > 1 ? ids[i % ids.length] : chassis);
+const partName = q.get('part');
+if (partName) {
+  const file = lib.kitFiles.get(partName) ?? `${partName}.glb`;
+  if (lib.load) model.add(await lib.load(file));
+}
+for (let i = 0; i < (partName ? 0 : lineup); i++) {
+  const id = lineup > 1 ? ids[i % ids.length] : chassis;
+  await ensureKitParts(lib, id);
+  const m = build(id);
   m.position.x = (i - (lineup - 1) / 2) * 34;
   m.position.z = -Math.abs(i - (lineup - 1) / 2) * 10;
   model.add(m);
