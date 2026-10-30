@@ -23,6 +23,8 @@ export interface WalkerInput {
   chassis: string;
   driver: DriverInput;
   loadout: Partial<Record<Location, string[]>>;
+  /** Optional hull colour for the 3D model (#rrggbb). No effect on the rules. */
+  paint?: string;
 }
 
 export interface LanceInput {
