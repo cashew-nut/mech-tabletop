@@ -21,6 +21,8 @@ export interface Palette {
   enamel: THREE.Material;
   /** The ground on top of the base. */
   ground: THREE.Material;
+  /** Polished steel for blades. */
+  steel: THREE.Material;
 }
 
 // ---------------------------------------------------------------- materials
@@ -80,6 +82,7 @@ export function makePalette(hullColour: string): Palette {
     fire: new THREE.MeshStandardMaterial({ name: 'fire', color: '#3a1606', emissive: '#ff5a0a', emissiveIntensity: 1.5, roughness: 0.4 }),
     copper: new THREE.MeshStandardMaterial({ name: 'copper', color: '#c46a3c', roughness: 0.38, roughnessMap: metal, metalness: 1 }),
     enamel: new THREE.MeshStandardMaterial({ name: 'enamel', color: '#efe4c6', roughness: 0.5, metalness: 0 }),
+    steel: new THREE.MeshStandardMaterial({ name: 'steel', color: '#c9ccd0', roughness: 0.28, roughnessMap: metal, metalness: 1 }),
     ground: new THREE.MeshStandardMaterial({ name: 'ground', color: '#3d362e', roughness: 1, metalness: 0 }),
   };
 }
@@ -98,11 +101,6 @@ export function group(...children: THREE.Object3D[]) {
   const g = new THREE.Group();
   for (const c of children) g.add(c);
   return g;
-}
-
-/** The same object on both sides: the given one at +x and a mirrored copy at -x. */
-export function mirrored(make: (side: 1 | -1) => THREE.Object3D) {
-  return group(make(1), make(-1));
 }
 
 // ---------------------------------------------------------------- shapes
@@ -140,19 +138,19 @@ export function lathe(profile: Array<[number, number]>, m: THREE.Material, seg =
   return mesh(new THREE.LatheGeometry(pts, seg), m);
 }
 
-/** A cylinder lying along the given axis, centred on the origin. */
+/** A cylinder lying along the given axis, centred on the origin. Wrapped in a group so `at` can still place and turn it. */
 export function bar(r: number, len: number, m: THREE.Material, axis: 'x' | 'z' = 'z', seg = 16) {
   const c = cyl(r, r, len, m, seg);
   if (axis === 'z') c.rotation.x = Math.PI / 2;
   else c.rotation.z = Math.PI / 2;
-  return c;
+  return group(c);
 }
 
 /** A barrel pointing forward along +Z from the origin. */
 export function barrel(r: number, len: number, m: THREE.Material, seg = 16) {
   const b = bar(r, len, m, 'z', seg);
   b.position.z = len / 2;
-  return b;
+  return group(b);
 }
 
 /** A pipe through the given points, with rounded bends. */
@@ -274,6 +272,27 @@ export function gauge(r: number, p: Palette, reading = 0.3) {
   needle.geometry.translate(0, r * 0.3, 0);
   g.add(at(needle, 0, 0, r * 0.33, 0, 0, reading * Math.PI));
   return g;
+}
+
+/** A brass gear wheel with its axle along Y. */
+export function gear(r: number, thick: number, teeth: number, m: THREE.Material) {
+  const g = group(cyl(r, r, thick, m, teeth * 2), cyl(r * 0.3, r * 0.3, thick * 1.6, m, 12));
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2;
+    const t = box(r * 0.28, thick, r * 0.3, m);
+    g.add(at(t, Math.cos(a) * r, 0, Math.sin(a) * r, 0, -a, 0));
+  }
+  return g;
+}
+
+/** A bevelled beam from a to b, `w` wide (along X) and `d` deep, for limbs and struts. */
+export function link(a: V3, b: V3, w: number, d: number, m: THREE.Material) {
+  const va = new THREE.Vector3(...a);
+  const vb = new THREE.Vector3(...b);
+  const beam = plate(w, va.distanceTo(vb), d, m);
+  beam.position.copy(va).add(vb).multiplyScalar(0.5);
+  beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.sub(va).normalize());
+  return beam;
 }
 
 /** A hydraulic piston from a to b: a fat iron sleeve and a thin brass rod. */

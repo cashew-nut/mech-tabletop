@@ -1,4 +1,4 @@
-// Standalone turntable for judging the walker models: render.html?chassis=bulwark&angle=35
+// Standalone turntable for judging the walker models: render.html?chassis=bulwark&angle=35&set=b&paint=%231f5c63
 // Used by scripts/render-walkers.mjs to save preview images without the full app.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
@@ -10,6 +10,11 @@ const SHOWCASE: Record<string, WalkerInput['loadout']> = {
   striker: { armRight: ['autocannon', 'autocannon'], armLeft: ['missile-rack'], core: ['targeting-array', 'coolant-loop'], legs: ['jump-jets'] },
   bulwark: { armRight: ['rail-lance'], armLeft: ['kinetic-shield', 'impact-hammer'], core: ['overcharged-boiler', 'ablative-plating', 'smoke-launcher'], legs: ['anchor-spikes'] },
   titan: { armRight: ['arc-mortar', 'thermal-projector'], armLeft: ['beam-cutter', 'beam-cutter', 'kinetic-shield'], core: ['static-choir', 'spotter-drone', 'overcharged-boiler'], legs: ['gyro-stabilisers', 'anchor-spikes'] },
+};
+
+// A second set covers the parts the first leaves out.
+const SHOWCASE_B: Record<string, WalkerInput['loadout']> = {
+  striker: { armRight: ['ion-lance', 'reactive-shell'], armLeft: ['beam-cutter', 'scattergun'], core: ['field-repair-rig', 'static-choir'], legs: ['gyro-stabilisers'] },
 };
 
 const q = new URLSearchParams(location.search);
@@ -24,7 +29,7 @@ document.body.appendChild(renderer.domElement);
 const { scene, fit } = createStage(renderer);
 
 const lib = await loadPartLibrary();
-const walker: WalkerInput = { name: chassis, chassis, driver: { command: 0, trait: null }, loadout: SHOWCASE[chassis] ?? {} } as WalkerInput;
+const walker: WalkerInput = { name: chassis, chassis, driver: { command: 0, trait: null }, loadout: (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[chassis] ?? {} } as WalkerInput;
 const model = buildWalkerModel(walker, q.get('paint') ?? '#7a2e22', lib);
 scene.add(model);
 fit(model);

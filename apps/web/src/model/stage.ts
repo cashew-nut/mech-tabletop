@@ -84,8 +84,8 @@ export function createStage(renderer: THREE.WebGLRenderer): Stage {
   const rim = new THREE.DirectionalLight('#9cc8ff', 2.4);
   rim.position.set(-70, 60, -90);
   scene.add(rim);
-  const fill = new THREE.PointLight('#ff9a4a', 800, 0, 2);
-  fill.position.set(-50, 15, 60);
+  const fill = new THREE.PointLight('#ff9a4a', 900, 0, 2);
+  fill.position.set(-45, 45, 55);
   scene.add(fill);
 
   const floor = new THREE.Mesh(

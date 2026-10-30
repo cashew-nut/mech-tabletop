@@ -1,6 +1,7 @@
 // Save preview renders of each chassis with a showcase loadout.
 //   npm run render -- [outDir] [chassis...]
-// ANGLES=35,145 picks the camera angles in degrees; PAINT=#1f5c63 sets the hull colour.
+// ANGLES=35,145 picks the camera angles in degrees; PAINT=#1f5c63 sets the hull colour;
+// SET=b swaps in the second showcase loadout.
 // Starts the web dev server, opens apps/web/render.html in headless Chromium
 // (Playwright) and screenshots each walker from a few angles.
 import { createRequire } from 'node:module';
@@ -14,7 +15,7 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 const [outDir = 'renders', ...picked] = process.argv.slice(2);
 const chassis = picked.length ? picked : ['scout', 'striker', 'bulwark', 'titan'];
 const angles = (process.env.ANGLES ?? '35,145').split(',').map(Number);
-const paint = process.env.PAINT ? `&paint=${encodeURIComponent(process.env.PAINT)}` : '';
+const paint = (process.env.PAINT ? `&paint=${encodeURIComponent(process.env.PAINT)}` : '') + (process.env.SET ? `&set=${process.env.SET}` : '');
 mkdirSync(outDir, { recursive: true });
 
 const server = spawn('npx', ['vite', '--port', '5199', '--strictPort'], { cwd: resolve('apps/web'), stdio: 'ignore', detached: true });
@@ -32,7 +33,7 @@ try {
     for (const angle of angles) {
       await page.goto(`http://localhost:5199/render.html?chassis=${id}&angle=${angle}${paint}`);
       await page.waitForSelector('body[data-ready="1"]', { timeout: 60000 });
-      const file = `${outDir}/${id}-${angle}.png`;
+      const file = `${outDir}/${id}${process.env.SET ? `-${process.env.SET}` : ''}-${angle}.png`;
       await page.locator('canvas').screenshot({ path: file });
       console.log(file);
     }
