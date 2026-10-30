@@ -19,7 +19,7 @@
       "structure": { "core": 5, "other": 4 }
     },
     {
-      "id": "titan", "name": "Titan", "size": 4, "points": 33, "stride": 1, "boiler": 7,
+      "id": "titan", "name": "Titan", "size": 4, "points": 34, "stride": 1, "boiler": 7,
       "slots": { "armLeft": 3, "armRight": 3, "core": 3, "legs": 2 },
       "armour": { "coreFront": 10, "coreRear": 5, "arm": 5, "legs": 6 },
       "structure": { "core": 6, "other": 5 }

@@ -23,7 +23,7 @@
     {
       "id": "gunner",
       "name": "Gunner",
-      "points": 4,
+      "points": 2,
       "rules": "The first weapon fired each activation costs 1 less Pressure (minimum 0)."
     },
     {

@@ -13,8 +13,8 @@ describe('walker stats', () => {
 
   it('sums Pressure to fire everything, with the Gunner discount', () => {
     const w = walker('G', 'striker', { armLeft: ['rail-lance'], armRight: ['beam-cutter'] });
-    expect(walkerStats(w).alphaPressure).toBe(5);
-    expect(walkerStats({ ...w, driver: { command: 0, trait: 'gunner' } }).alphaPressure).toBe(4);
+    expect(walkerStats(w).alphaPressure).toBe(4);
+    expect(walkerStats({ ...w, driver: { command: 0, trait: 'gunner' } }).alphaPressure).toBe(3);
   });
 
   it('estimates expected damage by range band', () => {

@@ -123,8 +123,8 @@
         "arm"
       ],
       "slots": 2,
-      "pressure": 3,
-      "points": 7,
+      "pressure": 2,
+      "points": 8,
       "weapon": {
         "dice": 1,
         "damage": 4,
@@ -146,7 +146,7 @@
       ],
       "slots": 2,
       "pressure": 2,
-      "points": 6,
+      "points": 5,
       "weapon": {
         "dice": 2,
         "damage": 2,
@@ -187,7 +187,7 @@
       ],
       "slots": 1,
       "pressure": 1,
-      "points": 5,
+      "points": 6,
       "weapon": {
         "dice": 2,
         "damage": 3,
@@ -207,7 +207,7 @@
       ],
       "slots": 1,
       "pressure": 1,
-      "points": 6,
+      "points": 8,
       "weapon": {
         "dice": 3,
         "damage": 2,
