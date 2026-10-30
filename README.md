@@ -20,6 +20,7 @@ Phase 7 of the plan: polish. Rules are at v0.3; see the [balance report](docs/ba
 | [`packages/ai`](packages/ai) | Greedy utility AI: `chooseAction(state)` and `playOut(state)` for AI-vs-AI games. |
 | [`tools/sim`](tools/sim) | Balance simulator: `npm run sim -- 600 1` plays AI-vs-AI Trials and reports win rates by lance, chassis, item, trait and Company. |
 | [`assets/blender`](assets/blender) | Blender scripts: a starter parts file, part export to the web builder, and lance-to-STL assembly. |
+| [`scripts/render-walkers.mjs`](scripts/render-walkers.mjs) | `npm run render -- renders` saves preview images of each chassis with a showcase loadout, using headless Chromium (needs Playwright installed globally). |
 | [`scripts/validate-data.mjs`](scripts/validate-data.mjs) | Checks the data and that every example lance is legal. |
 
 ```sh

@@ -1,10 +1,12 @@
 # Blender part pipeline
 
 The Lance Ledger draws each war-walker from swappable parts: one chassis plus
-one part per fitted item. Until real models exist it uses procedural
-placeholders (`apps/web/src/model/parts.ts`). These scripts let you replace
-them one part at a time with models made in Blender, and turn any lance into a
-printable STL.
+one part per fitted item. By default these are procedural models built in
+code: `apps/web/src/model/chassis.ts` for the four chassis and `parts.ts` for
+the items, from the building blocks in `kit.ts` (bevelled plates, banded
+boilers, rivets, pipes, gauges, pistons and the brass, iron and hull
+materials). These scripts let you replace them one part at a time with models
+made in Blender, and turn any lance into a printable STL.
 
 Tested with Blender 5.2 (the `bpy` module). Every script runs headless:
 
@@ -51,6 +53,6 @@ These match the web builder, so a part made here drops straight in.
 - `export_parts.py`: exports `chassis_*` and `item_*` roots as GLB and updates the manifest.
 - `build_walker.py`: assembles one walker from the exported GLBs and saves an STL.
 
-Parts you have not modelled yet keep using the web placeholders, so the
+Parts you have not modelled yet keep using the procedural web parts, so the
 manifest can grow one entry at a time. Commit the `.blend` and the exported GLBs
 together.

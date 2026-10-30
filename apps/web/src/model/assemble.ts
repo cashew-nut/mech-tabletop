@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { LOCATIONS, getChassis, getEquipment, type Location, type WalkerInput } from '@brass-charter/rules';
+import { bake } from './kit';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
 export interface PartLibrary {
@@ -93,7 +94,7 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       slot += def.slots;
       if (!anchor) continue; // over-full location: nothing left to attach to
       const fromLib = lib?.items.get(id);
-      const part = fromLib ? fromLib.clone(true) : (PARTS[id]?.(palette) ?? new THREE.Group());
+      const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());
       if (fromLib) repaint(part, palette);
       part.name = `part_${id}`;
       part.scale.setScalar(scale);
