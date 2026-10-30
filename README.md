@@ -9,22 +9,24 @@ rules are written to work on a physical tabletop too.
 
 ## Status
 
-Phase 1 of the plan: rules and data.
+Phase 2 of the plan: the rules engine.
 
 | Path | What it is |
 | --- | --- |
 | [`docs/rules.md`](docs/rules.md) | Core rules v0.1 |
 | [`data/`](data) | Chassis, equipment, Driver traits, Companies, scenarios and example lances as JSON. The source of truth for the engine, builder, AI and simulator. |
+| [`packages/rules`](packages/rules) | TypeScript rules engine: `createGame`, `applyAction`, `legalActions`, `previewAttack`. Pure and deterministic (seeded dice), so the browser game, AI and simulator can share it. |
 | [`scripts/validate-data.mjs`](scripts/validate-data.mjs) | Checks the data and that every example lance is legal. |
 
 ```sh
-npm run validate
+npm install
+npm run check   # validate data, typecheck, run tests
 ```
 
 ## Roadmap
 
-1. Rules and data (this phase)
-2. Rules engine in TypeScript, with tests
+1. Rules and data (done)
+2. Rules engine in TypeScript, with tests (this phase)
 3. 2D lance builder in the browser
 4. Playable battle against an AI on a hex map
 5. Headless AI-vs-AI simulator and a balance pass

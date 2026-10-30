@@ -1,16 +1,75 @@
 {
-  "map": { "width": 16, "height": 12, "deploymentDepth": 3 },
+  "map": {
+    "width": 16,
+    "height": 12,
+    "deploymentDepth": 3
+  },
   "rounds": 6,
-  "lance": { "budget": 100, "minWalkers": 3, "maxWalkers": 5 },
+  "lance": {
+    "budget": 100,
+    "minWalkers": 3,
+    "maxWalkers": 5
+  },
   "scenarios": [
-    { "id": "hold-the-field", "name": "Hold the Field",
-      "objectives": [ { "q": 3, "r": 6, "vp": 1 }, { "q": 7, "r": 6, "vp": 1 }, { "q": 11, "r": 6, "vp": 1 } ],
-      "rules": "" },
-    { "id": "refinery-seizure", "name": "Refinery Seizure",
-      "objectives": [ { "q": 7, "r": 6, "vp": 2 }, { "q": 4, "r": 3, "vp": 1 }, { "q": 10, "r": 3, "vp": 1 }, { "q": 4, "r": 9, "vp": 1 }, { "q": 10, "r": 9, "vp": 1 } ],
-      "rules": "The centre objective is worth 2 VP." },
-    { "id": "surveyor-escort", "name": "Surveyor Escort",
+    {
+      "id": "hold-the-field",
+      "name": "Hold the Field",
+      "objectives": [
+        {
+          "col": 3,
+          "row": 6,
+          "vp": 1
+        },
+        {
+          "col": 7,
+          "row": 6,
+          "vp": 1
+        },
+        {
+          "col": 11,
+          "row": 6,
+          "vp": 1
+        }
+      ],
+      "rules": ""
+    },
+    {
+      "id": "refinery-seizure",
+      "name": "Refinery Seizure",
+      "objectives": [
+        {
+          "col": 7,
+          "row": 6,
+          "vp": 2
+        },
+        {
+          "col": 4,
+          "row": 3,
+          "vp": 1
+        },
+        {
+          "col": 10,
+          "row": 3,
+          "vp": 1
+        },
+        {
+          "col": 4,
+          "row": 9,
+          "vp": 1
+        },
+        {
+          "col": 10,
+          "row": 9,
+          "vp": 1
+        }
+      ],
+      "rules": "The centre objective is worth 2 VP."
+    },
+    {
+      "id": "surveyor-escort",
+      "name": "Surveyor Escort",
       "objectives": [],
-      "rules": "Attacker's surveyor token moves 2 hexes when an adjacent friendly war-walker spends 1 Pressure. Attacker scores 6 VP if it exits the far edge. It has 3 hit points, TN 4 and no armour; destroying it gives the defender 4 VP." }
+      "rules": "Attacker's surveyor token moves 2 hexes when an adjacent friendly war-walker spends 1 Pressure. Attacker scores 6 VP if it exits the far edge. It has 3 hit points, TN 4 and no armour; destroying it gives the defender 4 VP."
+    }
   ]
 }
