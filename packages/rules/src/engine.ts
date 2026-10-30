@@ -182,6 +182,8 @@ export function createGame(setup: GameSetup): GameState {
   return state;
 }
 
+// TODO: alternating deployment, including the Calloway & Vane late-deployment doctrine.
+// TODO: Surveyor Escort's surveyor token and scoring.
 function defaultDeployment(state: GameState, side: Side, count: number): Deployment[] {
   const row = side === 0 ? 1 : state.map.height - 2;
   const out: Deployment[] = [];

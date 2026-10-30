@@ -276,7 +276,7 @@ the Trial ends at once and the other side wins.
 | --- | --- | --- |
 | Halvorsen Ironworks | Heavy industry | Ablative Plating costs 1 point less. |
 | Meridian Lantern Company | Aether refining | Once per round, one war-walker may remove 1 Overpressure for free at the start of its activation. |
-| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying. Spotter Drones cost 1 point less. |
+| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying (not yet in the engine). Spotter Drones cost 1 point less. |
 
 ## 13. Reference: chassis
 
