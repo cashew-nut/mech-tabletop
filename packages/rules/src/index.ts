@@ -4,3 +4,4 @@ export * from './lance';
 export * from './rng';
 export * from './types';
 export * from './engine';
+export * from './builder';
