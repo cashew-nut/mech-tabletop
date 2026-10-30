@@ -3,15 +3,19 @@ import { chooseAction } from '@brass-charter/ai';
 import {
   IllegalAction,
   MAPS,
+  SURVEYOR_ID,
   SCENARIOS,
   aliveWalkers,
   applyAction,
   createGame,
+  deployable,
+  deploymentZone,
   distance,
   facingTowards,
   getChassis,
   getEquipment,
   hexKey,
+  neighbors,
   previewAttack,
   reachable,
   moveAllowance,
@@ -40,7 +44,7 @@ const ZONE_NAMES: Record<Zone, string> = {
   armRight: 'Right arm',
   legs: 'Legs',
 };
-const PLAYABLE_SCENARIOS = SCENARIOS.filter((s) => s.objectives.length > 0);
+const PLAYABLE_SCENARIOS = SCENARIOS;
 
 interface Choice {
   label: string;
@@ -67,12 +71,13 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
   const [theirs, setTheirs] = useState(Math.max(0, choices.findIndex((c) => c.lance.name === EXAMPLES[2].name)));
   const [scenario, setScenario] = useState(PLAYABLE_SCENARIOS[0].id);
   const [map, setMap] = useState('foundry-flats');
+  const [deploy, setDeploy] = useState<'alternate' | 'auto'>('alternate');
   const myErrors = validateLance(choices[mine].lance).errors;
   const theirErrors = validateLance(choices[theirs].lance).errors;
 
   const start = () => {
     const seed = Math.floor(Math.random() * 2 ** 31);
-    onStart(createGame({ seed, scenario, map, lances: [choices[mine].lance, choices[theirs].lance] }));
+    onStart(createGame({ seed, scenario, map, deploy, lances: [choices[mine].lance, choices[theirs].lance] }));
   };
 
   return (
@@ -123,6 +128,15 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
           </select>
         </label>
       </div>
+      <label className="field">
+        <span>Deployment</span>
+        <select value={deploy} onChange={(e) => setDeploy(e.target.value as 'alternate' | 'auto')}>
+          <option value="alternate">Take turns placing war-walkers</option>
+          <option value="auto">Quick: line up on each edge</option>
+        </select>
+      </label>
+      <p className="hint">{SCENARIOS.find((s) => s.id === scenario)?.rules || 'Hold objectives at the end of each round to score.'}</p>
+      {scenario === 'surveyor-escort' && <p className="hint">You escort the surveyor; the AI tries to stop it.</p>}
       <button className="start" disabled={myErrors.length > 0 || theirErrors.length > 0} onClick={start}>
         Begin the Trial
       </button>
@@ -143,7 +157,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   const [state, setState] = useState(initial);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string | null>(null);
-  const [mode, setMode] = useState<'move' | 'jump' | 'smoke'>('move');
+  const [mode, setMode] = useState<Mode>('move');
   const [error, setError] = useState<string | null>(null);
 
   const act = (action: Action) => {
@@ -187,12 +201,30 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     return new Map([...r].map(([k, v]) => [k, v.path]));
   }, [state, mineActive]);
 
+  const deploying = state.phase === 'deployment' && state.activeSide === HUMAN;
+  const toDeploy = deploying ? deployable(state) : [];
+  useEffect(() => {
+    if (deploying && !toDeploy.some((w) => w.id === selectedId)) setSelectedId(toDeploy[0]?.id ?? null);
+  }, [state]);
+
+  const escorts = useMemo(
+    () => (mineActive && mode === 'escort' ? escortMoves(state, can) : new Map<string, Hex[]>()),
+    [state, mineActive, mode],
+  );
+
   const jetUid = mineActive ? workingItems(mineActive, 'jump-jets')[0]?.uid : undefined;
   const smokeUid = mineActive ? workingItems(mineActive, 'smoke-launcher')[0]?.uid : undefined;
 
   const highlights = useMemo(() => {
     const h = new Map<string, Highlight>();
+    if (deploying && selectedId) {
+      for (const hex of deploymentZone(state, HUMAN)) {
+        if (can({ type: 'deploy', walkerId: selectedId, hex })) h.set(hexKey(hex), 'move');
+      }
+      return h;
+    }
     if (!mineActive) return h;
+    if (mode === 'escort') for (const k of escorts.keys()) h.set(k, 'jump');
     if (mode === 'move') for (const k of moves.keys()) h.set(k, 'move');
     if (mode === 'jump' && jetUid) {
       for (const k of Object.keys(state.map.hexes)) {
@@ -207,11 +239,20 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
       }
     }
     return h;
-  }, [mode, moves, state, mineActive, jetUid, smokeUid]);
+  }, [mode, moves, escorts, state, mineActive, jetUid, smokeUid, deploying, selectedId]);
 
   const onHex = (hex: Hex) => {
-    if (!mineActive) return;
     const key = hexKey(hex);
+    if (deploying && selectedId && highlights.has(key)) {
+      act({ type: 'deploy', walkerId: selectedId, hex });
+      return;
+    }
+    if (!mineActive) return;
+    if (mode === 'escort' && escorts.has(key)) {
+      act({ type: 'escort', path: escorts.get(key)! });
+      setMode('move');
+      return;
+    }
     if (mode === 'move' && moves.has(key)) {
       const enemy = aliveWalkers(state, 1).sort((a, b) => distance(a.pos, hex) - distance(b.pos, hex))[0];
       act({ type: 'move', path: moves.get(key)!, facing: enemy ? facingTowards(hex, enemy.pos) : undefined });
@@ -226,6 +267,11 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   };
 
   const onWalker = (id: string) => {
+    if (id === SURVEYOR_ID) {
+      if (state.surveyor?.side !== HUMAN) setTargetId(id);
+      else if (mineActive) setMode(mode === 'escort' ? 'move' : 'escort');
+      return;
+    }
     const w = state.walkers.find((x) => x.id === id)!;
     if (w.side !== HUMAN) {
       setTargetId(id);
@@ -236,6 +282,8 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
 
   const selected = state.walkers.find((w) => w.id === selectedId) ?? null;
   const target = state.walkers.find((w) => w.id === targetId) ?? null;
+  const targetName = targetId === SURVEYOR_ID ? 'the surveyor' : target?.name;
+  const sv = state.surveyor;
   const myTurn = state.phase !== 'over' && state.activeSide === HUMAN;
 
   return (
@@ -246,7 +294,12 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
             {state.lances[0].name} <strong>{state.vp[0]}</strong>
           </span>
           <span className="round">
-            Round {Math.min(state.round, state.rounds)} of {state.rounds}
+            {state.phase === 'deployment' ? 'Deployment' : `Round ${Math.min(state.round, state.rounds)} of ${state.rounds}`}
+            {sv && (
+              <small>
+                {' · '}Surveyor {sv.status === 'active' ? `${sv.hp} hits left` : sv.status === 'exited' ? 'escaped' : 'destroyed'}
+              </small>
+            )}
           </span>
           <span className="side1">
             <strong>{state.vp[1]}</strong> {state.lances[1].name}
@@ -255,7 +308,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
         <HexMap state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
         <p className="legend">
           Rough ∴ costs 2 to enter · Light cover ♣ +1 TN · Heavy cover ▲ +2 TN, blocks sight through it · Dark hexes are impassable · Rings
-          mark high ground · Gold circles are objectives
+          mark high ground · Gold circles are objectives{sv ? ' · The brass diamond is the surveyor' : ''}
         </p>
       </div>
 
@@ -268,16 +321,38 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
             </p>
             <button onClick={onQuit}>New Trial</button>
           </div>
+        ) : deploying ? (
+          <div className="panel">
+            <h3>Deploy your war-walkers</h3>
+            <p className="hint">Pick a war-walker, then click a highlighted hex in your zone. The sides take turns.</p>
+            <ul className="activate-list">
+              {toDeploy.map((w) => (
+                <li key={w.id} className={w.id === selectedId ? 'active' : ''}>
+                  <button className="link" onClick={() => setSelectedId(w.id)}>
+                    {w.name}
+                  </button>
+                  <small>{getChassis(w.chassis).name}</small>
+                </li>
+              ))}
+            </ul>
+            {state.lances[HUMAN].company === 'calloway-vane' && (
+              <p className="hint">Calloway &amp; Vane doctrine: your last war-walker deploys after the enemy has finished.</p>
+            )}
+          </div>
         ) : !myTurn ? (
           <div className="panel">
             <h3>Opponent's turn</h3>
-            <p className="hint">{active ? `${active.name} is acting…` : 'The Company AI is choosing…'}</p>
+            <p className="hint">
+              {state.phase === 'deployment' ? 'The Company AI is deploying…' : active ? `${active.name} is acting…` : 'The Company AI is choosing…'}
+            </p>
           </div>
         ) : mineActive ? (
           <ActivationPanel
             state={state}
             walker={mineActive}
             target={target}
+            targetId={targetId}
+            targetName={targetName}
             mode={mode}
             setMode={setMode}
             act={act}
@@ -331,20 +406,41 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   );
 }
 
+type Mode = 'move' | 'jump' | 'smoke' | 'escort';
+
+/** Hexes the friendly surveyor can be escorted to from here, with the path to each. */
+function escortMoves(state: GameState, can: (a: Action) => boolean): Map<string, Hex[]> {
+  const out = new Map<string, Hex[]>();
+  const sv = state.surveyor;
+  if (sv?.status !== 'active') return out;
+  for (const n of neighbors(sv.pos)) {
+    if (!can({ type: 'escort', path: [n] })) continue;
+    out.set(hexKey(n), [n]);
+    for (const m of neighbors(n)) {
+      if (!out.has(hexKey(m)) && can({ type: 'escort', path: [n, m] })) out.set(hexKey(m), [n, m]);
+    }
+  }
+  return out;
+}
+
 interface PanelProps {
   state: GameState;
   walker: WalkerState;
   target: WalkerState | null;
-  mode: 'move' | 'jump' | 'smoke';
-  setMode: (m: 'move' | 'jump' | 'smoke') => void;
+  targetId: string | null;
+  targetName?: string;
+  mode: Mode;
+  setMode: (m: Mode) => void;
   act: (a: Action) => void;
   can: (a: Action) => boolean;
   jetUid?: string;
   smokeUid?: string;
 }
 
-function ActivationPanel({ state, walker, target, mode, setMode, act, can, jetUid, smokeUid }: PanelProps) {
+function ActivationPanel({ state, walker, target, targetId, targetName, mode, setMode, act, can, jetUid, smokeUid }: PanelProps) {
   const a = state.active!;
+  const sv = state.surveyor;
+  const canEscort = sv?.status === 'active' && sv.side === walker.side && distance(sv.pos, walker.pos) === 1 && a.pressure >= 1;
   const weapons = workingItems(walker).filter((it) => getEquipment(it.id).weapon);
   const damagedZone = (Object.keys(walker.armour) as Zone[]).find((z) => walker.armour[z] < walker.maxArmour[z]);
   const utilities: Array<{ label: string; action: Action; title: string }> = [];
@@ -372,7 +468,9 @@ function ActivationPanel({ state, walker, target, mode, setMode, act, can, jetUi
             : `Click a highlighted hex to move up to ${moveAllowance(state, walker)} hexes for 1 Pressure. You can move again while Pressure lasts, and you end facing the nearest enemy.`
           : mode === 'jump'
             ? 'Click a highlighted hex to jump (2 Pressure, +1 Overpressure).'
-            : 'Click this or an adjacent hex to lay smoke.'}
+            : mode === 'escort'
+              ? 'Click a highlighted hex to move the surveyor there (1 Pressure, up to 2 hexes).'
+              : 'Click this or an adjacent hex to lay smoke.'}
       </p>
 
       <div className="turns" role="group" aria-label="Turn to face (1 Pressure)">
@@ -389,12 +487,12 @@ function ActivationPanel({ state, walker, target, mode, setMode, act, can, jetUi
         ))}
       </div>
 
-      <h4>Weapons {target ? `vs ${target.name}` : ''}</h4>
+      <h4>Weapons {targetName ? `vs ${targetName}` : ''}</h4>
       <ul className="weapons">
         {weapons.length === 0 && <li className="hint">No working weapons.</li>}
         {weapons.map((it) => {
           const def = getEquipment(it.id);
-          const p = target ? previewAttack(state, it.uid, target.id) : null;
+          const p = targetId ? previewAttack(state, it.uid, targetId) : null;
           return (
             <li key={it.uid}>
               <div>
@@ -404,10 +502,10 @@ function ActivationPanel({ state, walker, target, mode, setMode, act, can, jetUi
                   {it.firedThisActivation ? ' · fired' : ''}
                 </small>
                 <small className={p?.ok ? 'good' : 'bad'}>
-                  {!target ? 'Click an enemy to target it' : p!.ok ? `${p!.dice} dice, hit on ${p!.tn}+${p!.indirect ? ' (indirect)' : ''}` : p!.reason}
+                  {!targetId ? 'Click an enemy to target it' : p!.ok ? `${p!.dice} dice, hit on ${p!.tn}+${p!.indirect ? ' (indirect)' : ''}` : p!.reason}
                 </small>
               </div>
-              <button disabled={!p?.ok} onClick={() => target && act({ type: 'fire', itemUid: it.uid, targetId: target.id })}>
+              <button disabled={!p?.ok} onClick={() => targetId && act({ type: 'fire', itemUid: it.uid, targetId })}>
                 Fire
               </button>
             </li>
@@ -435,6 +533,11 @@ function ActivationPanel({ state, walker, target, mode, setMode, act, can, jetUi
         {jetUid && (
           <button className={mode === 'jump' ? 'on' : ''} disabled={a.pressure < 2} onClick={() => setMode(mode === 'jump' ? 'move' : 'jump')}>
             Jump Jets
+          </button>
+        )}
+        {canEscort && (
+          <button className={mode === 'escort' ? 'on' : ''} onClick={() => setMode(mode === 'escort' ? 'move' : 'escort')} title="1 Pressure: move the surveyor up to 2 hexes">
+            Escort surveyor
           </button>
         )}
         {smokeUid && (

@@ -1,4 +1,4 @@
-# Brass Charter — Core Rules v0.2
+# Brass Charter — Core Rules v0.3
 
 > Draft for playtesting. Numbers will change. All chassis and equipment stats live in
 > [`data/`](../data) and are the source of truth; tables here are for reading convenience.
@@ -50,7 +50,8 @@ one war-walker gives it -1 Stride.
 1. Pick a scenario (section 11) and place terrain and objectives as it says.
 2. Each side rolls a d6; the higher roll picks a deployment edge. The other side deploys first.
 3. Sides alternate placing one war-walker at a time anywhere within 3 hexes of their edge,
-   facing any hexside.
+   facing any hexside. When one side has placed everything, the other places the rest.
+   Calloway & Vane hold their last war-walker back until the enemy has finished (section 12).
 
 ## 6. The round
 
@@ -269,7 +270,7 @@ the Trial ends at once and the other side wins.
 | --- | --- | --- |
 | Hold the Field | 3 objectives in a line across the centre row, 4 hexes apart. | None. |
 | Refinery Seizure | 5 objectives: one in the centre, four 3 hexes from it diagonally. | The centre objective is worth 2 VP. |
-| Surveyor Escort (not yet in the engine) | The attacker's surveyor token starts in their deployment zone. | The surveyor moves 2 hexes when a friendly war-walker adjacent to it spends 1 Pressure. The attacker scores 6 VP if it leaves the far edge. Destroying it (3 hits at TN 4, no armour) gives the defender 4 VP. No objectives. |
+| Surveyor Escort | The attacker's surveyor token starts at the front of their deployment zone, in the centre column. It blocks movement like a war-walker. | A friendly war-walker next to the surveyor may spend 1 Pressure to move it up to 2 hexes. The attacker scores 6 VP when it reaches the far edge row. It can be shot like a war-walker (no armour, no hit location), at +1 TN while a friendly war-walker is next to it. 5 hits destroy it and give the defender 4 VP. No objectives. |
 
 ## 12. Companies
 
@@ -277,7 +278,7 @@ the Trial ends at once and the other side wins.
 | --- | --- | --- |
 | Halvorsen Ironworks | Heavy industry | Ablative Plating costs 1 point less. |
 | Meridian Lantern Company | Aether refining | Once per round, one war-walker may remove 1 Overpressure for free at the start of its activation. |
-| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying (not yet in the engine). Spotter Drones cost 1 point less. |
+| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying. If both sides are Calloway & Vane, this cancels out. Spotter Drones cost 1 point less. |
 
 ## 13. Reference: chassis
 
@@ -313,3 +314,11 @@ Balance pass driven by 600-game AI-vs-AI simulations (see [`balance.md`](balance
 - Targeting Array 5 to 4, Gyro Stabilisers 4 to 3, Kinetic Shield 4 to 3, and Overcharged Boiler
   4 to 2 points.
 - Tactician 5 to 4 and Iron Nerve 3 to 2 points.
+
+## 16. Changes in v0.3
+
+- Alternating deployment and the Calloway & Vane late-deployment doctrine are now in the engine.
+- Surveyor Escort is playable. Compared with the v0.2 draft, the surveyor starts at the front of
+  the deployment zone instead of the back, takes 5 hits instead of 3, and is screened (+1 TN)
+  while an escort stands next to it. In 120 AI-vs-AI games with alternating deployment the
+  escorting side won 51%, lost 43% and drew 6%; the surveyor escaped in 74% of games.

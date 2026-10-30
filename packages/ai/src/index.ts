@@ -4,17 +4,23 @@
 // value, fire the best shots it can afford, then spend what is left.
 import {
   IllegalAction,
+  SURVEYOR_ID,
   aliveWalkers,
   applyAction,
+  deployable,
+  deploymentZone,
   distance,
   facingTowards,
   getChassis,
   getEquipment,
   hexKey,
   hexInfo,
+  hexToOffset,
   hitChance,
   lineOfSight,
   moveAllowance,
+  neighbors,
+  surveyorExitRow,
   previewAttack,
   rangeBand,
   reachable,
@@ -59,6 +65,13 @@ function shotValue(state: GameState, itemUid: string, attacker: WalkerState, tar
   return { value: hits * perHit * (1 + 3 / Math.max(1, toughness)), pressure: p.pressure };
 }
 
+/** Value of shooting the enemy surveyor: each hit is a third of its destroy VP. */
+function surveyorShotValue(state: GameState, itemUid: string): { value: number; pressure: number } | null {
+  const p = previewAttack(state, itemUid, SURVEYOR_ID);
+  if (!p.ok) return null;
+  return { value: p.dice * hitChance(p.tn) * 2.5, pressure: p.pressure };
+}
+
 /** Best total shot value the active walker could get from its current position with `budget` Pressure. */
 function attackPlanValue(state: GameState, w: WalkerState, budget: number): number {
   const enemies = aliveWalkers(state, (1 - w.side) as Side);
@@ -70,6 +83,8 @@ function attackPlanValue(state: GameState, w: WalkerState, budget: number): numb
       const v = shotValue(state, it.uid, w, e);
       if (v && (!best || v.value > best.value)) best = v;
     }
+    const sv = surveyorShotValue(state, it.uid);
+    if (sv && (!best || sv.value > best.value)) best = sv;
     if (best) options.push({ uid: it.uid, ...best });
   }
   options.sort((a, b) => b.value / Math.max(1, b.pressure) - a.value / Math.max(1, a.pressure));
@@ -117,6 +132,15 @@ function objectiveValue(state: GameState, hex: Hex): number {
   return value - 0.15 * nearest;
 }
 
+/** Escorts want to stand next to their surveyor; hunters want to close on the enemy's. */
+function surveyorValue(state: GameState, w: WalkerState, hex: Hex): number {
+  const sv = state.surveyor;
+  if (sv?.status !== 'active') return 0;
+  const d = distance(sv.pos, hex);
+  if (sv.side === w.side) return (d === 1 ? 3 : 0) - 0.3 * d;
+  return -0.1 * d;
+}
+
 function coverValue(state: GameState, hex: Hex): number {
   const t = hexInfo(state, hex)?.terrain;
   return t === 'heavy' ? 1 : t === 'light' ? 0.5 : 0;
@@ -152,7 +176,12 @@ function bestSpot(state: GameState, w: WalkerState, caution: number): { stay: Sp
     const enemy = nearestEnemy(eval_, ew, hex);
     const approach = enemy ? -0.08 * distance(hex, enemy.pos) : 0;
     return (
-      attackPlanValue(eval_, ew, budget) - caution * threatAt(eval_, ew, hex) + objectiveValue(eval_, hex) + coverValue(eval_, hex) + approach
+      attackPlanValue(eval_, ew, budget) -
+      caution * threatAt(eval_, ew, hex) +
+      objectiveValue(eval_, hex) +
+      surveyorValue(eval_, ew, hex) +
+      coverValue(eval_, hex) +
+      approach
     );
   };
 
@@ -183,6 +212,42 @@ function bestSpot(state: GameState, w: WalkerState, caution: number): { stay: Sp
     }
   }
   return { stay, best };
+}
+
+/** Push the friendly surveyor as far toward its exit row as it can go. */
+function bestEscort(state: GameState, w: WalkerState): Action | null {
+  const sv = state.surveyor;
+  if (sv?.status !== 'active' || sv.side !== w.side || distance(sv.pos, w.pos) !== 1) return null;
+  const exit = surveyorExitRow(state);
+  const gap = (h: Hex) => Math.abs(hexToOffset(h).row - exit);
+  let best: { action: Action; gap: number } | null = null;
+  for (const n of neighbors(sv.pos)) {
+    for (const path of [[n], ...neighbors(n).map((m) => [n, m])]) {
+      const end = path[path.length - 1];
+      const action: Action = { type: 'escort', path };
+      if ((!best || gap(end) < best.gap) && gap(end) < gap(sv.pos) && legal(state, action)) best = { action, gap: gap(end) };
+    }
+  }
+  return best?.action ?? null;
+}
+
+/** Deploy the biggest war-walker first, into cover near objectives and the surveyor. */
+function chooseDeploy(state: GameState): Action {
+  const side = state.activeSide;
+  const walkers = deployable(state).sort((x, y) => y.size - x.size);
+  const w = walkers[0];
+  const friends = aliveWalkers(state, side);
+  let best: { hex: Hex; score: number } | null = null;
+  for (const hex of deploymentZone(state, side)) {
+    const info = hexInfo(state, hex);
+    if (!info || info.terrain === 'blocking') continue;
+    const crowding = friends.filter((f) => distance(f.pos, hex) <= 1).length;
+    const forward = Math.abs(hexToOffset(hex).row - (side === 0 ? 0 : state.map.height - 1));
+    const centre = -0.1 * Math.abs(hexToOffset(hex).col - state.map.width / 2);
+    const score = coverValue(state, hex) + objectiveValue(state, hex) + surveyorValue(state, w, hex) - 0.8 * crowding + 0.2 * forward + centre;
+    if ((!best || score > best.score) && legal(state, { type: 'deploy', walkerId: w.id, hex })) best = { hex, score };
+  }
+  return { type: 'deploy', walkerId: w.id, hex: best!.hex };
 }
 
 function chooseActivation(state: GameState, caution: number): Action {
@@ -224,6 +289,9 @@ function chooseWalkerAction(state: GameState, caution: number): Action {
 
   if (w.prone && a.pressure >= 1) return { type: 'standUp' };
 
+  const escort = bestEscort(state, w);
+  if (escort && a.pressure >= 1) return escort;
+
   if (a.pressure >= 1) {
     const { best, stay } = bestSpot(state, w, caution);
     if (best.path && best.score > stay.score) {
@@ -243,6 +311,8 @@ function chooseWalkerAction(state: GameState, caution: number): Action {
       const v = shotValue(state, it.uid, w, e);
       if (v && v.value > 0.05 && (!shot || v.value > shot.value)) shot = { action: { type: 'fire', itemUid: it.uid, targetId: e.id }, value: v.value };
     }
+    const sv = surveyorShotValue(state, it.uid);
+    if (sv && sv.value > 0.05 && (!shot || sv.value > shot.value)) shot = { action: { type: 'fire', itemUid: it.uid, targetId: SURVEYOR_ID }, value: sv.value };
   }
   if (shot) return shot.action;
 
@@ -284,6 +354,7 @@ function chooseWalkerAction(state: GameState, caution: number): Action {
 /** Pick one action for the side whose turn it is. Always returns a legal action. */
 export function chooseAction(state: GameState, options: AiOptions = {}): Action {
   const caution = options.caution ?? 0.4;
+  if (state.phase === 'deployment') return chooseDeploy(state);
   const action = state.active ? chooseWalkerAction(state, caution) : chooseActivation(state, caution);
   if (legal(state, action)) return action;
   // Fall back to something that is always available.

@@ -54,3 +54,24 @@ Striker). The other examples only changed to stay within 100 points.
 - **Arc Mortar (38%) and Spotter Drone (39%):** partly the AI, which doesn't set up indirect
   fire well. Check in human play first.
 - **Iron Nerve and Tactician (40%):** the AI rarely benefits from either one.
+
+## v0.3 check (phase 7)
+
+The simulator now uses alternating deployment, plays all four scenarios (including Surveyor
+Escort and Twin Wells) and pairs every scenario with every map, Canal Docks included. Earlier
+runs always put each scenario on the same map. One 600-game run with `npm run sim -- 600 1`
+and no rule changes:
+
+| Measure | v0.2 | v0.3 |
+| --- | --- | --- |
+| Example lances (Swarm / Gun Line / Lanterns) | 38% / 63% / 50% | 56% / 53% / 41% |
+| Chassis range | 49–53% | 49–54% |
+| Companies | 50% each | 48–52% |
+| Side that deployed first | n/a | 51% |
+| 3 / 4 / 5-walker lances | n/a / n/a / 43% | 56% / 50% / 46% |
+
+Surveyor Escort was tuned on its own over 120 games of the example lances (see rules section 16).
+
+New on the watch list: Rail Lance (39%) and Gunner (38%) dropped once the broken-up maps came in.
+Shear Blade (56%) and Impact Hammer (55%) are still the strongest items. Melee is still slightly
+too good.

@@ -9,7 +9,7 @@ import { randomLance } from './randomLance';
 
 const randomGames = Number(process.argv[2] ?? 400);
 const seed0 = Number(process.argv[3] ?? 1);
-const scenarios = SCENARIOS.filter((s) => s.objectives.length).map((s) => s.id);
+const scenarios = SCENARIOS.map((s) => s.id);
 const maps = MAPS.map((m) => m.id);
 const EXAMPLES = examples.lances as LanceInput[];
 
@@ -23,7 +23,7 @@ const add = (m: Map<string, Tally>, key: string, score: number) => {
 };
 
 function play(a: LanceInput, b: LanceInput, seed: number): GameState {
-  return playOut(createGame({ seed, scenario: scenarios[seed % scenarios.length], map: maps[seed % maps.length], lances: [a, b] }));
+  return playOut(createGame({ seed, scenario: scenarios[seed % scenarios.length], map: maps[Math.floor(seed / scenarios.length) % maps.length], lances: [a, b], deploy: 'alternate' }));
 }
 
 const scoreFor = (s: GameState, side: 0 | 1) => (s.winner === 'draw' ? 0.5 : s.winner === side ? 1 : 0);

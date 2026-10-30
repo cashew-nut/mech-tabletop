@@ -13,25 +13,309 @@
       "width": 16,
       "height": 12,
       "hexes": [
-        { "col": 2, "row": 4, "terrain": "light" },
-        { "col": 3, "row": 4, "terrain": "light" },
-        { "col": 12, "row": 7, "terrain": "light" },
-        { "col": 13, "row": 7, "terrain": "light" },
-        { "col": 5, "row": 5, "terrain": "heavy" },
-        { "col": 10, "row": 6, "terrain": "heavy" },
-        { "col": 7, "row": 3, "terrain": "blocking" },
-        { "col": 8, "row": 8, "terrain": "blocking" },
-        { "col": 6, "row": 8, "terrain": "rough" },
-        { "col": 7, "row": 8, "terrain": "rough" },
-        { "col": 9, "row": 3, "terrain": "rough" },
-        { "col": 0, "row": 6, "elevation": 1 },
-        { "col": 1, "row": 6, "elevation": 1 },
-        { "col": 1, "row": 5, "elevation": 1 },
-        { "col": 15, "row": 5, "elevation": 1 },
-        { "col": 14, "row": 5, "elevation": 1 },
-        { "col": 14, "row": 6, "elevation": 1 },
-        { "col": 7, "row": 6, "elevation": 1 },
-        { "col": 8, "row": 5, "elevation": 1 }
+        {
+          "col": 2,
+          "row": 4,
+          "terrain": "light"
+        },
+        {
+          "col": 3,
+          "row": 4,
+          "terrain": "light"
+        },
+        {
+          "col": 12,
+          "row": 7,
+          "terrain": "light"
+        },
+        {
+          "col": 13,
+          "row": 7,
+          "terrain": "light"
+        },
+        {
+          "col": 5,
+          "row": 5,
+          "terrain": "heavy"
+        },
+        {
+          "col": 10,
+          "row": 6,
+          "terrain": "heavy"
+        },
+        {
+          "col": 7,
+          "row": 3,
+          "terrain": "blocking"
+        },
+        {
+          "col": 8,
+          "row": 8,
+          "terrain": "blocking"
+        },
+        {
+          "col": 6,
+          "row": 8,
+          "terrain": "rough"
+        },
+        {
+          "col": 7,
+          "row": 8,
+          "terrain": "rough"
+        },
+        {
+          "col": 9,
+          "row": 3,
+          "terrain": "rough"
+        },
+        {
+          "col": 0,
+          "row": 6,
+          "elevation": 1
+        },
+        {
+          "col": 1,
+          "row": 6,
+          "elevation": 1
+        },
+        {
+          "col": 1,
+          "row": 5,
+          "elevation": 1
+        },
+        {
+          "col": 15,
+          "row": 5,
+          "elevation": 1
+        },
+        {
+          "col": 14,
+          "row": 5,
+          "elevation": 1
+        },
+        {
+          "col": 14,
+          "row": 6,
+          "elevation": 1
+        },
+        {
+          "col": 7,
+          "row": 6,
+          "elevation": 1
+        },
+        {
+          "col": 8,
+          "row": 5,
+          "elevation": 1
+        }
+      ]
+    },
+    {
+      "id": "canal-docks",
+      "name": "Canal Docks",
+      "width": 16,
+      "height": 12,
+      "hexes": [
+        {
+          "col": 0,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 0,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 1,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 1,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 2,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 2,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 4,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 4,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 5,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 5,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 6,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 6,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 7,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 7,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 9,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 9,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 10,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 10,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 11,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 11,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 13,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 13,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 14,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 14,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 15,
+          "row": 5,
+          "terrain": "rough"
+        },
+        {
+          "col": 15,
+          "row": 6,
+          "terrain": "rough"
+        },
+        {
+          "col": 5,
+          "row": 3,
+          "terrain": "blocking"
+        },
+        {
+          "col": 6,
+          "row": 3,
+          "terrain": "blocking"
+        },
+        {
+          "col": 10,
+          "row": 8,
+          "terrain": "blocking"
+        },
+        {
+          "col": 11,
+          "row": 8,
+          "terrain": "blocking"
+        },
+        {
+          "col": 2,
+          "row": 8,
+          "terrain": "heavy"
+        },
+        {
+          "col": 13,
+          "row": 3,
+          "terrain": "heavy"
+        },
+        {
+          "col": 4,
+          "row": 7,
+          "terrain": "heavy"
+        },
+        {
+          "col": 11,
+          "row": 4,
+          "terrain": "heavy"
+        },
+        {
+          "col": 6,
+          "row": 2,
+          "terrain": "light"
+        },
+        {
+          "col": 9,
+          "row": 9,
+          "terrain": "light"
+        },
+        {
+          "col": 1,
+          "row": 3,
+          "terrain": "light"
+        },
+        {
+          "col": 14,
+          "row": 8,
+          "terrain": "light"
+        },
+        {
+          "col": 0,
+          "row": 9,
+          "elevation": 1
+        },
+        {
+          "col": 15,
+          "row": 2,
+          "elevation": 1
+        }
       ]
     }
   ]

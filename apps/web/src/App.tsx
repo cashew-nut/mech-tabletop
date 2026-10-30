@@ -15,6 +15,7 @@ import {
 import examples from '../../../data/lances/examples.json';
 import { WalkerEditor } from './WalkerEditor';
 import { Battle } from './battle/Battle';
+import { Cards } from './Cards';
 import { downloadLance, loadDraft, loadSaved, parseLance, saveDraft, storeSaved } from './storage';
 
 const EXAMPLES = examples.lances as LanceInput[];
@@ -264,12 +265,13 @@ function Builder() {
   );
 }
 
-type Tab = 'builder' | 'battle';
+type Tab = 'builder' | 'cards' | 'battle';
+const TABS: Tab[] = ['builder', 'cards', 'battle'];
 
 export function App() {
-  const [tab, setTab] = useState<Tab>(() => (location.hash === '#battle' ? 'battle' : 'builder'));
+  const [tab, setTab] = useState<Tab>(() => TABS.find((t) => location.hash === `#${t}`) ?? 'builder');
   useEffect(() => {
-    history.replaceState(null, '', tab === 'battle' ? '#battle' : '#builder');
+    history.replaceState(null, '', `#${tab}`);
   }, [tab]);
   return (
     <>
@@ -279,12 +281,19 @@ export function App() {
           <button role="tab" aria-selected={tab === 'builder'} className={tab === 'builder' ? 'on' : ''} onClick={() => setTab('builder')}>
             Lance Ledger
           </button>
+          <button role="tab" aria-selected={tab === 'cards'} className={tab === 'cards' ? 'on' : ''} onClick={() => setTab('cards')}>
+            Unit Cards
+          </button>
           <button role="tab" aria-selected={tab === 'battle'} className={tab === 'battle' ? 'on' : ''} onClick={() => setTab('battle')}>
             Charter Trial
           </button>
         </div>
       </nav>
-      {tab === 'builder' ? <Builder /> : <div className="app"><Battle /></div>}
+      {tab === 'builder' ? (
+        <Builder />
+      ) : (
+        <div className="app">{tab === 'cards' ? <Cards /> : <Battle />}</div>
+      )}
     </>
   );
 }

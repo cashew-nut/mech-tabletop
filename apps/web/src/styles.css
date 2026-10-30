@@ -1121,3 +1121,211 @@ button.end {
   display: block;
   width: 100%;
 }
+
+/* ---------- surveyor ---------- */
+
+.surveyor {
+  cursor: pointer;
+}
+
+.surveyor polygon {
+  fill: #b5873a;
+  stroke: #2d6e9c;
+  stroke-width: 3;
+}
+
+.surveyor.targeted polygon {
+  stroke: #ffe066;
+  stroke-dasharray: 4 2;
+}
+
+.surveyor .initial {
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  fill: #1e1b18;
+  pointer-events: none;
+}
+
+/* ---------- unit cards ---------- */
+
+.cards-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cards-tools h2 {
+  margin: 0;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.unit-card {
+  background: #fbf6ea;
+  color: var(--ink);
+  border: 1px solid var(--brass-dark);
+  border-top: 8px solid var(--brass);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  break-inside: avoid;
+  min-width: 0;
+}
+
+.unit-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  border-bottom: 1px solid var(--parchment-2);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.unit-card h3 {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+}
+
+.unit-card h4 {
+  margin: 10px 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--brass-dark);
+}
+
+.unit-card small {
+  color: var(--ink-soft);
+}
+
+.card-cost {
+  font-family: 'Cinzel', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border: 2px solid var(--brass);
+  border-radius: 50%;
+  min-width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+}
+
+.card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.card-stats dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.card-stats dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.card-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 6px;
+}
+
+.card-table th,
+.card-table td {
+  text-align: left;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--parchment-2);
+  vertical-align: middle;
+}
+
+.card-table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.boxes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.boxes i {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.card-tracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px 0 8px;
+}
+
+.card-rules,
+.card-ref,
+.card-roster {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.card-rules {
+  list-style: none;
+  padding-left: 0;
+}
+
+.card-rules li + li {
+  margin-top: 3px;
+}
+
+.card-roster span {
+  float: right;
+  font-weight: 700;
+}
+
+.card-small {
+  font-size: 0.76rem;
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+  .topbar,
+  .cards-tools {
+    display: none !important;
+  }
+  .app {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6mm;
+  }
+  .unit-card {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
