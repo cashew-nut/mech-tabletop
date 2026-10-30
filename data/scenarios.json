@@ -69,7 +69,15 @@
       "id": "surveyor-escort",
       "name": "Surveyor Escort",
       "objectives": [],
-      "rules": "Attacker's surveyor token moves 2 hexes when an adjacent friendly war-walker spends 1 Pressure. Attacker scores 6 VP if it exits the far edge. It has 3 hit points, TN 4 and no armour; destroying it gives the defender 4 VP."
+      "rules": "Side 0 escorts a surveyor token that starts at the front of its deployment zone. A war-walker next to it can spend 1 Pressure to move it up to 2 hexes. Side 0 scores 6 VP when it reaches the far edge. It can be shot like a war-walker, at +1 TN while an escort is next to it; 5 hits destroy it and give side 1 4 VP.",
+      "surveyor": {
+        "side": 0,
+        "col": 7,
+        "row": 2,
+        "hp": 5,
+        "exitVp": 6,
+        "destroyVp": 4
+      }
     }
   ]
 }

@@ -17,6 +17,7 @@ import {
   arcOf,
   directionTo,
   distance,
+  hexToOffset,
   facingTowards,
   hexEq,
   hexKey,
@@ -51,6 +52,8 @@ const illegal = (msg: string): never => {
 const OVERPRESSURE_LIMIT = 6;
 const MAX_RESERVE = 2;
 const MAX_THROTTLE = 2;
+/** Target id for the Surveyor Escort scenario's surveyor token. */
+export const SURVEYOR_ID = 'surveyor';
 
 // ---------------------------------------------------------------- setup
 
@@ -67,6 +70,11 @@ export interface GameSetup {
   lances: [LanceInput, LanceInput];
   /** Optional fixed positions per side; otherwise walkers line up on their edge. */
   deployments?: [Deployment[], Deployment[]];
+  /**
+   * 'alternate' starts with a deployment phase in which the sides take turns
+   * placing war-walkers (section 5). 'auto' (the default) lines them up.
+   */
+  deploy?: 'auto' | 'alternate';
 }
 
 export function createGame(setup: GameSetup): GameState {
@@ -94,6 +102,10 @@ export function createGame(setup: GameSetup): GameState {
     wrecks: [],
     lances: setup.lances.map((l) => ({ name: l.name, company: l.company })),
     walkers: [],
+    undeployed: [],
+    surveyor: scenario.surveyor
+      ? { side: scenario.surveyor.side, pos: offsetToHex(scenario.surveyor), hp: scenario.surveyor.hp, status: 'active' }
+      : null,
     vp: [0, 0],
     activeSide: 0,
     active: null,
@@ -104,13 +116,14 @@ export function createGame(setup: GameSetup): GameState {
     log: [],
   };
 
-  const centre = offsetToHex({ col: Math.floor(mapDef.width / 2), row: Math.floor(mapDef.height / 2) });
+  const centre = mapCentre(state);
+  const alternate = setup.deploy === 'alternate' && !setup.deployments;
   setup.lances.forEach((lance, sideIndex) => {
     const side = sideIndex as Side;
     const report = validateLance(lance);
     if (report.errors.length) throw new Error(`Lance "${lance.name}" is not legal: ${report.errors.join('; ')}`);
     const company = getCompany(lance.company);
-    const deploy = setup.deployments?.[side] ?? defaultDeployment(state, side, lance.walkers.length);
+    const deploy = alternate ? null : (setup.deployments?.[side] ?? defaultDeployment(state, side, lance.walkers.length));
     lance.walkers.forEach((input, i) => {
       const c = getChassis(input.chassis);
       const id = `s${side}w${i}`;
@@ -139,9 +152,9 @@ export function createGame(setup: GameSetup): GameState {
       for (const item of items.filter((it) => it.id === 'ablative-plating')) {
         for (const zone of zonesOf(item.location)) armour[zone] += 2;
       }
-      const pos = offsetToHex(deploy[i]);
-      if (!passable(state, pos)) throw new Error(`Cannot deploy ${input.name} at ${deploy[i].col},${deploy[i].row}`);
-      state.walkers.push({
+      const pos = deploy ? offsetToHex(deploy[i]) : { q: 0, r: 0 };
+      if (deploy && !enterable(state, pos)) throw new Error(`Cannot deploy ${input.name} at ${deploy[i].col},${deploy[i].row}`);
+      const walker: WalkerState = {
         id,
         side,
         name: input.name,
@@ -151,7 +164,7 @@ export function createGame(setup: GameSetup): GameState {
         command: input.driver.command,
         trait: input.driver.trait,
         pos,
-        facing: deploy[i].facing ?? facingTowards(pos, centre),
+        facing: deploy ? (deploy[i].facing ?? facingTowards(pos, centre)) : 0,
         items,
         armour,
         maxArmour: { ...armour },
@@ -172,18 +185,92 @@ export function createGame(setup: GameSetup): GameState {
         aceUsed: false,
         reactiveUsed: false,
         tacticianUsed: false,
-      });
+      };
+      (deploy ? state.walkers : state.undeployed).push(walker);
     });
   });
 
   const events: GameEvent[] = [];
-  startRound(state, events);
+  if (alternate) {
+    // Each side rolls a d6; the loser deploys first.
+    let r0 = 0;
+    let r1 = 0;
+    while (r0 === r1) {
+      r0 = d6(state.rng);
+      r1 = d6(state.rng);
+    }
+    state.phase = 'deployment';
+    state.activeSide = r0 < r1 ? 0 : 1;
+    events.push({ type: 'deployment', text: `Deployment. Side ${state.activeSide} deploys first (${r0} vs ${r1}).` });
+  } else {
+    startRound(state, events);
+  }
   state.log.push(...events);
   return state;
 }
 
-// TODO: alternating deployment, including the Calloway & Vane late-deployment doctrine.
-// TODO: Surveyor Escort's surveyor token and scoring.
+const mapCentre = (state: GameState) =>
+  offsetToHex({ col: Math.floor(state.map.width / 2), row: Math.floor(state.map.height / 2) });
+
+/** Hexes a side may deploy into: the rows within deployment depth of its edge. */
+export function deploymentZone(state: GameState, side: Side): Hex[] {
+  const depth = RULES.map.deploymentDepth;
+  const out: Hex[] = [];
+  for (let row = 0; row < state.map.height; row++) {
+    if (side === 0 ? row >= depth : row < state.map.height - depth) continue;
+    for (let col = 0; col < state.map.width; col++) out.push(offsetToHex({ col, row }));
+  }
+  return out;
+}
+
+const undeployedCount = (state: GameState, side: Side) => state.undeployed.filter((w) => w.side === side).length;
+
+/**
+ * Calloway & Vane deploy their last war-walker after the enemy has finished.
+ * If both sides are Calloway & Vane, the rule cancels out once both are down to one.
+ */
+function mustHold(state: GameState, side: Side): boolean {
+  const other = (1 - side) as Side;
+  const calloway = (s: Side) => state.lances[s].company === 'calloway-vane';
+  if (!calloway(side) || undeployedCount(state, side) !== 1 || undeployedCount(state, other) === 0) return false;
+  return !(calloway(other) && undeployedCount(state, other) === 1);
+}
+
+const canDeploy = (state: GameState, side: Side) => undeployedCount(state, side) > 0 && !mustHold(state, side);
+
+/** War-walkers the side to move may deploy now. */
+export function deployable(state: GameState): WalkerState[] {
+  if (state.phase !== 'deployment' || mustHold(state, state.activeSide)) return [];
+  return state.undeployed.filter((w) => w.side === state.activeSide);
+}
+
+function doDeploy(ctx: Ctx, action: Extract<Action, { type: 'deploy' }>) {
+  const { state, emit } = ctx;
+  const side = state.activeSide;
+  const index = state.undeployed.findIndex((w) => w.id === action.walkerId);
+  if (index < 0) illegal(`${action.walkerId} is not waiting to deploy`);
+  const w = state.undeployed[index];
+  if (w.side !== side) illegal(`It is side ${side}'s turn to deploy`);
+  if (mustHold(state, side)) illegal('Calloway & Vane hold their last war-walker until the enemy has deployed');
+  if (!deploymentZone(state, side).some((h) => hexEq(h, action.hex))) illegal('That hex is outside the deployment zone');
+  if (!enterable(state, action.hex)) illegal('That hex is blocked or occupied');
+  w.pos = action.hex;
+  w.facing = action.facing ?? facingTowards(action.hex, mapCentre(state));
+  state.undeployed.splice(index, 1);
+  state.walkers.push(w);
+  const { col, row } = hexToOffset(action.hex);
+  emit('deploy', `${w.name} deploys at ${col},${row}.`, { walkerId: w.id, hex: action.hex });
+  const other = (1 - side) as Side;
+  if (canDeploy(state, other)) state.activeSide = other;
+  else if (canDeploy(state, side)) state.activeSide = side;
+  else {
+    state.phase = 'activation';
+    const events: GameEvent[] = [];
+    startRound(state, events);
+    for (const e of events) emit(e.type, e.text, e);
+  }
+}
+
 function defaultDeployment(state: GameState, side: Side, count: number): Deployment[] {
   const row = side === 0 ? 1 : state.map.height - 2;
   const out: Deployment[] = [];
@@ -194,7 +281,7 @@ function defaultDeployment(state: GameState, side: Side, count: number): Deploym
       const col = target + (shift % 2 ? -1 : 1) * Math.ceil(shift / 2);
       const hex = offsetToHex({ col, row });
       const info = state.map.hexes[hexKey(hex)];
-      if (col >= 0 && col < state.map.width && info && info.terrain !== 'blocking' && !taken.has(hexKey(hex))) {
+      if (col >= 0 && col < state.map.width && info && enterable(state, hex) && !taken.has(hexKey(hex))) {
         taken.add(hexKey(hex));
         out.push({ col, row });
         break;
@@ -226,7 +313,11 @@ function passable(state: GameState, hex: Hex): boolean {
 }
 
 function enterable(state: GameState, hex: Hex): boolean {
-  return passable(state, hex) && !walkerAt(state, hex);
+  return passable(state, hex) && !walkerAt(state, hex) && !surveyorAt(state, hex);
+}
+
+function surveyorAt(state: GameState, hex: Hex): boolean {
+  return state.surveyor?.status === 'active' && hexEq(state.surveyor.pos, hex);
 }
 
 function zonesOf(loc: Location): Zone[] {
@@ -367,14 +458,22 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
   if (a.jammedUid === item.uid) return fail(`${def.name} is jammed`);
   if (item.ammo !== null && item.ammo <= 0) return fail(`${def.name} is out of ammo`);
   if (w.prone) return fail('Prone war-walkers cannot fire');
-  const t = state.walkers.find((x) => x.id === targetId);
-  if (!t || t.destroyed) return fail('No such target');
-  if (t.side === w.side) return fail('Cannot target a friendly war-walker');
+  const sv = targetId === SURVEYOR_ID ? state.surveyor : null;
+  const t = sv ? null : state.walkers.find((x) => x.id === targetId);
+  if (sv) {
+    if (sv.status !== 'active') return fail('No such target');
+    if (sv.side === w.side) return fail('Cannot target your own surveyor');
+  } else {
+    if (!t || t.destroyed) return fail('No such target');
+    if (t.side === w.side) return fail('Cannot target a friendly war-walker');
+  }
+  const tPos = sv ? sv.pos : t!.pos;
+  const tSide = sv ? sv.side : t!.side;
   const pressure = pressureCost(state, w, def);
   if (pressure > a.pressure) return fail('Not enough Pressure');
-  if (arcOf(w.pos, w.facing, t.pos) !== 'front') return fail('Target is not in the front arc');
+  if (arcOf(w.pos, w.facing, tPos) !== 'front') return fail('Target is not in the front arc');
 
-  const dist = distance(w.pos, t.pos);
+  const dist = distance(w.pos, tPos);
   const melee = wp.range === 'melee';
   let band: RangeBand | null;
   let indirect = false;
@@ -386,31 +485,35 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
     band = rangeBand(dist);
     if (!band || BAND_ORDER.indexOf(band) > BAND_ORDER.indexOf(wp.range)) return fail('Target is out of range');
     if (wp.minRange && dist < wp.minRange) return fail(`Target is inside minimum range ${wp.minRange}`);
-    const los = lineOfSight(state, w.pos, t.pos);
+    const los = lineOfSight(state, w.pos, tPos);
     if (!los.clear) {
       const seen =
-        t.spottedBy === w.side ||
-        aliveWalkers(state, w.side).some((f) => f.id !== w.id && lineOfSight(state, f.pos, t.pos).clear);
+        t?.spottedBy === w.side ||
+        aliveWalkers(state, w.side).some((f) => f.id !== w.id && lineOfSight(state, f.pos, tPos).clear);
       if (!def.tags?.includes('indirect') || !seen) return fail('No line of sight');
       indirect = true;
       tn += 1;
     }
     tn += BAND_TN[band];
-    const here = hexInfo(state, t.pos)!;
-    const inSmoke = state.smoke.includes(hexKey(t.pos));
+    const here = hexInfo(state, tPos)!;
+    const inSmoke = state.smoke.includes(hexKey(tPos));
     const hexCover = here.terrain === 'heavy' ? 2 : here.terrain === 'light' || inSmoke ? 1 : 0;
     const lineCover = !indirect && los.throughLight ? 1 : 0;
     tn += Math.max(hexCover, lineCover);
     if (a.moved && !hasWorking(w, 'gyro-stabilisers')) tn += def.tags?.includes('static') ? 2 : 1;
   }
-  if (t.lastMoveDistance >= 4) tn += 1;
-  if (t.braced || t.anchored) tn += 1;
-  if ((hexInfo(state, w.pos)?.elevation ?? 0) > (hexInfo(state, t.pos)?.elevation ?? 0)) tn -= 1;
-  if (t.prone) tn -= 1;
+  if (t) {
+    if (t.lastMoveDistance >= 4) tn += 1;
+    if (t.braced || t.anchored) tn += 1;
+    if (t.prone) tn -= 1;
+    if (t.spottedBy === w.side) tn -= 1;
+  }
+  // A surveyor with an escort next to it is screened.
+  if (sv && aliveWalkers(state, sv.side).some((f) => distance(f.pos, sv.pos) === 1)) tn += 1;
+  if ((hexInfo(state, w.pos)?.elevation ?? 0) > (hexInfo(state, tPos)?.elevation ?? 0)) tn -= 1;
   if (hasWorking(w, 'targeting-array')) tn -= 1;
-  if (t.spottedBy === w.side) tn -= 1;
   if (a.faults.includes('steam-scald')) tn += 1;
-  if (aliveWalkers(state, t.side).some((f) => hasWorking(f, 'static-choir') && distance(f.pos, t.pos) <= 2)) tn += 1;
+  if (aliveWalkers(state, tSide).some((f) => hasWorking(f, 'static-choir') && distance(f.pos, tPos) <= 2)) tn += 1;
   tn = Math.max(2, tn);
 
   let dice = wp.dice;
@@ -435,13 +538,17 @@ export function applyAction(prev: GameState, action: Action): ActionResult {
   const emit = (type: string, text: string, extra: Record<string, unknown> = {}) => events.push({ type, text, ...extra });
   const ctx: Ctx = { state, emit };
 
-  if (action.type === 'activate') doActivate(ctx, action.walkerId, action.throttle ?? 0);
+  if (state.phase === 'deployment') {
+    if (action.type !== 'deploy') illegal('War-walkers must deploy first');
+    doDeploy(ctx, action as Extract<Action, { type: 'deploy' }>);
+  } else if (action.type === 'deploy') illegal('Deployment is over');
+  else if (action.type === 'activate') doActivate(ctx, action.walkerId, action.throttle ?? 0);
   else if (action.type === 'pass') doPass(ctx);
   else {
     const a = state.active;
     if (!a?.started) illegal('No war-walker is active');
     const w = getWalker(state, a!.walkerId);
-    doWalkerAction(ctx, w, a!, action);
+    doWalkerAction(ctx, w, a!, action as Exclude<Action, { type: 'activate' | 'pass' | 'deploy' }>);
     if (state.active?.forceEnd && state.phase !== 'over') endActivation(ctx, w, false);
   }
   state.log.push(...events);
@@ -563,7 +670,7 @@ function doPass(ctx: Ctx) {
   state.activeSide = other;
 }
 
-function doWalkerAction(ctx: Ctx, w: WalkerState, a: Activation, action: Exclude<Action, { type: 'activate' | 'pass' }>) {
+function doWalkerAction(ctx: Ctx, w: WalkerState, a: Activation, action: Exclude<Action, { type: 'activate' | 'pass' | 'deploy' }>) {
   const { state, emit } = ctx;
   switch (action.type) {
     case 'move': {
@@ -625,6 +732,10 @@ function doWalkerAction(ctx: Ctx, w: WalkerState, a: Activation, action: Exclude
       if (!p.ok) illegal(p.reason!);
       const item = w.items.find((it) => it.uid === action.itemUid)!;
       const def = getEquipment(item.id);
+      if (action.targetId === SURVEYOR_ID) {
+        fireAtSurveyor(ctx, w, item, p);
+        return;
+      }
       const t = getWalker(state, action.targetId);
       spend(a, p.pressure);
       a.firstWeaponFired = true;
@@ -670,9 +781,75 @@ function doWalkerAction(ctx: Ctx, w: WalkerState, a: Activation, action: Exclude
     case 'useItem':
       useItem(ctx, w, a, action);
       return;
+    case 'escort':
+      escort(ctx, w, a, action.path);
+      return;
     case 'endActivation':
       endActivation(ctx, w, !!action.reactivate);
       return;
+  }
+}
+
+// ---------------------------------------------------------------- surveyor escort
+
+function surveyorDef(state: GameState) {
+  return getScenario(state.scenario).surveyor!;
+}
+
+function fireAtSurveyor(ctx: Ctx, w: WalkerState, item: ItemState, p: AttackPreview) {
+  const { state, emit } = ctx;
+  const sv = state.surveyor!;
+  const def = getEquipment(item.id);
+  spend(state.active!, p.pressure);
+  state.active!.firstWeaponFired = true;
+  item.firedThisActivation = true;
+  if (item.ammo !== null) item.ammo -= 1;
+  emit('fire', `${w.name} fires ${def.name} at the surveyor (${p.dice} dice, TN ${p.tn}).`, {
+    walkerId: w.id,
+    targetId: SURVEYOR_ID,
+    itemId: def.id,
+  });
+  const hits = rollAttack(ctx, w, p.dice, p.tn, 7).filter((r) => r.hit).length;
+  if (!hits) return;
+  sv.hp = Math.max(0, sv.hp - hits);
+  if (sv.hp > 0) {
+    emit('hit', `The surveyor takes ${hits} hit${hits > 1 ? 's' : ''} (${sv.hp} left).`, { targetId: SURVEYOR_ID });
+    return;
+  }
+  sv.status = 'destroyed';
+  const scorer = (1 - sv.side) as Side;
+  const vp = surveyorDef(state).destroyVp;
+  state.vp[scorer] += vp;
+  emit('destroyed', `The surveyor is destroyed! Side ${scorer} scores ${vp} VP.`, { targetId: SURVEYOR_ID, side: scorer, vp });
+}
+
+/** The row the surveyor must reach to leave the far edge. */
+export function surveyorExitRow(state: GameState): number {
+  return state.surveyor?.side === 0 ? state.map.height - 1 : 0;
+}
+
+function escort(ctx: Ctx, w: WalkerState, a: Activation, path: Hex[]) {
+  const { state, emit } = ctx;
+  const sv = state.surveyor;
+  if (!sv || sv.status !== 'active') illegal('There is no surveyor to escort');
+  if (sv!.side !== w.side) illegal("Cannot escort the enemy's surveyor");
+  if (w.prone) illegal('Prone war-walkers cannot escort');
+  if (distance(w.pos, sv!.pos) !== 1) illegal('Must be next to the surveyor');
+  if (path.length < 1 || path.length > 2) illegal('The surveyor moves 1 or 2 hexes');
+  let at = sv!.pos;
+  for (const step of path) {
+    if (distance(at, step) !== 1) illegal('Path steps must be adjacent');
+    if (!enterable(state, step)) illegal('Path enters a blocked or occupied hex');
+    at = step;
+  }
+  spend(a, 1);
+  sv!.pos = at;
+  emit('escort', `${w.name} escorts the surveyor ${path.length} hex${path.length > 1 ? 'es' : ''}.`, { walkerId: w.id, path });
+  if (hexToOffset(at).row === surveyorExitRow(state)) {
+    sv!.status = 'exited';
+    const vp = surveyorDef(state).exitVp;
+    state.vp[sv!.side] += vp;
+    emit('surveyor', `The surveyor reaches the far edge! Side ${sv!.side} scores ${vp} VP.`, { side: sv!.side, vp });
   }
 }
 
@@ -1009,7 +1186,10 @@ export function legalActions(state: GameState): Action[] {
   if (state.phase === 'over') return [];
   const candidates: Action[] = [];
   const a = state.active;
-  if (!a) {
+  if (state.phase === 'deployment') {
+    const zone = deploymentZone(state, state.activeSide);
+    for (const w of deployable(state)) for (const hex of zone) candidates.push({ type: 'deploy', walkerId: w.id, hex });
+  } else if (!a) {
     for (const w of aliveWalkers(state, state.activeSide)) {
       if (w.activated) continue;
       for (let throttle = 0; throttle <= MAX_THROTTLE; throttle++) candidates.push({ type: 'activate', walkerId: w.id, throttle });
@@ -1045,6 +1225,17 @@ export function legalActions(state: GameState): Action[] {
         } else candidates.push({ type: 'useItem', itemUid: it.uid });
       }
       for (const e of enemies) if (distance(e.pos, w.pos) === 1) candidates.push({ type: 'ram', targetId: e.id });
+      const sv = state.surveyor;
+      if (sv?.status === 'active') {
+        if (sv.side !== w.side) {
+          for (const it of workingItems(w)) if (getEquipment(it.id).weapon) candidates.push({ type: 'fire', itemUid: it.uid, targetId: SURVEYOR_ID });
+        } else if (distance(sv.pos, w.pos) === 1) {
+          for (const n of neighbors(sv.pos)) {
+            candidates.push({ type: 'escort', path: [n] });
+            for (const m of neighbors(n)) if (!hexEq(m, sv.pos)) candidates.push({ type: 'escort', path: [n, m] });
+          }
+        }
+      }
     }
   }
   return candidates.filter((action) => {

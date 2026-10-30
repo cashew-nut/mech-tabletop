@@ -1121,3 +1121,28 @@ button.end {
   display: block;
   width: 100%;
 }
+
+/* ---------- surveyor ---------- */
+
+.surveyor {
+  cursor: pointer;
+}
+
+.surveyor polygon {
+  fill: #b5873a;
+  stroke: #2d6e9c;
+  stroke-width: 3;
+}
+
+.surveyor.targeted polygon {
+  stroke: #ffe066;
+  stroke-dasharray: 4 2;
+}
+
+.surveyor .initial {
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  fill: #1e1b18;
+  pointer-events: none;
+}

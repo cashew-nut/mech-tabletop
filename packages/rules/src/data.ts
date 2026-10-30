@@ -69,10 +69,21 @@ export interface ObjectiveDef {
   vp: number;
 }
 
+export interface SurveyorDef {
+  /** The side escorting it. */
+  side: 0 | 1;
+  col: number;
+  row: number;
+  hp: number;
+  exitVp: number;
+  destroyVp: number;
+}
+
 export interface ScenarioDef {
   id: string;
   name: string;
   objectives: ObjectiveDef[];
+  surveyor?: SurveyorDef;
   rules: string;
 }
 

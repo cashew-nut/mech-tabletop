@@ -1,4 +1,4 @@
-import { hexKey, type GameState, type Hex } from '@brass-charter/rules';
+import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
 
 const SIZE = 26;
 const SQRT3 = Math.sqrt(3);
@@ -88,6 +88,19 @@ export function HexMap({ state, highlights, selectedId, targetId, onHex, onWalke
           </text>
         );
       })}
+      {state.surveyor?.status === 'active' && (() => {
+        const sv = state.surveyor;
+        const { x, y } = hexCentre(sv.pos);
+        const r = SIZE * 0.5;
+        return (
+          <g className={`surveyor ${targetId === SURVEYOR_ID ? 'targeted' : ''}`} onClick={() => onWalker(SURVEYOR_ID)}>
+            <polygon points={`${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}`} />
+            <text x={x} y={y + 4} className="initial">
+              {sv.hp}
+            </text>
+          </g>
+        );
+      })()}
       {state.walkers
         .filter((w) => !w.destroyed)
         .map((w) => {

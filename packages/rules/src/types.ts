@@ -77,6 +77,13 @@ export interface Objective {
   vp: number;
 }
 
+export interface SurveyorState {
+  side: Side;
+  pos: Hex;
+  hp: number;
+  status: 'active' | 'exited' | 'destroyed';
+}
+
 export interface GameEvent {
   type: string;
   text: string;
@@ -87,7 +94,7 @@ export interface GameState {
   rng: Rng;
   round: number;
   rounds: number;
-  phase: 'activation' | 'over';
+  phase: 'deployment' | 'activation' | 'over';
   scenario: string;
   map: { id: string; width: number; height: number; hexes: Record<string, HexInfo> };
   objectives: Objective[];
@@ -95,6 +102,9 @@ export interface GameState {
   wrecks: string[];
   lances: Array<{ name: string; company: string }>;
   walkers: WalkerState[];
+  /** War-walkers still to be placed during the deployment phase. */
+  undeployed: WalkerState[];
+  surveyor: SurveyorState | null;
   vp: [number, number];
   activeSide: Side;
   active: Activation | null;
@@ -106,6 +116,8 @@ export interface GameState {
 }
 
 export type Action =
+  | { type: 'deploy'; walkerId: string; hex: Hex; facing?: Facing }
+  | { type: 'escort'; path: Hex[] }
   | { type: 'activate'; walkerId: string; throttle?: number }
   | { type: 'move'; path: Hex[]; facing?: Facing }
   | { type: 'turn'; facing: Facing }

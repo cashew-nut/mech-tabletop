@@ -48,3 +48,13 @@ describe('AI', () => {
     expect(wins).toBeGreaterThanOrEqual(5);
   });
 });
+
+describe('AI in phase 7 scenarios', () => {
+  it('deploys and plays Surveyor Escort to a result', () => {
+    const s = playOut(createGame({ seed: 7, scenario: 'surveyor-escort', map: 'foundry-flats', lances: [lances[0], lances[1]], deploy: 'alternate' }));
+    expect(s.phase).toBe('over');
+    expect(s.undeployed).toHaveLength(0);
+    expect(s.walkers).toHaveLength(lances[0].walkers.length + lances[1].walkers.length);
+    expect(s.log.some((e) => e.type === 'escort')).toBe(true);
+  });
+});
