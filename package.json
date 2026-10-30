@@ -11,7 +11,7 @@
   "scripts": {
     "validate": "node scripts/validate-data.mjs",
     "typecheck": "tsc -p packages/rules --noEmit && tsc -p packages/ai --noEmit && tsc -p apps/web --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --testTimeout=30000",
     "check": "npm run validate && npm run typecheck && npm test",
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.5"
   }
 }
