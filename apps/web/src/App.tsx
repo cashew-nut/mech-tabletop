@@ -14,6 +14,7 @@ import {
 } from '@brass-charter/rules';
 import examples from '../../../data/lances/examples.json';
 import { WalkerEditor } from './WalkerEditor';
+import { Battle } from './battle/Battle';
 import { downloadLance, loadDraft, loadSaved, parseLance, saveDraft, storeSaved } from './storage';
 
 const EXAMPLES = examples.lances as LanceInput[];
@@ -28,7 +29,7 @@ const newWalker = (taken: string[]): WalkerInput => ({
 
 const emptyLance = (): LanceInput => ({ name: 'New Lance', company: 'halvorsen', walkers: [] });
 
-export function App() {
+function Builder() {
   const [lance, setLance] = useState<LanceInput>(() => loadDraft() ?? structuredClone(EXAMPLES[1]));
   const [selected, setSelected] = useState(0);
   const [saved, setSaved] = useState<Record<string, LanceInput>>(loadSaved);
@@ -110,8 +111,8 @@ export function App() {
     <div className="app">
       <header className="masthead">
         <div>
-          <h1>Brass Charter</h1>
-          <p className="subtitle">Lance Ledger · Charter Trial muster</p>
+          <h2>Lance Ledger</h2>
+          <p className="subtitle">Muster up to {RULES.lance.maxWalkers} war-walkers for a Charter Trial</p>
         </div>
         <div className="masthead-actions">
           <select
@@ -260,5 +261,30 @@ export function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+type Tab = 'builder' | 'battle';
+
+export function App() {
+  const [tab, setTab] = useState<Tab>(() => (location.hash === '#battle' ? 'battle' : 'builder'));
+  useEffect(() => {
+    history.replaceState(null, '', tab === 'battle' ? '#battle' : '#builder');
+  }, [tab]);
+  return (
+    <>
+      <nav className="topbar">
+        <h1>Brass Charter</h1>
+        <div className="tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'builder'} className={tab === 'builder' ? 'on' : ''} onClick={() => setTab('builder')}>
+            Lance Ledger
+          </button>
+          <button role="tab" aria-selected={tab === 'battle'} className={tab === 'battle' ? 'on' : ''} onClick={() => setTab('battle')}>
+            Charter Trial
+          </button>
+        </div>
+      </nav>
+      {tab === 'builder' ? <Builder /> : <div className="app"><Battle /></div>}
+    </>
   );
 }

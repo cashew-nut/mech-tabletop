@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "validate": "node scripts/validate-data.mjs",
-    "typecheck": "tsc -p packages/rules --noEmit && tsc -p apps/web --noEmit",
+    "typecheck": "tsc -p packages/rules --noEmit && tsc -p packages/ai --noEmit && tsc -p apps/web --noEmit",
     "test": "vitest run",
     "check": "npm run validate && npm run typecheck && npm test",
     "dev": "npm run dev -w apps/web",
