@@ -1,6 +1,19 @@
 {
   "chassis": {},
-  "items": {},
+  "items": {
+    "arc-cannon": "item_arc-cannon.glb",
+    "autocannon": "item_autocannon.glb",
+    "carapace-gun": "item_carapace-gun.glb",
+    "hellfire-missiles": "item_hellfire-missiles.glb",
+    "industrial-claw": "item_industrial-claw.glb",
+    "kinetic-claws": "item_kinetic-claws.glb",
+    "lance": "item_lance.glb",
+    "melee-blade": "item_melee-blade.glb",
+    "missile-rack": "item_missile-rack.glb",
+    "rail-cannon": "item_rail-cannon.glb",
+    "rocket-pod": "item_rocket-pod.glb",
+    "soul-lantern": "item_soul-lantern.glb"
+  },
   "kit": {
     "covenant_arm_bulwark": "kit/covenant_arm_bulwark.glb",
     "covenant_arm_striker": "kit/covenant_arm_striker.glb",
