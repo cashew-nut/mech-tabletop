@@ -13,13 +13,13 @@
       "structure": { "core": 4, "other": 3 }
     },
     {
-      "id": "bulwark", "name": "Bulwark", "size": 3, "points": 25, "stride": 1, "boiler": 6,
+      "id": "bulwark", "name": "Bulwark", "size": 3, "points": 25, "stride": 2, "boiler": 6,
       "slots": { "armLeft": 2, "armRight": 2, "core": 3, "legs": 1 },
       "armour": { "coreFront": 8, "coreRear": 4, "arm": 4, "legs": 5 },
       "structure": { "core": 5, "other": 4 }
     },
     {
-      "id": "titan", "name": "Titan", "size": 4, "points": 32, "stride": 1, "boiler": 7,
+      "id": "titan", "name": "Titan", "size": 4, "points": 33, "stride": 1, "boiler": 7,
       "slots": { "armLeft": 3, "armRight": 3, "core": 3, "legs": 2 },
       "armour": { "coreFront": 10, "coreRear": 5, "arm": 5, "legs": 6 },
       "structure": { "core": 6, "other": 5 }

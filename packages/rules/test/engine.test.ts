@@ -104,13 +104,16 @@ describe('attack preview', () => {
     expect(previewAttack(s, gun.uid, 's1w0')).toMatchObject({ ok: false, reason: 'No line of sight' });
   });
 
-  it('stops the Rail Lance firing after moving', () => {
+  it('makes the Rail Lance harder to aim after moving', () => {
     let s = setup(walker('Rail', 'striker', { armLeft: ['rail-lance'] }));
     s = act(s, { type: 'activate', walkerId: 's0w0' });
     const w = getWalker(s, 's0w0');
     s = act(s, { type: 'move', path: [{ q: w.pos.q, r: w.pos.r + 1 }], facing: 0 });
     const lance = w.items[0];
-    expect(previewAttack(s, lance.uid, 's1w0')).toMatchObject({ ok: false, reason: 'Rail Lance cannot fire after moving' });
+    const moved = previewAttack(s, lance.uid, 's1w0');
+    expect(moved.ok).toBe(true);
+    // base 4, attacker moved +1, Rail Lance's extra +1
+    expect(moved.tn).toBe(4 + (moved.band === 'medium' ? 1 : 0) + 2);
   });
 });
 
@@ -199,6 +202,19 @@ describe('turn order', () => {
     expect(() => act(s, { type: 'activate', walkerId: 's0w1' })).toThrow(/Tactician/);
     s = act(s, { type: 'activate', walkerId: 's0w0' });
     expect(() => act(s, { type: 'endActivation', reactivate: true })).toThrow(/unused Tactician/);
+  });
+
+  it('gives an objective to the side with more chassis Size nearby', () => {
+    let s = setup();
+    const heavy = getWalker(s, 's1w0'); // a Striker, size 2
+    const scout = getWalker(s, 's0w1'); // a Scout, size 1
+    s.objectives = [{ hex: heavy.pos, vp: 1 }];
+    scout.pos = { q: heavy.pos.q - 1, r: heavy.pos.r };
+    getWalker(s, 's0w0').pos = { q: heavy.pos.q - 4, r: heavy.pos.r };
+    for (const w of s.walkers) w.activated = true;
+    getWalker(s, 's0w2').activated = false;
+    s = act(s, { type: 'activate', walkerId: 's0w2' }, { type: 'endActivation' });
+    expect(s.vp).toEqual([0, 1]);
   });
 
   it('scores objectives and runs out after 6 rounds', () => {

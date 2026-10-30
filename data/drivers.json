@@ -1,14 +1,48 @@
 {
   "command": [
-    { "value": 0, "points": 0 },
-    { "value": 1, "points": 2 },
-    { "value": 2, "points": 4 }
+    {
+      "value": 0,
+      "points": 0
+    },
+    {
+      "value": 1,
+      "points": 2
+    },
+    {
+      "value": 2,
+      "points": 4
+    }
   ],
   "traits": [
-    { "id": "ace", "name": "Ace", "points": 4, "rules": "Once per round, reroll one attack die roll or a Fault roll." },
-    { "id": "gunner", "name": "Gunner", "points": 4, "rules": "The first weapon fired each activation costs 1 less Pressure (minimum 0)." },
-    { "id": "brawler", "name": "Brawler", "points": 3, "rules": "+1 damage on melee weapon hits and Ram hits." },
-    { "id": "tactician", "name": "Tactician", "points": 5, "rules": "Once per Trial, after this war-walker activates, activate it again immediately." },
-    { "id": "iron-nerve", "name": "Iron Nerve", "points": 3, "rules": "Faults are rolled from 1 more Overpressure than normal." }
+    {
+      "id": "ace",
+      "name": "Ace",
+      "points": 4,
+      "rules": "Once per round, reroll one attack die roll or a Fault roll."
+    },
+    {
+      "id": "gunner",
+      "name": "Gunner",
+      "points": 4,
+      "rules": "The first weapon fired each activation costs 1 less Pressure (minimum 0)."
+    },
+    {
+      "id": "brawler",
+      "name": "Brawler",
+      "points": 3,
+      "rules": "+1 damage on melee weapon hits and Ram hits."
+    },
+    {
+      "id": "tactician",
+      "name": "Tactician",
+      "points": 4,
+      "rules": "Once per Trial, after this war-walker activates, activate it again immediately."
+    },
+    {
+      "id": "iron-nerve",
+      "name": "Iron Nerve",
+      "points": 2,
+      "rules": "Faults are rolled from 1 more Overpressure than normal."
+    }
   ]
 }
