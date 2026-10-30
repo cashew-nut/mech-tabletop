@@ -100,7 +100,7 @@ export interface GameState {
   objectives: Objective[];
   smoke: string[];
   wrecks: string[];
-  lances: Array<{ name: string; company: string }>;
+  lances: Array<{ name: string; faction: string }>;
   walkers: WalkerState[];
   /** War-walkers still to be placed during the deployment phase. */
   undeployed: WalkerState[];
@@ -109,7 +109,6 @@ export interface GameState {
   activeSide: Side;
   active: Activation | null;
   passesUsed: [number, number];
-  meridianUsed: [boolean, boolean];
   pendingTactician: string | null;
   winner: Side | 'draw' | null;
   log: GameEvent[];

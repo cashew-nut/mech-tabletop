@@ -74,10 +74,11 @@ function chassisFromLibrary(id: string, lib: PartLibrary | null, slots: Record<L
   return { root, mounts };
 }
 
-export const COMPANY_COLOURS: Record<string, string> = {
-  halvorsen: '#7a2e22',
-  meridian: '#1f5c63',
-  'calloway-vane': '#2f3e66',
+/** Default livery per faction, from the concept board. */
+export const FACTION_COLOURS: Record<string, string> = {
+  covenant: '#7a1c1c',
+  foundries: '#9a4a1c',
+  reliquary: '#2f5a5a',
 };
 
 export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: PartLibrary | null = null): THREE.Group {

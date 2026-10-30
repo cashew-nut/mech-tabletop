@@ -6,7 +6,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export interface Palette {
-  /** Company livery: banners, tabards and painted panels. Recoloured with the walker's paint. */
+  /** Faction livery: banners, tabards and painted panels. Recoloured with the walker's paint. */
   hull: THREE.Material;
   /** Blackened, oiled armour plate. */
   armour: THREE.Material;

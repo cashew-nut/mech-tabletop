@@ -1,13 +1,16 @@
-# Brass Charter — Core Rules v0.4
+# Brass Charter — Core Rules v0.5
 
-> Draft for playtesting. Numbers will change. All chassis and equipment stats live in
+> Draft for playtesting. Numbers will change. All class and equipment stats live in
 > [`data/`](../data) and are the source of truth; tables here are for reading convenience.
 
 ## 1. The setting in one paragraph
 
-The galaxy is carved up by the Chartered Companies, trading dynasties that own whole star
-systems. They settle disputes over worlds and trade lanes by **Charter Trial**: a legally
-binding battle between small lances of war-walkers. Centuries ago the **Quieting** burned out
+The galaxy is carved up by three powers that hold its Charters. The **Iron Covenant** are noble
+houses and sworn orders whose war engines are forged in cathedral foundries. The **Ashen
+Foundries** are industrial warbands and mercenary legions, built to win, not to inspire. The
+**Reliquary** are a forgotten order whose machines seem older than the wars themselves. They
+settle disputes over worlds and trade lanes by **Charter Trial**: a legally binding battle
+between small lances of war-walkers. Centuries ago the **Quieting** burned out
 every advanced circuit in the galaxy, so starships, war-walkers and their weapons run on
 aether-fired boilers, brass clockwork and valve-driven logic engines.
 
@@ -22,25 +25,29 @@ aether-fired boilers, brass clockwork and valve-driven logic engines.
 
 | Term | Meaning |
 | --- | --- |
-| War-walker | A mech. Each one is built from a chassis plus equipment. |
+| War-walker | A mech. Each one is built from a class (its chassis) plus equipment. |
+| Faction | Who your lance is sworn to. It sets your classes, signature weapons and doctrine. |
 | Driver | The pilot of a war-walker. Has a Command value and up to one trait. |
 | Lance | Your force: 3 to 5 war-walkers, 100 points by default. |
 | Pressure | The points a war-walker spends during its activation. |
-| Boiler rating | How much Pressure a chassis builds each activation. |
+| Boiler rating | How much Pressure a class builds each activation. |
 | Overpressure | Stress tokens. Too many cause Faults. |
 | Reserve | Pressure held back to use outside your activation. |
 | Target number (TN) | The number each attack die must equal or beat to hit. |
 
 ## 4. Building a lance
 
-1. Pick a Company (section 12). Its doctrine applies to your whole lance.
-2. Pick 3 to 5 war-walkers. For each, pick a chassis and fill its slots with equipment.
+1. Pick a faction (section 12). Its doctrine applies to your whole lance.
+2. Pick 3 to 5 war-walkers. For each, pick one of your faction's classes (section 13) and fill
+   its slots with equipment. Signature weapons (section 13.1) can only be fitted by their own
+   faction. All defence, mobility and system gear is shared, except the Reliquary's Soul Lantern.
 3. Give each war-walker a Driver: Command 0, 1 or 2 (0, 2 or 4 points) and optionally one trait.
-4. The total of chassis, equipment and Driver costs must not exceed the Trial budget (100).
+4. The total of class, equipment and Driver costs must not exceed the Trial budget (100).
 
-**Slots.** Each chassis has two arms, a core and legs, each with a number of slots. An item
+**Slots.** Each class has two arms, a core and legs, each with a number of slots. An item
 uses as many slots as listed and must fit in one location: a 2-slot weapon needs an arm with
-2 free slots. Items list which locations they may use (`arm`, `core`, `legs`, or `any`).
+2 free slots. Items list which locations they may use (`arm`, `core`, `legs`, or `any`). The Carapace Gun is
+a weapon that mounts on the core.
 
 **Limits.** At most one Targeting Array per war-walker. Fitting two or more Ablative Plating on
 one war-walker gives it -1 Stride.
@@ -51,7 +58,7 @@ one war-walker gives it -1 Stride.
 2. Each side rolls a d6; the higher roll picks a deployment edge. The other side deploys first.
 3. Sides alternate placing one war-walker at a time anywhere within 3 hexes of their edge,
    facing any hexside. When one side has placed everything, the other places the rest.
-   Calloway & Vane hold their last war-walker back until the enemy has finished (section 12).
+   The Reliquary hold their last war-walker back until the enemy has finished (section 12).
 
 ## 6. The round
 
@@ -122,7 +129,7 @@ or "reaction" (for example the Kinetic Shield). It is lost in the end phase.
 
 ### 7.4 Overpressure
 
-Overpressure comes from Opening the Throttle, Thermal Projector hits, some items and some
+Overpressure comes from Opening the Throttle, Hellfire Missile hits, some items and some
 criticals. At 3 or more, you roll for Faults at the start of each activation. At **6 or more**
 the safety valve blows: the war-walker removes all Overpressure and immediately ends its
 activation (or skips its next one, if this happens outside its activation).
@@ -252,7 +259,7 @@ Attacks against it get -1 TN.
 ## 10. Objectives and victory
 
 An objective is **held** by the side with the greater total chassis Size of war-walkers on or
-adjacent to it (Scout 1, Striker 2, Bulwark 3, Titan 4). A tie, including nobody nearby, means
+adjacent to it (each class lists its Size in section 13). A tie, including nobody nearby, means
 nobody holds it. Prone war-walkers still count.
 
 Victory points (VP):
@@ -272,29 +279,52 @@ the Trial ends at once and the other side wins.
 | Refinery Seizure | 5 objectives: one in the centre, four 3 hexes from it diagonally. | The centre objective is worth 2 VP. |
 | Surveyor Escort | The attacker's surveyor token starts at the front of their deployment zone, in the centre column. It blocks movement like a war-walker. | A friendly war-walker next to the surveyor may spend 1 Pressure to move it up to 2 hexes. The attacker scores 6 VP when it reaches the far edge row. It can be shot like a war-walker (no armour, no hit location), at +1 TN while a friendly war-walker is next to it. 5 hits destroy it and give the defender 4 VP. No objectives. |
 
-## 12. Companies
+## 12. Factions
 
-| Company | Specialty | Doctrine |
-| --- | --- | --- |
-| Halvorsen Ironworks | Heavy industry | Ablative Plating costs 1 point less. |
-| Meridian Lantern Company | Aether refining | Once per round, one war-walker may remove 1 Overpressure for free at the start of its activation. |
-| Calloway & Vane Surveyors | Scouting and mapping | Deploy one war-walker after the enemy has finished deploying. If both sides are Calloway & Vane, this cancels out. Spotter Drones cost 1 point less. |
+| Faction | Motto | Identity | Doctrine |
+| --- | --- | --- | --- |
+| Iron Covenant | Faith. Honour. Dominion. | Few, elite, armoured knights who win in melee. No Size 1 class. | **Sworn Knights:** each Driver trait costs 1 point less (minimum 1). |
+| Ashen Foundries | Build. Fight. Repeat. | Cheap, tough gun walkers in numbers. | **Forge Plate:** Ablative Plating costs 1 point less. |
+| Reliquary | Ancient. Watchful. Eternal. | Frail, fast or strange walkers around one towering Goliath. | **From the Veil:** deploy one war-walker after the enemy has finished deploying. If both sides are Reliquary, this cancels out. |
 
-## 13. Reference: chassis
+## 13. Reference: classes
 
-| Chassis | Size | Pts | Stride | Boiler | Slots (arm / core / legs) | Armour (core front / rear / arm / legs) | Structure (core / other) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Scout | 1 | 12 | 3 | 4 | 1 / 1 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
-| Striker | 2 | 18 | 2 | 5 | 2 / 2 / 1 | 6 / 3 / 3 / 4 | 4 / 3 |
-| Bulwark | 3 | 25 | 2 | 6 | 2 / 3 / 1 | 8 / 4 / 4 / 5 | 5 / 4 |
-| Titan | 4 | 34 | 1 | 7 | 3 / 3 / 2 | 10 / 5 / 5 / 6 | 6 / 5 |
+| Faction | Class | Role | Size | Pts | Stride | Boiler | Slots (arm / arm / core / legs) | Armour (core front / rear / arm / legs) | Structure (core / other) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Covenant | Lancer | Assault | 2 | 23 | 3 | 5 | 2 / 2 / 1 / 1 | 6 / 3 / 3 / 3 | 4 / 3 |
+| Covenant | Sentinel | Defence and support | 3 | 28 | 2 | 6 | 1 / 1 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
+| Covenant | Paladin | Heavy melee | 4 | 34 | 2 | 6 | 2 / 2 / 2 / 1 | 10 / 5 / 5 / 6 | 6 / 5 |
+| Foundries | Scavenger | Utility and recon | 1 | 12 | 3 | 4 | 1 / 1 / 2 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
+| Foundries | Brute | Frontline | 3 | 25 | 2 | 6 | 2 / 2 / 2 / 1 | 9 / 4 / 5 / 5 | 5 / 4 |
+| Foundries | Artillery | Long range | 3 | 22 | 1 | 7 | 3 / 3 / 2 / 1 | 7 / 3 / 3 / 5 | 5 / 4 |
+| Reliquary | Wraith | Assassin | 1 | 11 | 4 | 5 | 1 / 1 / 1 / 1 | 3 / 2 / 2 / 2 | 3 / 2 |
+| Reliquary | Seer | Artillery and psychic | 2 | 16 | 2 | 6 | 1 / 2 / 3 / 1 | 5 / 2 / 2 / 3 | 4 / 3 |
+| Reliquary | Goliath | Heavy | 4 | 33 | 2 | 7 | 2 / 2 / 3 / 2 | 9 / 5 / 4 / 6 | 6 / 5 |
 
-Equipment and Driver traits are listed in [`data/equipment.json`](../data/equipment.json) and
+### 13.1 Signature weapons
+
+| Faction | Weapon | Mount | Slots | Pressure | Pts | Range | Dice | Damage | Rules |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Covenant | Lance | Arm | 1 | 1 | 9 | Melee | 2 | 3 | **Charge:** +1 die if this war-walker has moved 2 or more hexes this activation. |
+| Covenant | Melee Blade | Arm | 1 | 1 | 8 | Melee | 3 | 2 | Rolls of 5 or 6 are criticals. |
+| Covenant | Carapace Gun | Core | 1 | 2 | 5 | Medium | 2 | 2 | Pierce 1. No ammo. |
+| Covenant | Missile Rack | Arm | 2 | 1 | 6 | Long | 5 | 1 | Indirect. Ammo 4. |
+| Foundries | Autocannon | Arm | 1 | 1 | 3 | Medium | 3 | 1 | Ammo 6. |
+| Foundries | Rail Cannon | Arm | 2 | 2 | 7 | Long | 1 | 4 | Pierce 2. +2 TN instead of +1 after moving. |
+| Foundries | Rocket Pod | Arm | 2 | 2 | 4 | Long | 2 | 2 | Blast. Minimum range 4. |
+| Foundries | Industrial Claw | Arm | 1 | 1 | 5 | Melee | 2 | 3 | Push the target 1 hex away on a hit. |
+| Reliquary | Arc Cannon | Arm | 1 | 1 | 6 | Medium | 3 | 1 | Each hit drains 1 Pressure from the target's next activation. No ammo. |
+| Reliquary | Hellfire Missiles | Arm | 2 | 1 | 5 | Long | 3 | 1 | Indirect. Each hit adds 1 Overpressure. Ammo 3. |
+| Reliquary | Kinetic Claws | Arm | 1 | 1 | 6 | Melee | 4 | 1 | **Backstab:** rolls of 5 or 6 are criticals from the target's rear arc. |
+| Reliquary | Soul Lantern | Core (system) | 1 | 0 | 5 | | | | Enemy attacks on friendly war-walkers within 2 hexes get +1 TN. Does not stack. |
+
+Shared equipment and Driver traits are listed in [`data/equipment.json`](../data/equipment.json) and
 [`data/drivers.json`](../data/drivers.json).
 
 ## 14. Open questions for playtesting
 
-- Does the Titan's Stride 1 still feel too slow now that the Bulwark has Stride 2?
+- Does the Artillery's Stride 1 feel too slow to reach objectives?
+- Do the factions feel different enough at the table, or do they need more exclusive systems?
 - Smoke, Jump Jets and Field Repair test weakly, but the AI barely uses them. Do they feel weak
   in human play?
 - Should Reserve be capped at 1 instead of 2?
@@ -333,3 +363,17 @@ Balance pass, two 600-game simulator rounds (see [`balance.md`](balance.md)).
 - Gunner costs 2 points instead of 4.
 - Titan costs 34 points instead of 33.
 - The AI now uses Jump Jets and Smoke Launchers.
+
+## 18. Changes in v0.5: the three factions
+
+- The Iron Covenant, Ashen Foundries and Reliquary replace the Companies. Halvorsen's plating
+  discount became the Foundries' doctrine and Calloway & Vane's late deployment became the
+  Reliquary's. Meridian's free vent is retired, and the Covenant's trait discount is new.
+- Nine faction classes replace the Scout, Striker, Bulwark and Titan.
+- Each faction has four signature weapons only it can fit. Shear Blade became the Melee Blade,
+  Beam Cutter the core-mounted Carapace Gun, Rail Lance the Rail Cannon (7 points), Arc Mortar the
+  Rocket Pod (4 points), Impact Hammer the Industrial Claw (5 points), Ion Lance the Arc Cannon
+  (now 1 damage, 6 points) and Static Choir the Soul Lantern (5 points). Lance, Hellfire Missiles
+  and Kinetic Claws are new.
+- Scattergun and Thermal Projector are retired.
+- Tuned over 2,000 simulated Trials (see [`balance.md`](balance.md)).

@@ -3,10 +3,10 @@ import { applyAction, getWalker, hexKey, IllegalAction, legalActions, previewAtt
 import { duel, walker } from './helpers';
 
 // Side 0 lead at col 2, side 1 lead at col 5, same row: 3 hexes apart, facing each other.
-const setup = (attacker = walker('Gun', 'striker', { armLeft: ['autocannon'], core: ['targeting-array'] }), seed = 1) =>
+const setup = (attacker = walker('Gun', 'brute', { armLeft: ['autocannon'], core: ['targeting-array'] }), seed = 1) =>
   duel(
-    [attacker, walker('A2', 'scout'), walker('A3', 'scout')],
-    [walker('Target', 'striker'), walker('B2', 'scout'), walker('B3', 'scout')],
+    [attacker, walker('A2', 'scavenger'), walker('A3', 'scavenger')],
+    [walker('Target', 'brute'), walker('B2', 'scavenger'), walker('B3', 'scavenger')],
     [
       [
         { col: 2, row: 6, facing: 0 },
@@ -28,12 +28,12 @@ const act = (s: GameState, ...actions: Parameters<typeof applyAction>[1][]) =>
 describe('activation and Pressure', () => {
   it('gives a war-walker its boiler rating in Pressure', () => {
     const s = act(setup(), { type: 'activate', walkerId: 's0w0' });
-    expect(s.active?.pressure).toBe(5);
+    expect(s.active?.pressure).toBe(6);
   });
 
   it('Opening the Throttle adds Pressure and Overpressure', () => {
     const s = act(setup(), { type: 'activate', walkerId: 's0w0', throttle: 2 });
-    expect(s.active?.pressure).toBe(7);
+    expect(s.active?.pressure).toBe(8);
     expect(getWalker(s, 's0w0').overpressure).toBe(2);
   });
 
@@ -57,7 +57,7 @@ describe('activation and Pressure', () => {
     ];
     s = act(s, { type: 'move', path });
     expect(getWalker(s, 's0w0').pos).toEqual(path[1]);
-    expect(s.active?.pressure).toBe(4);
+    expect(s.active?.pressure).toBe(5);
     const tooFar = [1, 2, 3].map((i) => ({ q: path[1].q, r: path[1].r - i }));
     expect(() => act(s, { type: 'move', path: tooFar })).toThrow(IllegalAction);
   });
@@ -104,15 +104,15 @@ describe('attack preview', () => {
     expect(previewAttack(s, gun.uid, 's1w0')).toMatchObject({ ok: false, reason: 'No line of sight' });
   });
 
-  it('makes the Rail Lance harder to aim after moving', () => {
-    let s = setup(walker('Rail', 'striker', { armLeft: ['rail-lance'] }));
+  it('makes the Rail Cannon harder to aim after moving', () => {
+    let s = setup(walker('Rail', 'brute', { armLeft: ['rail-cannon'] }));
     s = act(s, { type: 'activate', walkerId: 's0w0' });
     const w = getWalker(s, 's0w0');
     s = act(s, { type: 'move', path: [{ q: w.pos.q, r: w.pos.r + 1 }], facing: 0 });
     const lance = w.items[0];
     const moved = previewAttack(s, lance.uid, 's1w0');
     expect(moved.ok).toBe(true);
-    // base 4, attacker moved +1, Rail Lance's extra +1
+    // base 4, attacker moved +1, Rail Cannon's extra +1
     expect(moved.tn).toBe(4 + (moved.band === 'medium' ? 1 : 0) + 2);
   });
 });
@@ -122,7 +122,7 @@ describe('damage', () => {
     let hits = 0;
     const trials = 300;
     for (let seed = 1; seed <= trials; seed++) {
-      const s = act(setup(walker('Gun', 'striker', { armLeft: ['autocannon'] }), seed), { type: 'activate', walkerId: 's0w0' });
+      const s = act(setup(walker('Gun', 'brute', { armLeft: ['autocannon'] }), seed), { type: 'activate', walkerId: 's0w0' });
       const gun = getWalker(s, 's0w0').items[0];
       const { events } = applyAction(s, { type: 'fire', itemUid: gun.uid, targetId: 's1w0' });
       const roll = events.find((e) => e.type === 'roll')!;
@@ -135,7 +135,7 @@ describe('damage', () => {
 
   it('removes armour before structure and conserves damage', () => {
     for (let seed = 1; seed <= 50; seed++) {
-      const s = act(setup(walker('Gun', 'striker', { armLeft: ['autocannon'] }), seed), { type: 'activate', walkerId: 's0w0' });
+      const s = act(setup(walker('Gun', 'brute', { armLeft: ['autocannon'] }), seed), { type: 'activate', walkerId: 's0w0' });
       const before = getWalker(s, 's1w0');
       const gun = getWalker(s, 's0w0').items[0];
       const { state, events } = applyAction(s, { type: 'fire', itemUid: gun.uid, targetId: 's1w0' });
@@ -154,7 +154,7 @@ describe('damage', () => {
   it('destroys a war-walker whose core runs out, leaving a wreck and scoring VP', () => {
     let destroyed = 0;
     for (let seed = 1; seed <= 40; seed++) {
-      const s = act(setup(walker('Brute', 'striker', { armLeft: ['scattergun'] }), seed), { type: 'activate', walkerId: 's0w0' });
+      const s = act(setup(walker('Brute', 'brute', { armLeft: ['autocannon'] }), seed), { type: 'activate', walkerId: 's0w0' });
       const t = getWalker(s, 's1w0');
       t.pos = { q: getWalker(s, 's0w0').pos.q + 1, r: t.pos.r };
       t.armour = { coreFront: 0, coreRear: 0, armLeft: 0, armRight: 0, legs: 0 };
@@ -172,7 +172,7 @@ describe('damage', () => {
   });
 
   it('Kinetic Shield spends Reserve to cancel damage', () => {
-    const s0 = setup(walker('Brute', 'striker', { armLeft: ['scattergun'] }));
+    const s0 = setup(walker('Brute', 'brute', { armLeft: ['autocannon'] }));
     const t = getWalker(s0, 's1w0');
     t.items.push({ uid: 'shield', id: 'kinetic-shield', location: 'armRight', destroyed: false, ammo: null, uses: null, firedThisActivation: false });
     t.reserve = 2;
@@ -196,7 +196,7 @@ describe('turn order', () => {
   });
 
   it('lets a Tactician activate twice in a row once per Trial', () => {
-    const s0 = setup(walker('Tac', 'striker', {}, 'tactician'));
+    const s0 = setup(walker('Tac', 'brute', {}, 'tactician'));
     let s = act(s0, { type: 'activate', walkerId: 's0w0' }, { type: 'endActivation', reactivate: true });
     expect(s.activeSide).toBe(0);
     expect(() => act(s, { type: 'activate', walkerId: 's0w1' })).toThrow(/Tactician/);
@@ -206,8 +206,8 @@ describe('turn order', () => {
 
   it('gives an objective to the side with more chassis Size nearby', () => {
     let s = setup();
-    const heavy = getWalker(s, 's1w0'); // a Striker, size 2
-    const scout = getWalker(s, 's0w1'); // a Scout, size 1
+    const heavy = getWalker(s, 's1w0'); // a Brute, size 3
+    const scout = getWalker(s, 's0w1'); // a Scavenger, size 1
     s.objectives = [{ hex: heavy.pos, vp: 1 }];
     scout.pos = { q: heavy.pos.q - 1, r: heavy.pos.r };
     getWalker(s, 's0w0').pos = { q: heavy.pos.q - 4, r: heavy.pos.r };

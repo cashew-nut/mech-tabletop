@@ -4,7 +4,7 @@
 // (`mount_<location>_<slot>`) that equipment snaps to. Blender-made chassis
 // use the same names, so they can replace these one at a time.
 import * as THREE from 'three';
-import type { Location } from '@brass-charter/rules';
+import { CHASSIS, type Location } from '@brass-charter/rules';
 import {
   archWindow,
   at,
@@ -32,7 +32,12 @@ import {
   type V3,
 } from './kit';
 
+/** Base sizes by frame, the model skeleton each class is built on. */
 export const BASE_MM: Record<string, number> = { scout: 25, striker: 32, bulwark: 40, titan: 50 };
+
+/** The model skeleton a class uses until it has its own faction model. */
+export const frameOf = (chassisId: string) => CHASSIS.find((c) => c.id === chassisId)?.frame ?? chassisId;
+export const baseMm = (chassisId: string) => BASE_MM[frameOf(chassisId)];
 
 export interface ChassisModel {
   root: THREE.Group;
@@ -508,7 +513,7 @@ function titan(slots: Record<Location, number>, p: Palette) {
 const BUILDERS: Record<string, (slots: Record<Location, number>, p: Palette) => THREE.Group> = { scout, striker, bulwark, titan };
 
 export function buildChassis(chassisId: string, slots: Record<Location, number>, p: Palette): ChassisModel {
-  const build = BUILDERS[chassisId];
+  const build = BUILDERS[frameOf(chassisId)];
   if (!build) throw new Error(`No model for chassis ${chassisId}`);
   const root = bake(build(slots, p));
   root.name = `chassis_${chassisId}`;

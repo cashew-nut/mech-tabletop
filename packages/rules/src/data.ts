@@ -2,7 +2,7 @@
 import chassisJson from '../../../data/chassis.json';
 import equipmentJson from '../../../data/equipment.json';
 import driversJson from '../../../data/drivers.json';
-import companiesJson from '../../../data/companies.json';
+import factionsJson from '../../../data/factions.json';
 import scenariosJson from '../../../data/scenarios.json';
 import mapsJson from '../../../data/maps.json';
 
@@ -14,6 +14,11 @@ export type RangeBand = 'melee' | 'short' | 'medium' | 'long';
 export interface ChassisDef {
   id: string;
   name: string;
+  /** Each class belongs to one faction. */
+  faction: string;
+  role: string;
+  /** The 3D model skeleton this class is built on. */
+  frame: string;
   size: number;
   points: number;
   stride: number;
@@ -36,6 +41,8 @@ export interface WeaponStats {
 export interface EquipmentDef {
   id: string;
   name: string;
+  /** Signature gear only that faction can fit. Shared gear has none. */
+  faction?: string;
   category: 'weapon' | 'defence' | 'mobility' | 'system';
   mount: Array<'arm' | 'core' | 'legs' | 'any'>;
   slots: number;
@@ -55,12 +62,15 @@ export interface TraitDef {
   rules: string;
 }
 
-export interface CompanyDef {
+export interface FactionDef {
   id: string;
   name: string;
-  specialty: string;
+  motto: string;
+  identity: string;
   doctrine: string;
   pointModifiers: Record<string, number>;
+  /** Added to the cost of every Driver trait (minimum 1). */
+  traitModifier?: number;
 }
 
 export interface ObjectiveDef {
@@ -103,7 +113,7 @@ export const CHASSIS = chassisJson.chassis as ChassisDef[];
 export const EQUIPMENT = equipmentJson.equipment as EquipmentDef[];
 export const COMMAND_COST = new Map(driversJson.command.map((c) => [c.value, c.points]));
 export const TRAITS = driversJson.traits as TraitDef[];
-export const COMPANIES = companiesJson.companies as CompanyDef[];
+export const FACTIONS = factionsJson.factions as FactionDef[];
 export const SCENARIOS = scenariosJson.scenarios as ScenarioDef[];
 export const MAPS = mapsJson.maps as MapDef[];
 export const RULES = {
@@ -116,7 +126,7 @@ const byId = <T extends { id: string }>(list: T[]) => new Map(list.map((x) => [x
 const chassisById = byId(CHASSIS);
 const equipmentById = byId(EQUIPMENT);
 const traitById = byId(TRAITS);
-const companyById = byId(COMPANIES);
+const factionById = byId(FACTIONS);
 const scenarioById = byId(SCENARIOS);
 const mapById = byId(MAPS);
 
@@ -129,7 +139,7 @@ function lookup<T>(map: Map<string, T>, id: string, kind: string): T {
 export const getChassis = (id: string) => lookup(chassisById, id, 'chassis');
 export const getEquipment = (id: string) => lookup(equipmentById, id, 'equipment');
 export const getTrait = (id: string) => lookup(traitById, id, 'trait');
-export const getCompany = (id: string) => lookup(companyById, id, 'company');
+export const getFaction = (id: string) => lookup(factionById, id, 'faction');
 export const getScenario = (id: string) => lookup(scenarioById, id, 'scenario');
 export const getMap = (id: string) => lookup(mapById, id, 'map');
 export const hasEquipment = (id: string) => equipmentById.has(id);

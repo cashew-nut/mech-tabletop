@@ -19,7 +19,7 @@ blender --background --python assets/blender/starter_parts.py -- assets/blender/
 #    manifest.json. The web builder uses them on the next reload.
 blender assets/blender/parts.blend --background --python assets/blender/export_parts.py
 #    ...or only some parts:
-blender assets/blender/parts.blend --background --python assets/blender/export_parts.py -- --only titan rail-lance
+blender assets/blender/parts.blend --background --python assets/blender/export_parts.py -- --only titan rail-cannon
 
 # 3. Assemble a walker from a lance file (exported from the Lance Ledger)
 #    and save an STL, plus a .blend if you want to pose it before printing.
@@ -43,7 +43,7 @@ These match the web builder, so a part made here drops straight in.
 | Items | A root object named `item_<id>` (ids from `data/equipment.json`), with its origin at the point where it attaches and its business end pointing -Y. |
 | Item scale | Model items at Scout scale. They are scaled ×1.2, ×1.4 and ×1.7 on the Striker, Bulwark and Titan. |
 | Multi-slot items | Snap to the mount of their first slot, so a 2-slot item in slots 0-1 sits on `mount_<location>_0`. |
-| Paint | Any material whose name starts with `hull` is recoloured with the Company livery or the walker's paint. Name brass, iron and glowing parts anything else. |
+| Paint | Any material whose name starts with `hull` is recoloured with the faction livery or the walker's paint. Name brass, iron and glowing parts anything else. |
 | Printing | Keep walls at least 1 mm thick and barrels at least 1.5 mm across at Scout scale, and keep each part a closed mesh. |
 
 ## Files

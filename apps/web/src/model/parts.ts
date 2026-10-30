@@ -6,7 +6,8 @@ import * as THREE from 'three';
 import { archWindow, at, barrel, blade, box, cyl, dome, gauge, gear, group, lancet, lathe, piston, pipe, plate, rivetRow, sphere, spire, sunburst, torus, trimmed, type Palette } from './kit';
 
 export { makePalette, type Palette } from './kit';
-export { BASE_MM, buildChassis, type ChassisModel } from './chassis';
+export { BASE_MM, baseMm, buildChassis, frameOf, type ChassisModel } from './chassis';
+import { frameOf } from './chassis';
 
 const SCALE: Record<string, number> = { scout: 1, striker: 1.2, bulwark: 1.4, titan: 1.7 };
 
@@ -17,14 +18,6 @@ type PartBuilder = (p: Palette) => THREE.Object3D;
 /** Meshes for each item, built at Scout scale and pointing forward. */
 export const PARTS: Record<string, PartBuilder> = {
   // ------------------------------------------------ weapons
-  scattergun: (p) =>
-    group(
-      trimmed(3, 3, 3.8, p),
-      ...[-0.75, 0.75].flatMap((x) => [-0.75, 0.75].map((y) => at(barrel(0.55, 4.4, p.iron, 12), x, y, 1.4))),
-      at(plate(3.3, 3.3, 0.7, p.trim, 0.3), 0, 0, 5.5),
-      at(cyl(1.4, 1.4, 1.4, p.copper, 18), 0, -2.2, -0.4),
-      at(spire(0.45, 2.4, p), 0, 1.5, -1.2),
-    ),
   autocannon: (p) =>
     group(
       trimmed(3, 3.2, 5.2, p),
@@ -34,7 +27,7 @@ export const PARTS: Record<string, PartBuilder> = {
       at(lathe([[0.7, 0], [1.1, 0.6], [1.1, 1.4], [0.8, 1.6]], p.trim, 14), 0, 0.3, 10.4, Math.PI / 2),
       at(barrel(1.2, 1.6, p.copper, 18), 2.2, -0.4, -1.4, 0, Math.PI / 2),
     ),
-  'beam-cutter': (p) =>
+  'carapace-gun': (p) =>
     group(
       at(barrel(1.3, 4.4, p.iron, 18), 0, 0, -1.2),
       ...[0.4, 1.4, 2.4].map((z) => at(torus(1.4, 0.26, p.copper, 18), 0, 0, z)),
@@ -42,17 +35,6 @@ export const PARTS: Record<string, PartBuilder> = {
       at(sphere(0.75, p.glow, 14), 0, 0, 5.1),
       at(cyl(0.6, 0.6, 2.6, p.copper, 10), 0, 1.6, 0.4, Math.PI / 2),
       at(torus(0.62, 0.12, p.trim, 10), 0, 1.6, 1.6),
-    ),
-  'thermal-projector': (p) =>
-    group(
-      at(barrel(1.5, 4.2, p.copper, 18), 0, 1.6, -1.6),
-      ...[-1.2, 2].map((z) => at(torus(1.52, 0.18, p.trim, 18), 0, 1.6, z + 0.4)),
-      at(dome(1.5, p.copper, 16), 0, 1.6, 2.6, Math.PI / 2),
-      at(barrel(0.8, 3.6, p.iron, 14), 0, 0, 0),
-      at(lathe([[0.8, 0], [0.9, 0.4], [1.6, 2.4], [1.7, 2.6], [1.2, 2.6]], p.trim, 18), 0, 0, 3.4, Math.PI / 2),
-      at(sphere(0.55, p.fire, 10), 0, 0, 5.5),
-      pipe([[0, 1, 1.6], [0, 0.7, 2.6]], 0.3, p.trim),
-      at(gauge(0.6, p, 0.6), 1.55, 1.6, 0, 0, Math.PI / 2),
     ),
   'missile-rack': (p) => {
     const rack = group(trimmed(4.8, 3.8, 5.6, p), at(plate(5.2, 0.5, 5, p.trim, 0.2), 0, 2.1, -0.2));
@@ -65,7 +47,7 @@ export const PARTS: Record<string, PartBuilder> = {
     rack.add(at(spire(0.5, 3, p), 1.8, 2.3, -2));
     return rack;
   },
-  'rail-lance': (p) =>
+  'rail-cannon': (p) =>
     group(
       plate(3.4, 3.2, 5.2, p.iron, 0.5),
       at(plate(3.8, 0.6, 4.4, p.trim, 0.2), 0, 1.7, 0),
@@ -76,7 +58,7 @@ export const PARTS: Record<string, PartBuilder> = {
       at(plate(3, 1.7, 0.8, p.trim, 0.2), 0, 0, 15.2),
       pipe([[1.9, -0.6, -2], [2.1, -1.4, 0], [1.4, -1.2, 3]], 0.3, p.copper),
     ),
-  'arc-mortar': (p) =>
+  'rocket-pod': (p) =>
     group(
       at(plate(4.2, 1.6, 4.2, p.iron, 0.4), 0, -1, 0),
       at(cyl(1.4, 1.4, 1, p.trim, 16), 0, 0, 0),
@@ -93,7 +75,7 @@ export const PARTS: Record<string, PartBuilder> = {
       ),
       piston([0, -0.6, -1.6], [0, 2.2, -0.4], 0.4, p),
     ),
-  'ion-lance': (p) =>
+  'arc-cannon': (p) =>
     group(
       plate(2.6, 2.6, 3, p.iron, 0.4),
       at(barrel(0.5, 9, p.trim, 12), 0, 0, 1),
@@ -102,7 +84,7 @@ export const PARTS: Record<string, PartBuilder> = {
       at(sphere(0.5, p.glow, 12), 0, 0, 10.2),
       at(cyl(0.45, 0.45, 2.2, p.copper, 10), 0, 1.5, 0, Math.PI / 2),
     ),
-  'impact-hammer': (p) =>
+  'industrial-claw': (p) =>
     group(
       at(barrel(0.9, 3.4, p.iron), 0, 0, 0),
       at(barrel(0.5, 2.6, p.trim), 0, 0, 3),
@@ -114,11 +96,30 @@ export const PARTS: Record<string, PartBuilder> = {
       rivetRow([1.8, 1.75, 6.4], [1.8, 1.75, 7.6], 2, 0.22, p.trim, [0, 1, 0]),
       at(cyl(0.6, 0.6, 2.4, p.copper, 10), 0, 1.4, 1.8, Math.PI / 2),
     ),
-  'shear-blade': (p) =>
+  'melee-blade': (p) =>
     group(
       plate(2, 2.2, 2.4, p.iron, 0.4),
       at(plate(3.4, 0.8, 0.8, p.trim, 0.25), 0, 0, 1.4),
       at(blade(9, 2.2, p), 0, -0.4, 1.6),
+    ),
+  lance: (p) =>
+    group(
+      plate(2, 2.2, 2.4, p.iron, 0.4),
+      at(cyl(1.6, 0.5, 2.6, p.trim, 16), 0, 0, 2.4, Math.PI / 2),
+      at(cyl(0.5, 0.3, 9, p.iron, 10), 0, 0, 8, Math.PI / 2),
+      at(spire(0.55, 3, p), 0, 0, 12.4, Math.PI / 2),
+      at(plate(0.2, 2.4, 3, p.hull, 0.05), 0, -1.6, 4.4),
+    ),
+  'hellfire-missiles': (p) => {
+    const g = PARTS['missile-rack'](p) as THREE.Group;
+    g.add(at(sphere(0.6, p.glow, 12), 0, 1.6, 0), at(sunburst(1.2, p), 0, 0, -1.6));
+    return g;
+  },
+  'kinetic-claws': (p) =>
+    group(
+      plate(2, 2.2, 2.4, p.iron, 0.4),
+      ...[-0.9, 0, 0.9].map((x) => at(blade(5.5, 0.9, p), x, -0.4, 1.6, 0, x * 0.25)),
+      at(torus(0.9, 0.18, p.glow, 12), 0, 0, 1.2),
     ),
   // ------------------------------------------------ armour
   'ablative-plating': (p) =>
@@ -237,7 +238,7 @@ export const PARTS: Record<string, PartBuilder> = {
     g.add(at(spire(1.2, 4.6, p), 0, 5.3, 0));
     return g;
   },
-  'static-choir': (p) => {
+  'soul-lantern': (p) => {
     // A belfry: four posts round a gold bell, under a spire.
     const g = group(at(plate(3.6, 0.8, 3.6, p.armour, 0.25), 0, 0.4, 0));
     for (const [x, z] of [
@@ -277,5 +278,5 @@ export const PARTS: Record<string, PartBuilder> = {
     ),
 };
 
-/** Scale for equipment on a chassis, so parts grow with the walker. */
-export const partScale = (chassisId: string) => SCALE[chassisId] ?? 1;
+/** Scale for equipment on a chassis, so parts grow with the walker's frame. */
+export const partScale = (chassisId: string) => SCALE[frameOf(chassisId)] ?? 1;

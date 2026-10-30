@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CHASSIS,
   COMMAND_COST,
-  COMPANIES,
+  FACTIONS,
   RULES,
   TRAITS,
-  getCompany,
+  getChassis,
+  getEquipment,
+  getFaction,
   validateLance,
   validateWalker,
   walkerCost,
@@ -21,14 +23,32 @@ import { downloadLance, loadDraft, loadSaved, parseLance, saveDraft, storeSaved 
 const EXAMPLES = examples.lances as LanceInput[];
 const NAMES = ['Gimbal', 'Sprocket', 'Tallow', 'Ember', 'Ratchet', 'Cinder', 'Flue', 'Piston', 'Rook', 'Valve'];
 
-const newWalker = (taken: string[]): WalkerInput => ({
+const classesOf = (faction: string) => CHASSIS.filter((c) => c.faction === faction);
+
+const newWalker = (taken: string[], faction: string): WalkerInput => ({
   name: NAMES.find((n) => !taken.includes(n)) ?? `Walker ${taken.length + 1}`,
-  chassis: 'scout',
+  chassis: classesOf(faction)[0].id,
   driver: { command: 0, trait: null },
   loadout: {},
 });
 
-const emptyLance = (): LanceInput => ({ name: 'New Lance', company: 'halvorsen', walkers: [] });
+const emptyLance = (): LanceInput => ({ name: 'New Lance', faction: 'foundries', walkers: [] });
+
+/** Swear a lance to another faction: each walker takes the nearest class by Size and drops the old faction's gear. */
+function changeFaction(lance: LanceInput, faction: string) {
+  const classes = classesOf(faction);
+  lance.faction = faction;
+  for (const w of lance.walkers) {
+    const size = getChassis(w.chassis).size;
+    w.chassis = classes.reduce((a, b) => (Math.abs(b.size - size) < Math.abs(a.size - size) ? b : a)).id;
+    for (const loc of Object.keys(w.loadout) as Array<keyof typeof w.loadout>) {
+      w.loadout[loc] = (w.loadout[loc] ?? []).filter((id) => {
+        const owner = getEquipment(id).faction;
+        return !owner || owner === faction;
+      });
+    }
+  }
+}
 
 function Builder() {
   const [lance, setLance] = useState<LanceInput>(() => loadDraft() ?? structuredClone(EXAMPLES[1]));
@@ -45,7 +65,7 @@ function Builder() {
   }, [notice]);
 
   const report = useMemo(() => validateLance(lance), [lance]);
-  const company = getCompany(lance.company);
+  const faction = getFaction(lance.faction);
   const budget = RULES.lance.budget;
   const { minWalkers, maxWalkers } = RULES.lance;
   const current = lance.walkers[selected] as WalkerInput | undefined;
@@ -63,7 +83,7 @@ function Builder() {
   };
 
   const addWalker = () => {
-    update((l) => l.walkers.push(newWalker(l.walkers.map((w) => w.name))));
+    update((l) => l.walkers.push(newWalker(l.walkers.map((w) => w.name), l.faction)));
     setSelected(lance.walkers.length);
   };
 
@@ -75,7 +95,7 @@ function Builder() {
   const duplicateWalker = (i: number) => {
     update((l) => {
       const copy = structuredClone(l.walkers[i]);
-      copy.name = newWalker(l.walkers.map((w) => w.name)).name;
+      copy.name = newWalker(l.walkers.map((w) => w.name), l.faction).name;
       l.walkers.splice(i + 1, 0, copy);
     });
     setSelected(i + 1);
@@ -156,9 +176,9 @@ function Builder() {
             <input value={lance.name} onChange={(e) => update((l) => void (l.name = e.target.value))} />
           </label>
           <label className="field">
-            <span>Company</span>
-            <select value={lance.company} onChange={(e) => update((l) => void (l.company = e.target.value))}>
-              {COMPANIES.map((c) => (
+            <span>Faction</span>
+            <select value={lance.faction} onChange={(e) => update((l) => changeFaction(l, e.target.value))}>
+              {FACTIONS.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -166,7 +186,9 @@ function Builder() {
             </select>
           </label>
           <p className="doctrine">
-            <strong>{company.specialty}.</strong> {company.doctrine}
+            <em>{faction.motto}</em> {faction.identity}
+            <br />
+            <strong>Doctrine.</strong> {faction.doctrine}
           </p>
 
           <div className={`budget ${over ? 'over' : ''}`}>
@@ -186,7 +208,7 @@ function Builder() {
 
           <ol className="roster">
             {lance.walkers.map((w, i) => {
-              const ok = validateWalker(w).length === 0;
+              const ok = validateWalker(w, lance.faction).length === 0;
               return (
                 <li key={i} className={i === selected ? 'active' : ''}>
                   <button className="roster-main" onClick={() => setSelected(i)}>
@@ -195,7 +217,7 @@ function Builder() {
                       {!ok && <span className="flag" title="This build has problems"> !</span>}
                     </span>
                     <span className="roster-meta">
-                      {CHASSIS.find((c) => c.id === w.chassis)?.name ?? w.chassis} · {ok ? walkerCost(w, company) : '?'} pts
+                      {CHASSIS.find((c) => c.id === w.chassis)?.name ?? w.chassis} · {ok ? walkerCost(w, faction) : '?'} pts
                     </span>
                   </button>
                   <span className="roster-tools">
@@ -246,7 +268,7 @@ function Builder() {
           {current ? (
             <WalkerEditor
               walker={current}
-              company={company}
+              faction={faction}
               commandCosts={COMMAND_COST}
               traits={TRAITS}
               onChange={(w) => update((l) => void (l.walkers[selected] = w))}

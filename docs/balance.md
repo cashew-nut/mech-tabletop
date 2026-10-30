@@ -107,3 +107,45 @@ Watch list for v0.5:
 - Melee is still a little strong: Shear Blade and Impact Hammer at 55%.
 - The Gun Line example (64%) is still the strongest example lance.
 - 5-walker lances are at 46%.
+
+## v0.5: three factions
+
+Factions replaced the Companies, nine classes replaced the four chassis, and each faction got
+four signature weapons (rules section 18). The simulator now builds random lances for one
+faction at a time and cycles every faction pairing, so each matchup gets the same number of
+games. It reports win rates by faction and by matchup. Runs use four processes on different
+seeds, and the results below combine two 600 and 900-game runs on the final numbers.
+
+| Measure | First draft | Round 2 | Final (2,000 games) |
+| --- | --- | --- | --- |
+| Iron Covenant | 72% | 49% | 51% |
+| Ashen Foundries | 41% | 46% | 48% |
+| Reliquary | 38% | 56% | 51% |
+| Worst matchup | 17 / 83% (Foundries vs Covenant) | 40 / 60% | 45 / 55% (Foundries vs Covenant) |
+| Class range | 35–74% | 39–60% | 46–53% |
+| 3 / 4 / 5-walker lances | 66 / 35 / 35% | 51 / 49 / 50% | 52 / 47 / 48% |
+
+The first draft priced the classes from the old chassis they were closest to. The Covenant was
+far too strong: Stride 3 Lancers with the charging Lance and Missile Racks won 72%. The tuning:
+
+| Item | Draft | Final |
+| --- | --- | --- |
+| Lancer / Sentinel / Paladin | 20 / 25 / 33 | 23 / 28 / 34 |
+| Scavenger / Brute / Artillery | 13 / 25 / 24 | 12 / 25 / 22 |
+| Wraith / Seer / Goliath | 13 / 18 / 35 | 11 / 16 / 33 |
+| Lance | 6 | 9 |
+| Rail Cannon / Rocket Pod / Industrial Claw | 8 / 5 / 6 | 7 / 4 / 5 |
+| Hellfire Missiles / Soul Lantern | 6 / 6 | 5 / 5 |
+
+Each faction has about 1,000 games behind its figure, so it moves by about ±2 points from noise.
+Each matchup has about 330, so ±3.
+
+Watch list for v0.6:
+- Lance and Melee Blade (55%): Covenant melee is the strongest gear, like melee before it.
+- Rocket Pod (43%): it was the Arc Mortar's weakness too. The AI sets up blast fire poorly.
+- Carapace Gun has too few games to judge (20). The random lance builder fills arms with
+  weapons first, so it rarely fits a core weapon.
+- The example lances (48 games each) range from 42% to 65%. The Veiled Pilgrims are the
+  strongest of them.
+- Spotter Drone, Jump Jets and Field Repair Rig (38–40%) are still limited by the AI.
+

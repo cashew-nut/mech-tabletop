@@ -16,14 +16,15 @@ import {
 import { lance, walker } from './helpers';
 
 const act = (s: GameState, ...actions: Action[]) => actions.reduce((st, a) => applyAction(st, a).state, s);
-const trio = (p: string) => [walker(`${p}1`, 'scout'), walker(`${p}2`, 'scout'), walker(`${p}3`, 'scout')];
+const LIGHT: Record<string, string> = { covenant: 'lancer', foundries: 'scavenger', reliquary: 'wraith' };
+const trio = (p: string, faction = 'foundries') => [1, 2, 3].map((i) => walker(`${p}${i}`, LIGHT[faction]));
 
-const alternate = (companies: [string, string] = ['halvorsen', 'meridian'], seed = 3) =>
+const alternate = (factions: [string, string] = ['foundries', 'covenant'], seed = 3) =>
   createGame({
     seed,
     scenario: 'hold-the-field',
     map: 'open-field',
-    lances: [lance('A', trio('A'), companies[0]), lance('B', trio('B'), companies[1])],
+    lances: [lance('A', trio('A', factions[0])), lance('B', trio('B', factions[1]))],
     deploy: 'alternate',
   });
 
@@ -69,16 +70,16 @@ describe('alternating deployment', () => {
     expect(() => act(s, { type: 'pass' })).toThrow(/deploy first/);
   });
 
-  it('makes Calloway & Vane place their last war-walker after the enemy', () => {
+  it('makes the Reliquary place their last war-walker after the enemy', () => {
     for (const seed of [1, 2, 3, 4]) {
-      const { order } = deployAll(alternate(['calloway-vane', 'halvorsen'], seed));
+      const { order } = deployAll(alternate(['reliquary', 'foundries'], seed));
       expect(order[order.length - 1]).toBe(0);
       expect(order.slice(0, -1).filter((x) => x === 1)).toHaveLength(3);
     }
   });
 
-  it('cancels out when both sides are Calloway & Vane', () => {
-    const { state, order } = deployAll(alternate(['calloway-vane', 'calloway-vane']));
+  it('cancels out when both sides are Reliquary', () => {
+    const { state, order } = deployAll(alternate(['reliquary', 'reliquary']));
     expect(order).toHaveLength(6);
     expect(state.phase).toBe('activation');
   });

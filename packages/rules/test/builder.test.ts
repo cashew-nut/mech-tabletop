@@ -4,21 +4,21 @@ import { walker } from './helpers';
 
 describe('walker stats', () => {
   it('derives stride, armour and slots from the build', () => {
-    const s = walkerStats(walker('P', 'bulwark', { core: ['ablative-plating', 'ablative-plating'], armLeft: ['rail-lance'] }));
-    expect(s.armour.coreFront).toBe(12);
+    const s = walkerStats(walker('P', 'brute', { core: ['ablative-plating', 'ablative-plating'], armLeft: ['rail-cannon'] }));
+    expect(s.armour.coreFront).toBe(13);
     expect(s.armour.coreRear).toBe(8);
     expect(s.stride).toBe(1);
-    expect(s.slotsFree).toEqual({ armLeft: 0, armRight: 2, core: 1, legs: 1 });
+    expect(s.slotsFree).toEqual({ armLeft: 0, armRight: 2, core: 0, legs: 1 });
   });
 
   it('sums Pressure to fire everything, with the Gunner discount', () => {
-    const w = walker('G', 'striker', { armLeft: ['rail-lance'], armRight: ['beam-cutter'] });
+    const w = walker('G', 'brute', { armLeft: ['rail-cannon'], core: ['carapace-gun'] });
     expect(walkerStats(w).alphaPressure).toBe(4);
     expect(walkerStats({ ...w, driver: { command: 0, trait: 'gunner' } }).alphaPressure).toBe(3);
   });
 
   it('estimates expected damage by range band', () => {
-    const s = walkerStats(walker('A', 'scout', { armLeft: ['autocannon'] }));
+    const s = walkerStats(walker('A', 'scavenger', { armLeft: ['autocannon'] }));
     expect(s.weapons[0].expected).toEqual({ short: 1.5, medium: 1 });
     expect(hitChance(6)).toBeCloseTo(1 / 6);
   });

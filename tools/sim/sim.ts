@@ -1,10 +1,10 @@
 // Balance simulator: AI-vs-AI Trials between the example lances and random
-// legal lances, reporting win rates by lance, chassis, item, trait and size.
+// legal lances, reporting win rates by lance, faction, matchup, class, item, trait and size.
 //
 //   npm run sim -- [randomGames=400] [seed=1]
 import examples from '../../data/lances/examples.json';
 import { playOut } from '@brass-charter/ai';
-import { COMPANIES, EQUIPMENT, MAPS, SCENARIOS, TRAITS, createGame, type GameState, type LanceInput } from '@brass-charter/rules';
+import { CHASSIS, EQUIPMENT, FACTIONS, MAPS, SCENARIOS, TRAITS, createGame, type GameState, type LanceInput } from '@brass-charter/rules';
 import { randomLance } from './randomLance';
 
 const randomGames = Number(process.argv[2] ?? 400);
@@ -55,19 +55,25 @@ const byItem = tally();
 const byChassis = tally();
 const byTrait = tally();
 const bySize = tally();
-const byCompany = tally();
+const byFaction = tally();
+const byMatchup = tally();
 let firstPlayerScore = 0;
 const lengths: number[] = [];
 const started = Date.now();
 for (let g = 0; g < randomGames; g++) {
-  const lances = [randomLance(rng, 'A'), randomLance(rng, 'B')] as [LanceInput, LanceInput];
+  // Cycle every ordered faction pairing, mirrors included, so each matchup gets the same games.
+  const fa = FACTIONS[g % FACTIONS.length].id;
+  const fb = FACTIONS[Math.floor(g / FACTIONS.length) % FACTIONS.length].id;
+  const lances = [randomLance(rng, 'A', fa), randomLance(rng, 'B', fb)] as [LanceInput, LanceInput];
   const s = play(lances[0], lances[1], seed0 + 1000 + g);
   firstPlayerScore += scoreFor(s, 0);
   lengths.push(s.round);
   lances.forEach((l, side) => {
     const score = scoreFor(s, side as 0 | 1);
     add(bySize, `${l.walkers.length} walkers`, score);
-    add(byCompany, l.company, score);
+    add(byFaction, l.faction, score);
+    const foe = lances[1 - side].faction;
+    if (foe !== l.faction) add(byMatchup, `${l.faction} vs ${foe}`, score);
     for (const id of new Set(l.walkers.flatMap((w) => Object.values(w.loadout).flat() as string[]))) add(byItem, id, score);
     for (const id of new Set(l.walkers.map((w) => w.chassis))) add(byChassis, id, score);
     for (const id of new Set(l.walkers.map((w) => w.driver.trait).filter(Boolean) as string[])) add(byTrait, id, score);
@@ -82,7 +88,8 @@ const report = (title: string, m: Map<string, Tally>, names: Map<string, string>
 };
 console.log(`\n${randomGames} random-lance Trials in ${((Date.now() - started) / 1000).toFixed(0)}s; side that deployed first scored ${((firstPlayerScore / randomGames) * 100).toFixed(0)}%`);
 report('Lance size', bySize);
-report('Chassis', byChassis);
+report('Classes', byChassis, new Map(CHASSIS.map((c) => [c.id, `${c.name} (${c.faction})`])));
 report('Items', byItem, new Map(EQUIPMENT.map((e) => [e.id, e.name])));
 report('Driver traits', byTrait, new Map(TRAITS.map((t) => [t.id, t.name])));
-report('Companies', byCompany, new Map(COMPANIES.map((c) => [c.id, c.name])));
+report('Factions', byFaction, new Map(FACTIONS.map((f) => [f.id, f.name])));
+report('Faction matchups', byMatchup);

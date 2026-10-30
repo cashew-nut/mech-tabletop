@@ -1,198 +1,167 @@
 {
   "lances": [
     {
-      "name": "Calloway Swarm",
-      "company": "calloway-vane",
+      "name": "Oathsworn Lance",
+      "faction": "covenant",
       "walkers": [
         {
-          "name": "Wren",
-          "chassis": "scout",
+          "name": "Warden",
+          "chassis": "sentinel",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armRight": [
-              "scattergun"
-            ],
-            "legs": [
-              "sprint-servos"
+            "core": [
+              "carapace-gun",
+              "reactive-shell"
             ]
           }
         },
         {
-          "name": "Finch",
-          "chassis": "scout",
+          "name": "Vigil",
+          "chassis": "lancer",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armRight": [
-              "scattergun"
-            ],
-            "legs": [
-              "sprint-servos"
+            "armLeft": [
+              "lance"
             ]
           }
         },
         {
-          "name": "Linnet",
-          "chassis": "scout",
+          "name": "Censer",
+          "chassis": "lancer",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
             "armRight": [
-              "scattergun"
-            ],
-            "legs": [
-              "sprint-servos"
-            ]
-          }
-        },
-        {
-          "name": "Siskin",
-          "chassis": "scout",
-          "driver": {
-            "command": 0,
-            "trait": null
-          },
-          "loadout": {
-            "armRight": [
-              "scattergun"
-            ],
-            "legs": [
-              "sprint-servos"
-            ]
-          }
-        },
-        {
-          "name": "Pipit",
-          "chassis": "scout",
-          "driver": {
-            "command": 0,
-            "trait": null
-          },
-          "loadout": {
-            "armRight": [
-              "scattergun"
-            ],
-            "legs": [
-              "sprint-servos"
+              "missile-rack"
             ]
           }
         }
       ]
     },
     {
-      "name": "Halvorsen Gun Line",
-      "company": "halvorsen",
+      "name": "Ashfall Warband",
+      "faction": "foundries",
       "walkers": [
         {
           "name": "Anvil",
-          "chassis": "bulwark",
+          "chassis": "brute",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
             "armLeft": [
-              "rail-lance"
-            ],
-            "armRight": [
+              "autocannon",
               "autocannon"
             ],
-            "legs": [
-              "gyro-stabilisers"
+            "armRight": [
+              "industrial-claw"
+            ],
+            "core": [
+              "ablative-plating"
             ]
           }
         },
         {
-          "name": "Bellows",
-          "chassis": "bulwark",
+          "name": "Long Tom",
+          "chassis": "artillery",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
             "armLeft": [
-              "rail-lance"
+              "rail-cannon"
             ],
             "armRight": [
-              "autocannon"
+              "rocket-pod"
             ],
             "legs": [
-              "gyro-stabilisers"
+              "anchor-spikes"
             ]
           }
         },
         {
-          "name": "Rivet",
-          "chassis": "striker",
+          "name": "Rook",
+          "chassis": "scavenger",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armLeft": [
+            "armRight": [
               "autocannon"
+            ],
+            "core": [
+              "spotter-drone"
+            ],
+            "legs": [
+              "sprint-servos"
             ]
           }
         }
       ]
     },
     {
-      "name": "Meridian Lanterns",
-      "company": "meridian",
+      "name": "Veiled Pilgrims",
+      "faction": "reliquary",
       "walkers": [
         {
-          "name": "Lamplighter",
-          "chassis": "titan",
+          "name": "The Abbot",
+          "chassis": "goliath",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
             "armLeft": [
-              "beam-cutter",
-              "beam-cutter"
+              "arc-cannon"
             ],
             "armRight": [
-              "kinetic-shield"
+              "arc-cannon"
+            ],
+            "core": [
+              "soul-lantern"
             ]
           }
         },
         {
-          "name": "Wick",
-          "chassis": "striker",
+          "name": "Oracle",
+          "chassis": "seer",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armLeft": [
-              "thermal-projector"
-            ],
             "armRight": [
-              "scattergun"
+              "hellfire-missiles"
             ],
-            "legs": [
-              "sprint-servos"
+            "core": [
+              "spotter-drone"
             ]
           }
         },
         {
-          "name": "Glim",
-          "chassis": "striker",
+          "name": "Hush",
+          "chassis": "wraith",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armLeft": [
-              "beam-cutter"
+            "armRight": [
+              "kinetic-claws"
+            ],
+            "core": [
+              "smoke-launcher"
             ]
           }
         }
