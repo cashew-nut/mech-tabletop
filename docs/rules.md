@@ -1,4 +1,4 @@
-# Brass Charter — Core Rules v0.3
+# Brass Charter — Core Rules v0.4
 
 > Draft for playtesting. Numbers will change. All chassis and equipment stats live in
 > [`data/`](../data) and are the source of truth; tables here are for reading convenience.
@@ -287,7 +287,7 @@ the Trial ends at once and the other side wins.
 | Scout | 1 | 12 | 3 | 4 | 1 / 1 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
 | Striker | 2 | 18 | 2 | 5 | 2 / 2 / 1 | 6 / 3 / 3 / 4 | 4 / 3 |
 | Bulwark | 3 | 25 | 2 | 6 | 2 / 3 / 1 | 8 / 4 / 4 / 5 | 5 / 4 |
-| Titan | 4 | 33 | 1 | 7 | 3 / 3 / 2 | 10 / 5 / 5 / 6 | 6 / 5 |
+| Titan | 4 | 34 | 1 | 7 | 3 / 3 / 2 | 10 / 5 / 5 / 6 | 6 / 5 |
 
 Equipment and Driver traits are listed in [`data/equipment.json`](../data/equipment.json) and
 [`data/drivers.json`](../data/drivers.json).
@@ -322,3 +322,14 @@ Balance pass driven by 600-game AI-vs-AI simulations (see [`balance.md`](balance
   the deployment zone instead of the back, takes 5 hits instead of 3, and is screened (+1 TN)
   while an escort stands next to it. In 120 AI-vs-AI games with alternating deployment the
   escorting side won 51%, lost 43% and drew 6%; the surveyor escaped in 74% of games.
+
+## 17. Changes in v0.4
+
+Balance pass, two 600-game simulator rounds (see [`balance.md`](balance.md)).
+
+- Rail Lance costs 2 Pressure instead of 3 and 8 points instead of 7.
+- Shear Blade costs 8 points instead of 6. Impact Hammer costs 6 instead of 5.
+- Arc Mortar costs 5 points instead of 6.
+- Gunner costs 2 points instead of 4.
+- Titan costs 34 points instead of 33.
+- The AI now uses Jump Jets and Smoke Launchers.

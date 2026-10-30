@@ -35,7 +35,7 @@ describe('lance building', () => {
   it('enforces lance size and budget', () => {
     const titans = Array.from({ length: 4 }, (_, i) => walker(`T${i}`, 'titan'));
     const report = validateLance(lance('Heavy', titans));
-    expect(report.errors).toContain('costs 132 points, budget is 100');
+    expect(report.errors).toContain('costs 136 points, budget is 100');
     expect(validateLance(lance('Tiny', [walker('S', 'scout')])).errors[0]).toMatch(/needs 3-5/);
   });
 });

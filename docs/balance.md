@@ -75,3 +75,35 @@ Surveyor Escort was tuned on its own over 120 games of the example lances (see r
 New on the watch list: Rail Lance (39%) and Gunner (38%) dropped once the broken-up maps came in.
 Shear Blade (56%) and Impact Hammer (55%) are still the strongest items. Melee is still slightly
 too good.
+
+## v0.4 pass
+
+Two 600-game rounds with `npm run sim -- 600 1`, using alternating deployment, every scenario
+and every map, after the AI learned to use Jump Jets and Smoke.
+
+| Measure | v0.3 | Round 1 | Round 2 (v0.4) |
+| --- | --- | --- | --- |
+| Rail Lance | 39% | 52% | 47% |
+| Gunner | 38% | 52% | 49% |
+| Shear Blade | 56% | 56% | 55% |
+| Impact Hammer | 55% | 52% | 55% |
+| Arc Mortar | 43% | 45% | 44% |
+| Titan | 54% | 56% | 49% |
+| Chassis range | 49–54% | 48–56% | 49–51% |
+| Driver traits range | 38–49% | 44–55% | 47–51% |
+| Example lances (Swarm / Gun Line / Lanterns) | 56 / 53 / 41% | 44 / 72 / 34% | 44 / 64 / 42% |
+
+Round 1 changed Rail Lance from 3 to 2 Pressure, Gunner from 4 to 2 points, Shear Blade from 6 to
+7, Impact Hammer from 5 to 6 and Arc Mortar from 6 to 5. That fixed Rail Lance and Gunner, but the
+Gun Line example, which fields two Rail Lances, jumped to 72%. Round 2 raised Rail Lance to 8 points,
+Shear Blade to 8 and the Titan to 34. To stay inside 100 points, the Gun Line's Rivet now carries
+an Autocannon in place of the Missile Rack.
+
+Each example lance plays 48 games, so its rate moves by about ±7 points from noise. Items fitted
+in fewer than 120 games move by more than ±9.
+
+Watch list for v0.5:
+- Kinetic Shield (37%, 112 games) looks weak. The AI rarely banks Pressure for it.
+- Melee is still a little strong: Shear Blade and Impact Hammer at 55%.
+- The Gun Line example (64%) is still the strongest example lance.
+- 5-walker lances are at 46%.

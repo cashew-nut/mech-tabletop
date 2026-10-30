@@ -159,6 +159,8 @@ interface Spot {
   facing: Facing;
   path: Hex[] | null;
   score: number;
+  /** Reach this spot with Jump Jets instead of walking. */
+  jump?: boolean;
 }
 
 /** Score staying put and every reachable hex for the active walker. */
@@ -208,6 +210,20 @@ function bestSpot(state: GameState, w: WalkerState, caution: number): { stay: Sp
         let cut = path.length;
         while (cut > 1 && !firstStep.has(hexKey(path[cut - 1]))) cut--;
         best = { hex, facing, path: path.slice(0, cut), score: s };
+      }
+    }
+    // Jump Jets: 2 Pressure and 1 Overpressure to land anywhere within 3 hexes.
+    const jets = workingItems(w, 'jump-jets')[0];
+    if (jets && jets.uses !== 0 && pressure >= 2 && w.overpressure <= 2) {
+      for (const k of Object.keys(state.map.hexes)) {
+        const [q, r] = k.split(',').map(Number);
+        const hex = { q, r };
+        const d = distance(w.pos, hex);
+        if (d < 2 || d > 3) continue;
+        const facing = facingFor(hex);
+        if (!legal(state, { type: 'useItem', itemUid: jets.uid, hex, facing })) continue;
+        const s = score(hex, facing, true, pressure - 2) - 0.6;
+        if (s > best.score + 0.3) best = { hex, facing, path: null, score: s, jump: true };
       }
     }
   }
@@ -294,6 +310,9 @@ function chooseWalkerAction(state: GameState, caution: number): Action {
 
   if (a.pressure >= 1) {
     const { best, stay } = bestSpot(state, w, caution);
+    if (best.jump && best.score > stay.score) {
+      return { type: 'useItem', itemUid: workingItems(w, 'jump-jets')[0].uid, hex: best.hex, facing: best.facing };
+    }
     if (best.path && best.score > stay.score) {
       const end = best.path[best.path.length - 1];
       const reachedGoal = hexKey(end) === hexKey(best.hex);
@@ -345,6 +364,10 @@ function chooseWalkerAction(state: GameState, caution: number): Action {
       if (zones.length) utility.push({ type: 'useItem', itemUid: it.uid, zone: zones[0][0] as keyof typeof w.armour });
     }
     if (it.id === 'anchor-spikes' && !w.anchored && a.moved === false) utility.push({ type: 'useItem', itemUid: it.uid });
+  }
+  const smoke = workingItems(w, 'smoke-launcher')[0];
+  if (smoke && smoke.uses !== 0 && !state.smoke.includes(hexKey(w.pos)) && threatAt(state, w, w.pos) >= 2) {
+    utility.push({ type: 'useItem', itemUid: smoke.uid, hex: w.pos });
   }
   if (w.reserve < 2 && workingItems(w, 'kinetic-shield').length) utility.push({ type: 'bank' });
   if (!a.braced && enemies.some((e) => distance(e.pos, w.pos) <= 8)) utility.push({ type: 'brace' });
