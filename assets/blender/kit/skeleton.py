@@ -24,7 +24,7 @@ import math
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 from .core import empty, parent_keep
 from .materials import PALETTES
@@ -255,5 +255,9 @@ def to_joint(part, faction, frame, component, side="L"):
     """Move a part modelled in place on the walker into its joint's space, so
     its origin is the joint (that is how the web and STL builder attach it)."""
     off = Skeleton(faction, frame).socket(component, side)
-    part.location = part.location - off
+    # Shift the children, not the root: export puts the root at the origin,
+    # so an offset on the root itself would be lost.
+    bpy.context.view_layer.update()
+    for child in part.children:
+        child.matrix_world = Matrix.Translation(-off) @ child.matrix_world
     return part
