@@ -370,7 +370,6 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
   const t = state.walkers.find((x) => x.id === targetId);
   if (!t || t.destroyed) return fail('No such target');
   if (t.side === w.side) return fail('Cannot target a friendly war-walker');
-  if (def.id === 'rail-lance' && a.moved && !hasWorking(w, 'gyro-stabilisers')) return fail('Rail Lance cannot fire after moving');
   const pressure = pressureCost(state, w, def);
   if (pressure > a.pressure) return fail('Not enough Pressure');
   if (arcOf(w.pos, w.facing, t.pos) !== 'front') return fail('Target is not in the front arc');
@@ -402,7 +401,7 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
     const hexCover = here.terrain === 'heavy' ? 2 : here.terrain === 'light' || inSmoke ? 1 : 0;
     const lineCover = !indirect && los.throughLight ? 1 : 0;
     tn += Math.max(hexCover, lineCover);
-    if (a.moved && !hasWorking(w, 'gyro-stabilisers')) tn += 1;
+    if (a.moved && !hasWorking(w, 'gyro-stabilisers')) tn += def.tags?.includes('static') ? 2 : 1;
   }
   if (t.lastMoveDistance >= 4) tn += 1;
   if (t.braced || t.anchored) tn += 1;
@@ -956,11 +955,15 @@ function startRound(state: GameState, events: GameEvent[]) {
 function endPhase(ctx: Ctx) {
   const { state, emit } = ctx;
   for (const o of state.objectives) {
-    const near = (side: Side) => aliveWalkers(state, side).some((w) => distance(w.pos, o.hex) <= 1);
-    const h0 = near(0);
-    const h1 = near(1);
+    // Control goes to the side with more total chassis Size on or next to the objective.
+    const weight = (side: Side) =>
+      aliveWalkers(state, side)
+        .filter((w) => distance(w.pos, o.hex) <= 1)
+        .reduce((sum, w) => sum + w.size, 0);
+    const h0 = weight(0);
+    const h1 = weight(1);
     if (h0 !== h1) {
-      const side: Side = h0 ? 0 : 1;
+      const side: Side = h0 > h1 ? 0 : 1;
       state.vp[side] += o.vp;
       emit('objective', `Side ${side} holds an objective for ${o.vp} VP.`, { side, vp: o.vp, hex: o.hex });
     }

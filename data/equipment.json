@@ -1,66 +1,392 @@
 {
-  "rangeBands": { "short": [1, 3], "medium": [4, 7], "long": [8, 12] },
+  "rangeBands": {
+    "short": [
+      1,
+      3
+    ],
+    "medium": [
+      4,
+      7
+    ],
+    "long": [
+      8,
+      12
+    ]
+  },
   "equipment": [
-    { "id": "scattergun", "name": "Scattergun", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 1, "points": 3,
-      "weapon": { "dice": 5, "damage": 1, "range": "short" }, "tags": ["close"],
-      "rules": "+1 die when the target is adjacent." },
-    { "id": "autocannon", "name": "Autocannon", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 1, "points": 4,
-      "weapon": { "dice": 3, "damage": 1, "range": "medium", "ammo": 4 }, "tags": [],
-      "rules": "" },
-    { "id": "beam-cutter", "name": "Beam Cutter", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 2, "points": 5,
-      "weapon": { "dice": 2, "damage": 2, "range": "medium" }, "tags": [],
-      "rules": "No ammo." },
-    { "id": "thermal-projector", "name": "Thermal Projector", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 1, "points": 4,
-      "weapon": { "dice": 3, "damage": 1, "range": "short" }, "tags": ["overpressure"],
-      "rules": "Each hit adds 1 Overpressure to the target." },
-    { "id": "missile-rack", "name": "Missile Rack", "category": "weapon", "mount": ["arm"], "slots": 2, "pressure": 1, "points": 6,
-      "weapon": { "dice": 4, "damage": 1, "range": "long", "ammo": 3 }, "tags": ["indirect"],
-      "rules": "Indirect." },
-    { "id": "rail-lance", "name": "Rail Lance", "category": "weapon", "mount": ["arm"], "slots": 2, "pressure": 3, "points": 8,
-      "weapon": { "dice": 1, "damage": 4, "range": "long", "pierce": 2 }, "tags": ["pierce", "static"],
-      "rules": "Pierce 2. Cannot fire if the war-walker moved this activation." },
-    { "id": "arc-mortar", "name": "Arc Mortar", "category": "weapon", "mount": ["arm"], "slots": 2, "pressure": 2, "points": 7,
-      "weapon": { "dice": 2, "damage": 2, "range": "long", "minRange": 4 }, "tags": ["blast"],
-      "rules": "Blast: also roll 1 die against each war-walker adjacent to the target. Minimum range 4." },
-    { "id": "ion-lance", "name": "Ion Lance", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 2, "points": 5,
-      "weapon": { "dice": 2, "damage": 0, "range": "medium" }, "tags": ["drain"],
-      "rules": "Each hit drains 1 Pressure from the target's next activation. Hits still roll location and can cause criticals on a 6." },
-    { "id": "impact-hammer", "name": "Impact Hammer", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 1, "points": 3,
-      "weapon": { "dice": 2, "damage": 3, "range": "melee" }, "tags": ["push"],
-      "rules": "If it hits, push the target 1 hex directly away." },
-    { "id": "shear-blade", "name": "Shear Blade", "category": "weapon", "mount": ["arm"], "slots": 1, "pressure": 1, "points": 4,
-      "weapon": { "dice": 3, "damage": 2, "range": "melee", "critOn": 5 }, "tags": [],
-      "rules": "Rolls of 5 or 6 are criticals." },
-
-    { "id": "ablative-plating", "name": "Ablative Plating", "category": "defence", "mount": ["any"], "slots": 1, "pressure": 0, "points": 2,
-      "rules": "+2 Armour on the location it is fitted to (front and rear core). Two or more on one war-walker: -1 Stride." },
-    { "id": "reactive-shell", "name": "Reactive Shell", "category": "defence", "mount": ["core"], "slots": 1, "pressure": 0, "points": 5,
-      "rules": "Ignore the first hit against this war-walker each round." },
-    { "id": "kinetic-shield", "name": "Kinetic Shield", "category": "defence", "mount": ["arm"], "slots": 1, "pressure": 1, "points": 4,
-      "rules": "Reaction, when hit: spend Reserve, each point cancels 1 damage from that hit." },
-    { "id": "smoke-launcher", "name": "Smoke Launcher", "category": "defence", "mount": ["core"], "slots": 1, "pressure": 1, "points": 3, "uses": 2,
-      "rules": "Place smoke in this or an adjacent hex until the end phase." },
-
-    { "id": "jump-jets", "name": "Jump Jets", "category": "mobility", "mount": ["legs"], "slots": 1, "pressure": 2, "points": 5,
-      "rules": "Jump up to 3 hexes ignoring terrain, elevation and war-walkers in between. +1 Overpressure. Counts as moving." },
-    { "id": "sprint-servos", "name": "Sprint Servos", "category": "mobility", "mount": ["legs"], "slots": 1, "pressure": 0, "points": 4,
-      "rules": "+1 Stride on the first Move action each activation." },
-    { "id": "gyro-stabilisers", "name": "Gyro Stabilisers", "category": "mobility", "mount": ["legs"], "slots": 1, "pressure": 0, "points": 4,
-      "rules": "Ignore the attacker-moved TN penalty. Rail Lance may fire after moving." },
-    { "id": "anchor-spikes", "name": "Anchor Spikes", "category": "mobility", "mount": ["legs"], "slots": 1, "pressure": 1, "points": 3,
-      "rules": "Anchor: cannot be pushed or knocked down and gets Brace's +1 TN until it next moves. +1 die on long-range attacks while anchored." },
-
-    { "id": "targeting-array", "name": "Targeting Array", "category": "system", "mount": ["core"], "slots": 1, "pressure": 0, "points": 5, "maxPerWalker": 1,
-      "rules": "-1 TN on all your attacks." },
-    { "id": "coolant-loop", "name": "Coolant Loop", "category": "system", "mount": ["core"], "slots": 1, "pressure": 1, "points": 3,
-      "rules": "Remove 2 Overpressure." },
-    { "id": "overcharged-boiler", "name": "Overcharged Boiler", "category": "system", "mount": ["core"], "slots": 1, "pressure": 0, "points": 4,
-      "rules": "+1 Boiler rating. Faults are rolled from 2 Overpressure instead of 3." },
-    { "id": "static-choir", "name": "Static Choir (ECM)", "category": "system", "mount": ["core"], "slots": 1, "pressure": 0, "points": 6,
-      "rules": "Enemy attacks against friendly war-walkers within 2 hexes of this one get +1 TN. Does not stack." },
-    { "id": "spotter-drone", "name": "Spotter Drone", "category": "system", "mount": ["core"], "slots": 1, "pressure": 1, "points": 4,
-      "rules": "Mark an enemy within 8 hexes (no line of sight needed within 4). Friendly attacks against it get -1 TN until the end phase, and it counts as seen for Indirect fire." },
-    { "id": "field-repair-rig", "name": "Field Repair Rig", "category": "system", "mount": ["core"], "slots": 1, "pressure": 2, "points": 5, "uses": 2,
-      "rules": "Restore 2 Armour to one location on this or an adjacent friendly war-walker." }
+    {
+      "id": "scattergun",
+      "name": "Scattergun",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 4,
+      "weapon": {
+        "dice": 5,
+        "damage": 1,
+        "range": "short"
+      },
+      "tags": [
+        "close"
+      ],
+      "rules": "+1 die when the target is adjacent."
+    },
+    {
+      "id": "autocannon",
+      "name": "Autocannon",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 3,
+      "weapon": {
+        "dice": 3,
+        "damage": 1,
+        "range": "medium",
+        "ammo": 6
+      },
+      "tags": [],
+      "rules": ""
+    },
+    {
+      "id": "beam-cutter",
+      "name": "Beam Cutter",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 2,
+      "points": 5,
+      "weapon": {
+        "dice": 2,
+        "damage": 2,
+        "range": "medium",
+        "pierce": 1
+      },
+      "tags": [
+        "pierce"
+      ],
+      "rules": "No ammo. Pierce 1."
+    },
+    {
+      "id": "thermal-projector",
+      "name": "Thermal Projector",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 4,
+      "weapon": {
+        "dice": 3,
+        "damage": 1,
+        "range": "short"
+      },
+      "tags": [
+        "overpressure"
+      ],
+      "rules": "Each hit adds 1 Overpressure to the target."
+    },
+    {
+      "id": "missile-rack",
+      "name": "Missile Rack",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 2,
+      "pressure": 1,
+      "points": 6,
+      "weapon": {
+        "dice": 5,
+        "damage": 1,
+        "range": "long",
+        "ammo": 4
+      },
+      "tags": [
+        "indirect"
+      ],
+      "rules": "Indirect."
+    },
+    {
+      "id": "rail-lance",
+      "name": "Rail Lance",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 2,
+      "pressure": 3,
+      "points": 7,
+      "weapon": {
+        "dice": 1,
+        "damage": 4,
+        "range": "long",
+        "pierce": 2
+      },
+      "tags": [
+        "pierce",
+        "static"
+      ],
+      "rules": "Pierce 2. If the war-walker moved this activation, +2 TN instead of +1 (Gyro Stabilisers remove it)."
+    },
+    {
+      "id": "arc-mortar",
+      "name": "Arc Mortar",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 2,
+      "pressure": 2,
+      "points": 6,
+      "weapon": {
+        "dice": 2,
+        "damage": 2,
+        "range": "long",
+        "minRange": 4
+      },
+      "tags": [
+        "blast"
+      ],
+      "rules": "Blast: also roll 1 die against each war-walker adjacent to the target. Minimum range 4."
+    },
+    {
+      "id": "ion-lance",
+      "name": "Ion Lance",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 5,
+      "weapon": {
+        "dice": 3,
+        "damage": 0,
+        "range": "medium"
+      },
+      "tags": [
+        "drain"
+      ],
+      "rules": "Each hit drains 1 Pressure from the target's next activation. Hits still roll location and can cause criticals on a 6."
+    },
+    {
+      "id": "impact-hammer",
+      "name": "Impact Hammer",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 5,
+      "weapon": {
+        "dice": 2,
+        "damage": 3,
+        "range": "melee"
+      },
+      "tags": [
+        "push"
+      ],
+      "rules": "If it hits, push the target 1 hex directly away."
+    },
+    {
+      "id": "shear-blade",
+      "name": "Shear Blade",
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 6,
+      "weapon": {
+        "dice": 3,
+        "damage": 2,
+        "range": "melee",
+        "critOn": 5
+      },
+      "tags": [],
+      "rules": "Rolls of 5 or 6 are criticals."
+    },
+    {
+      "id": "ablative-plating",
+      "name": "Ablative Plating",
+      "category": "defence",
+      "mount": [
+        "any"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 2,
+      "rules": "+2 Armour on the location it is fitted to (front and rear core). Two or more on one war-walker: -1 Stride."
+    },
+    {
+      "id": "reactive-shell",
+      "name": "Reactive Shell",
+      "category": "defence",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 5,
+      "rules": "Ignore the first hit against this war-walker each round."
+    },
+    {
+      "id": "kinetic-shield",
+      "name": "Kinetic Shield",
+      "category": "defence",
+      "mount": [
+        "arm"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 3,
+      "rules": "Reaction, when hit: spend Reserve, each point cancels 1 damage from that hit."
+    },
+    {
+      "id": "smoke-launcher",
+      "name": "Smoke Launcher",
+      "category": "defence",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 3,
+      "uses": 2,
+      "rules": "Place smoke in this or an adjacent hex until the end phase."
+    },
+    {
+      "id": "jump-jets",
+      "name": "Jump Jets",
+      "category": "mobility",
+      "mount": [
+        "legs"
+      ],
+      "slots": 1,
+      "pressure": 2,
+      "points": 5,
+      "rules": "Jump up to 3 hexes ignoring terrain, elevation and war-walkers in between. +1 Overpressure. Counts as moving."
+    },
+    {
+      "id": "sprint-servos",
+      "name": "Sprint Servos",
+      "category": "mobility",
+      "mount": [
+        "legs"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 4,
+      "rules": "+1 Stride on the first Move action each activation."
+    },
+    {
+      "id": "gyro-stabilisers",
+      "name": "Gyro Stabilisers",
+      "category": "mobility",
+      "mount": [
+        "legs"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 3,
+      "rules": "Ignore the attacker-moved TN penalty, including the Rail Lance's extra +1."
+    },
+    {
+      "id": "anchor-spikes",
+      "name": "Anchor Spikes",
+      "category": "mobility",
+      "mount": [
+        "legs"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 3,
+      "rules": "Anchor: cannot be pushed or knocked down and gets Brace's +1 TN until it next moves. +1 die on long-range attacks while anchored."
+    },
+    {
+      "id": "targeting-array",
+      "name": "Targeting Array",
+      "category": "system",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 4,
+      "maxPerWalker": 1,
+      "rules": "-1 TN on all your attacks."
+    },
+    {
+      "id": "coolant-loop",
+      "name": "Coolant Loop",
+      "category": "system",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 3,
+      "rules": "Remove 2 Overpressure."
+    },
+    {
+      "id": "overcharged-boiler",
+      "name": "Overcharged Boiler",
+      "category": "system",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 2,
+      "rules": "+1 Boiler rating. Faults are rolled from 2 Overpressure instead of 3."
+    },
+    {
+      "id": "static-choir",
+      "name": "Static Choir (ECM)",
+      "category": "system",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 0,
+      "points": 6,
+      "rules": "Enemy attacks against friendly war-walkers within 2 hexes of this one get +1 TN. Does not stack."
+    },
+    {
+      "id": "spotter-drone",
+      "name": "Spotter Drone",
+      "category": "system",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 1,
+      "points": 4,
+      "rules": "Mark an enemy within 8 hexes (no line of sight needed within 4). Friendly attacks against it get -1 TN until the end phase, and it counts as seen for Indirect fire."
+    },
+    {
+      "id": "field-repair-rig",
+      "name": "Field Repair Rig",
+      "category": "system",
+      "mount": [
+        "core"
+      ],
+      "slots": 1,
+      "pressure": 2,
+      "points": 5,
+      "uses": 2,
+      "rules": "Restore 2 Armour to one location on this or an adjacent friendly war-walker."
+    }
   ]
 }

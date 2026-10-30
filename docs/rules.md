@@ -1,4 +1,4 @@
-# Brass Charter — Core Rules v0.1
+# Brass Charter — Core Rules v0.2
 
 > Draft for playtesting. Numbers will change. All chassis and equipment stats live in
 > [`data/`](../data) and are the source of truth; tables here are for reading convenience.
@@ -250,8 +250,9 @@ Attacks against it get -1 TN.
 
 ## 10. Objectives and victory
 
-An objective is **held** by a side that has a war-walker on or adjacent to it while the other
-side does not. Prone war-walkers still count.
+An objective is **held** by the side with the greater total chassis Size of war-walkers on or
+adjacent to it (Scout 1, Striker 2, Bulwark 3, Titan 4). A tie, including nobody nearby, means
+nobody holds it. Prone war-walkers still count.
 
 Victory points (VP):
 
@@ -284,15 +285,31 @@ the Trial ends at once and the other side wins.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Scout | 1 | 12 | 3 | 4 | 1 / 1 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
 | Striker | 2 | 18 | 2 | 5 | 2 / 2 / 1 | 6 / 3 / 3 / 4 | 4 / 3 |
-| Bulwark | 3 | 25 | 1 | 6 | 2 / 3 / 1 | 8 / 4 / 4 / 5 | 5 / 4 |
-| Titan | 4 | 32 | 1 | 7 | 3 / 3 / 2 | 10 / 5 / 5 / 6 | 6 / 5 |
+| Bulwark | 3 | 25 | 2 | 6 | 2 / 3 / 1 | 8 / 4 / 4 / 5 | 5 / 4 |
+| Titan | 4 | 33 | 1 | 7 | 3 / 3 / 2 | 10 / 5 / 5 / 6 | 6 / 5 |
 
 Equipment and Driver traits are listed in [`data/equipment.json`](../data/equipment.json) and
 [`data/drivers.json`](../data/drivers.json).
 
 ## 14. Open questions for playtesting
 
-- Is Stride 1 too slow for Bulwark and Titan, or does their bigger boiler make up for it?
-- Does passing once per round balance a 3-walker lance against a 5-walker lance?
-- Is the Rail Lance's "cannot fire after moving" too punishing without Gyro Stabilisers?
+- Does the Titan's Stride 1 still feel too slow now that the Bulwark has Stride 2?
+- Smoke, Jump Jets and Field Repair test weakly, but the AI barely uses them. Do they feel weak
+  in human play?
 - Should Reserve be capped at 1 instead of 2?
+
+## 15. Changes in v0.2
+
+Balance pass driven by 600-game AI-vs-AI simulations (see [`balance.md`](balance.md)).
+
+- Objectives are held by total chassis Size rather than by any presence. This stopped
+  five-Scout swarms from winning on objectives alone.
+- Bulwark Stride 1 to 2. Titan 32 to 33 points.
+- Rail Lance can now fire after moving, taking +2 TN for moving instead of the usual +1 (Gyro
+  Stabilisers remove both); 8 to 7 points.
+- Missile Rack 4 to 5 dice and 3 to 4 ammo. Arc Mortar 7 to 6 points. Ion Lance 2 to 1 Pressure
+  and 2 to 3 dice. Beam Cutter gains Pierce 1. Autocannon 4 to 3 points and 4 to 6 ammo.
+- Scattergun 3 to 4, Impact Hammer 3 to 5, and Shear Blade 4 to 6 points.
+- Targeting Array 5 to 4, Gyro Stabilisers 4 to 3, Kinetic Shield 4 to 3, and Overcharged Boiler
+  4 to 2 points.
+- Tactician 5 to 4 and Iron Nerve 3 to 2 points.

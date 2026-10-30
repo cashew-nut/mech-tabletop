@@ -4,29 +4,198 @@
       "name": "Calloway Swarm",
       "company": "calloway-vane",
       "walkers": [
-        { "name": "Wren", "chassis": "scout", "driver": { "command": 1, "trait": null }, "loadout": { "armRight": ["scattergun"], "legs": ["sprint-servos"] } },
-        { "name": "Finch", "chassis": "scout", "driver": { "command": 0, "trait": "brawler" }, "loadout": { "armRight": ["scattergun"], "legs": ["sprint-servos"] } },
-        { "name": "Linnet", "chassis": "scout", "driver": { "command": 0, "trait": null }, "loadout": { "armRight": ["scattergun"], "legs": ["sprint-servos"] } },
-        { "name": "Siskin", "chassis": "scout", "driver": { "command": 0, "trait": null }, "loadout": { "armRight": ["scattergun"], "legs": ["sprint-servos"] } },
-        { "name": "Pipit", "chassis": "scout", "driver": { "command": 0, "trait": null }, "loadout": { "armRight": ["scattergun"], "legs": ["sprint-servos"] } }
+        {
+          "name": "Wren",
+          "chassis": "scout",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armRight": [
+              "scattergun"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Finch",
+          "chassis": "scout",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armRight": [
+              "scattergun"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Linnet",
+          "chassis": "scout",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armRight": [
+              "scattergun"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Siskin",
+          "chassis": "scout",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armRight": [
+              "scattergun"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Pipit",
+          "chassis": "scout",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armRight": [
+              "scattergun"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        }
       ]
     },
     {
       "name": "Halvorsen Gun Line",
       "company": "halvorsen",
       "walkers": [
-        { "name": "Anvil", "chassis": "bulwark", "driver": { "command": 0, "trait": null }, "loadout": { "armLeft": ["rail-lance"], "armRight": ["autocannon"] } },
-        { "name": "Bellows", "chassis": "bulwark", "driver": { "command": 0, "trait": null }, "loadout": { "armLeft": ["rail-lance"], "armRight": ["autocannon"] } },
-        { "name": "Rivet", "chassis": "striker", "driver": { "command": 0, "trait": null }, "loadout": { "armLeft": ["rail-lance"] } }
+        {
+          "name": "Anvil",
+          "chassis": "bulwark",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "rail-lance"
+            ],
+            "armRight": [
+              "autocannon"
+            ],
+            "legs": [
+              "gyro-stabilisers"
+            ]
+          }
+        },
+        {
+          "name": "Bellows",
+          "chassis": "bulwark",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "rail-lance"
+            ],
+            "armRight": [
+              "autocannon"
+            ],
+            "legs": [
+              "gyro-stabilisers"
+            ]
+          }
+        },
+        {
+          "name": "Rivet",
+          "chassis": "striker",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "missile-rack"
+            ]
+          }
+        }
       ]
     },
     {
       "name": "Meridian Lanterns",
       "company": "meridian",
       "walkers": [
-        { "name": "Lamplighter", "chassis": "titan", "driver": { "command": 1, "trait": null }, "loadout": { "armLeft": ["beam-cutter", "beam-cutter"], "armRight": ["kinetic-shield"] } },
-        { "name": "Wick", "chassis": "striker", "driver": { "command": 0, "trait": null }, "loadout": { "armLeft": ["thermal-projector"], "armRight": ["impact-hammer"], "legs": ["sprint-servos"] } },
-        { "name": "Glim", "chassis": "striker", "driver": { "command": 0, "trait": null }, "loadout": { "armLeft": ["beam-cutter"] } }
+        {
+          "name": "Lamplighter",
+          "chassis": "titan",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "beam-cutter",
+              "beam-cutter"
+            ],
+            "armRight": [
+              "kinetic-shield"
+            ]
+          }
+        },
+        {
+          "name": "Wick",
+          "chassis": "striker",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "thermal-projector"
+            ],
+            "armRight": [
+              "scattergun"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Glim",
+          "chassis": "striker",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "beam-cutter"
+            ]
+          }
+        }
       ]
     }
   ]
