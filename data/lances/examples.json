@@ -5,18 +5,16 @@
       "faction": "covenant",
       "walkers": [
         {
-          "name": "Sir Aldous",
-          "chassis": "paladin",
+          "name": "Warden",
+          "chassis": "sentinel",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armLeft": [
-              "lance"
-            ],
-            "armRight": [
-              "melee-blade"
+            "core": [
+              "carapace-gun",
+              "reactive-shell"
             ]
           }
         },
@@ -61,6 +59,7 @@
           },
           "loadout": {
             "armLeft": [
+              "autocannon",
               "autocannon"
             ],
             "armRight": [
@@ -160,6 +159,9 @@
           "loadout": {
             "armRight": [
               "kinetic-claws"
+            ],
+            "core": [
+              "smoke-launcher"
             ]
           }
         }
