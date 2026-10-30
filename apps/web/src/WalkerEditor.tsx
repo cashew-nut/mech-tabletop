@@ -5,11 +5,12 @@ import {
   getChassis,
   getEquipment,
   itemCost,
+  traitCost,
   mountableItems,
   validateWalker,
   walkerCost,
   walkerStats,
-  type CompanyDef,
+  type FactionDef,
   type Location,
   type TraitDef,
   type WalkerInput,
@@ -30,17 +31,17 @@ const BAND_NAMES = { melee: 'Melee', short: 'Short', medium: 'Medium', long: 'Lo
 
 interface Props {
   walker: WalkerInput;
-  company: CompanyDef;
+  faction: FactionDef;
   commandCosts: Map<number, number>;
   traits: TraitDef[];
   onChange: (w: WalkerInput) => void;
 }
 
-export function WalkerEditor({ walker, company, commandCosts, traits, onChange }: Props) {
+export function WalkerEditor({ walker, faction, commandCosts, traits, onChange }: Props) {
   const chassis = getChassis(walker.chassis);
-  const errors = validateWalker(walker);
+  const errors = validateWalker(walker, faction.id);
   const stats = walkerStats(walker);
-  const cost = errors.length ? null : walkerCost(walker, company);
+  const cost = errors.length ? null : walkerCost(walker, faction);
 
   const edit = (fn: (w: WalkerInput) => void) => {
     const next = structuredClone(walker);
@@ -62,11 +63,11 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
           <input value={walker.name} onChange={(e) => edit((w) => void (w.name = e.target.value))} />
         </label>
         <label className="field">
-          <span>Chassis</span>
+          <span>Class</span>
           <select value={walker.chassis} onChange={(e) => edit((w) => void (w.chassis = e.target.value))}>
-            {CHASSIS.map((c) => (
+            {CHASSIS.filter((c) => c.faction === faction.id).map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.points} pts)
+                {c.name}, {c.role} ({c.points} pts)
               </option>
             ))}
           </select>
@@ -94,7 +95,7 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
             <option value="">None</option>
             {traits.map((t) => (
               <option key={t.id} value={t.id} title={t.rules}>
-                {t.name} ({t.points} pts)
+                {t.name} ({traitCost(t.id, faction)} pts)
               </option>
             ))}
           </select>
@@ -110,7 +111,7 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
         {(['armLeft', 'core', 'armRight', 'legs'] as Location[]).map((loc) => {
           const items = walker.loadout[loc] ?? [];
           const free = stats.slotsFree[loc];
-          const options = mountableItems(loc, EQUIPMENT);
+          const options = mountableItems(loc, EQUIPMENT).filter((o) => !o.faction || o.faction === faction.id);
           return (
             <div key={loc} className={`panel location loc-${loc} ${free < 0 ? 'overfull' : ''}`}>
               <div className="location-head">
@@ -129,7 +130,7 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
                       <div>
                         <strong>{def.name}</strong>
                         <small>
-                          {def.slots} slot{def.slots > 1 ? 's' : ''} · {def.pressure} Pressure · {itemCost(id, company)} pts
+                          {def.slots} slot{def.slots > 1 ? 's' : ''} · {def.pressure} Pressure · {itemCost(id, faction)} pts
                         </small>
                       </div>
                       <button aria-label={`Remove ${def.name}`} onClick={() => removeItem(loc, i)}>
@@ -157,7 +158,7 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
                           const atMax = !!o.maxPerWalker && countOf(o.id) >= o.maxPerWalker;
                           return (
                             <option key={o.id} value={o.id} disabled={tooBig || atMax} title={o.rules}>
-                              {o.name} · {itemCost(o.id, company)} pts{tooBig ? ` (needs ${o.slots} slots)` : ''}
+                              {o.name} · {itemCost(o.id, faction)} pts{tooBig ? ` (needs ${o.slots} slots)` : ''}
                               {atMax ? ' (limit reached)' : ''}
                             </option>
                           );
@@ -175,7 +176,7 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
       <Suspense fallback={<section className="panel model"><p className="hint">Loading 3D view…</p></section>}>
         <WalkerModel
           walker={walker}
-          company={company.id}
+          faction={faction.id}
           onPaint={(colour) => edit((w) => void (colour ? (w.paint = colour) : delete w.paint))}
         />
       </Suspense>

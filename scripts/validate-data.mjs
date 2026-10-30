@@ -18,7 +18,7 @@ const RANGES = ['melee', 'short', 'medium', 'long'];
 const { chassis } = load('chassis.json');
 const { equipment } = load('equipment.json');
 const drivers = load('drivers.json');
-const { companies } = load('companies.json');
+const { factions } = load('factions.json');
 const scenarioFile = load('scenarios.json');
 
 function indexById(list, where) {
@@ -80,12 +80,20 @@ for (const e of equipment) {
 const commandCost = new Map(drivers.command.map((c) => [c.value, c.points]));
 const traitsById = indexById(drivers.traits, 'drivers.json');
 
-// Companies
-const companiesById = indexById(companies, 'companies.json');
-for (const co of companies) {
-  for (const itemId of Object.keys(co.pointModifiers ?? {})) {
-    if (!equipmentById.has(itemId)) fail(`company "${co.id}"`, `pointModifiers names unknown item "${itemId}"`);
+// Factions
+const factionsById = indexById(factions, 'factions.json');
+for (const f of factions) {
+  for (const itemId of Object.keys(f.pointModifiers ?? {})) {
+    if (!equipmentById.has(itemId)) fail(`faction "${f.id}"`, `pointModifiers names unknown item "${itemId}"`);
   }
+  if (f.traitModifier !== undefined && !Number.isInteger(f.traitModifier)) fail(`faction "${f.id}"`, 'traitModifier must be an integer');
+}
+for (const c of chassis) {
+  if (!factionsById.has(c.faction)) fail(`chassis "${c.id}"`, `unknown faction "${c.faction}"`);
+  if (!c.frame) fail(`chassis "${c.id}"`, 'missing frame (the 3D model skeleton it uses)');
+}
+for (const e of equipment) {
+  if (e.faction !== undefined && !factionsById.has(e.faction)) fail(`equipment "${e.id}"`, `unknown faction "${e.faction}"`);
 }
 
 // Scenarios
@@ -120,12 +128,13 @@ for (const m of maps) {
 }
 
 // Lances
-function walkerCost(walker, company, where) {
+function walkerCost(walker, faction, where) {
   const c = chassisById.get(walker.chassis);
   if (!c) {
     fail(where, `unknown chassis "${walker.chassis}"`);
     return 0;
   }
+  if (faction && c.faction !== faction.id) fail(where, `${c.name} is a ${c.faction} class, not ${faction.id}`);
   let total = c.points;
 
   const cmd = walker.driver?.command ?? 0;
@@ -134,7 +143,7 @@ function walkerCost(walker, company, where) {
   const trait = walker.driver?.trait;
   if (trait) {
     if (!traitsById.has(trait)) fail(where, `unknown trait "${trait}"`);
-    else total += traitsById.get(trait).points;
+    else total += Math.max(1, traitsById.get(trait).points + (faction?.traitModifier ?? 0));
   }
 
   const counts = new Map();
@@ -153,9 +162,10 @@ function walkerCost(walker, company, where) {
       if (!e.mount.includes('any') && !e.mount.includes(MOUNT_OF[loc])) {
         fail(where, `${e.name} cannot be mounted in ${loc}`);
       }
+      if (faction && e.faction && e.faction !== faction.id) fail(where, `${e.name} is ${e.faction} gear, not ${faction.id}`);
       used += e.slots;
       counts.set(id, (counts.get(id) ?? 0) + 1);
-      total += Math.max(1, e.points + (company?.pointModifiers?.[id] ?? 0));
+      total += Math.max(1, e.points + (faction?.pointModifiers?.[id] ?? 0));
     }
     if (used > c.slots[loc]) fail(where, `${loc} uses ${used} slots but ${c.name} has ${c.slots[loc]}`);
   }
@@ -172,18 +182,18 @@ const summary = [];
 for (const file of readdirSync(lanceDir).filter((f) => f.endsWith('.json'))) {
   for (const lance of load(join('lances', file)).lances) {
     const where = `lance "${lance.name}"`;
-    const company = companiesById.get(lance.company);
-    if (!company) fail(where, `unknown company "${lance.company}"`);
+    const faction = factionsById.get(lance.faction);
+    if (!faction) fail(where, `unknown faction "${lance.faction}"`);
     const n = lance.walkers.length;
     if (n < minWalkers || n > maxWalkers) fail(where, `has ${n} war-walkers, needs ${minWalkers}-${maxWalkers}`);
-    const costs = lance.walkers.map((w) => walkerCost(w, company, `${where} / ${w.name}`));
+    const costs = lance.walkers.map((w) => walkerCost(w, faction, `${where} / ${w.name}`));
     const total = costs.reduce((a, b) => a + b, 0);
     if (total > budget) fail(where, `costs ${total} points, budget is ${budget}`);
     summary.push(`  ${lance.name}: ${total}/${budget} pts [${costs.join(', ')}]`);
   }
 }
 
-console.log(`chassis: ${chassis.length}, equipment: ${equipment.length}, traits: ${drivers.traits.length}, companies: ${companies.length}, scenarios: ${scenarioFile.scenarios.length}, maps: ${maps.length}`);
+console.log(`chassis: ${chassis.length}, equipment: ${equipment.length}, traits: ${drivers.traits.length}, factions: ${factions.length}, scenarios: ${scenarioFile.scenarios.length}, maps: ${maps.length}`);
 console.log('lances:');
 console.log(summary.join('\n'));
 

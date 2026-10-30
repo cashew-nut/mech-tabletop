@@ -4,12 +4,12 @@ import {
   LOCATIONS,
   RULES,
   getChassis,
-  getCompany,
+  getFaction,
   getEquipment,
   getTrait,
   hasEquipment,
   hasTrait,
-  type CompanyDef,
+  type FactionDef,
   type Location,
 } from './data';
 
@@ -29,7 +29,7 @@ export interface WalkerInput {
 
 export interface LanceInput {
   name: string;
-  company: string;
+  faction: string;
   walkers: WalkerInput[];
 }
 
@@ -40,24 +40,28 @@ const MOUNT_OF: Record<Location, 'arm' | 'core' | 'legs'> = {
   legs: 'legs',
 };
 
-export function itemCost(itemId: string, company: CompanyDef | null): number {
+export function itemCost(itemId: string, faction: FactionDef | null): number {
   const base = getEquipment(itemId).points;
-  return Math.max(1, base + (company?.pointModifiers[itemId] ?? 0));
+  return Math.max(1, base + (faction?.pointModifiers[itemId] ?? 0));
+}
+
+export function traitCost(traitId: string, faction: FactionDef | null): number {
+  return Math.max(1, getTrait(traitId).points + (faction?.traitModifier ?? 0));
 }
 
 /** Points cost of one war-walker. Throws on unknown ids; use validateWalker first. */
-export function walkerCost(walker: WalkerInput, company: CompanyDef | null): number {
+export function walkerCost(walker: WalkerInput, faction: FactionDef | null): number {
   let total = getChassis(walker.chassis).points;
   total += COMMAND_COST.get(walker.driver.command) ?? 0;
-  if (walker.driver.trait) total += getTrait(walker.driver.trait).points;
+  if (walker.driver.trait) total += traitCost(walker.driver.trait, faction);
   for (const loc of LOCATIONS) {
-    for (const id of walker.loadout[loc] ?? []) total += itemCost(id, company);
+    for (const id of walker.loadout[loc] ?? []) total += itemCost(id, faction);
   }
   return total;
 }
 
-/** Problems with one war-walker's build, empty when legal. */
-export function validateWalker(walker: WalkerInput): string[] {
+/** Problems with one war-walker's build, empty when legal. With a faction, also checks it may field the class and gear. */
+export function validateWalker(walker: WalkerInput, faction: string | null = null): string[] {
   const errors: string[] = [];
   let chassis;
   try {
@@ -65,6 +69,7 @@ export function validateWalker(walker: WalkerInput): string[] {
   } catch {
     return [`unknown chassis "${walker.chassis}"`];
   }
+  if (faction && chassis.faction !== faction) errors.push(`${chassis.name} is not a ${getFaction(faction).name} class`);
   if (!COMMAND_COST.has(walker.driver.command)) errors.push(`invalid driver command ${walker.driver.command}`);
   if (walker.driver.trait && !hasTrait(walker.driver.trait)) errors.push(`unknown trait "${walker.driver.trait}"`);
 
@@ -84,6 +89,7 @@ export function validateWalker(walker: WalkerInput): string[] {
       if (!e.mount.includes('any') && !e.mount.includes(MOUNT_OF[loc as Location])) {
         errors.push(`${e.name} cannot be mounted in ${loc}`);
       }
+      if (faction && e.faction && e.faction !== faction) errors.push(`${e.name} is ${getFaction(e.faction).name} gear`);
       used += e.slots;
       counts.set(id, (counts.get(id) ?? 0) + 1);
     }
@@ -105,20 +111,20 @@ export interface LanceReport {
 
 export function validateLance(lance: LanceInput, budget = RULES.lance.budget): LanceReport {
   const errors: string[] = [];
-  let company: CompanyDef | null = null;
+  let faction: FactionDef | null = null;
   try {
-    company = getCompany(lance.company);
+    faction = getFaction(lance.faction);
   } catch {
-    errors.push(`unknown company "${lance.company}"`);
+    errors.push(`unknown faction "${lance.faction}"`);
   }
   const { minWalkers, maxWalkers } = RULES.lance;
   const n = lance.walkers.length;
   if (n < minWalkers || n > maxWalkers) errors.push(`has ${n} war-walkers, needs ${minWalkers}-${maxWalkers}`);
 
   const costs = lance.walkers.map((w) => {
-    const problems = validateWalker(w);
+    const problems = validateWalker(w, faction?.id ?? null);
     errors.push(...problems.map((p) => `${w.name}: ${p}`));
-    return problems.length ? 0 : walkerCost(w, company);
+    return problems.length ? 0 : walkerCost(w, faction);
   });
   const total = costs.reduce((a, b) => a + b, 0);
   if (total > budget) errors.push(`costs ${total} points, budget is ${budget}`);

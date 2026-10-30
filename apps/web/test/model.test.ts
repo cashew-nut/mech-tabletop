@@ -5,7 +5,7 @@ import equipmentData from '../../../data/equipment.json';
 import { LOCATIONS, type Location, type WalkerInput } from '@brass-charter/rules';
 import { buildWalkerModel } from '../src/model/assemble';
 import { stlBytes } from '../src/model/exporters';
-import { BASE_MM, PARTS, buildChassis, makePalette } from '../src/model/parts';
+import { PARTS, baseMm, buildChassis, makePalette } from '../src/model/parts';
 
 const chassis = chassisData.chassis as Array<{ id: string; slots: Record<Location, number> }>;
 
@@ -22,7 +22,7 @@ describe('walker models', () => {
       }
       const box = new THREE.Box3().setFromObject(root);
       expect(box.min.y).toBeCloseTo(0, 1);
-      expect(box.max.y).toBeGreaterThan(BASE_MM[c.id] * 0.6);
+      expect(box.max.y).toBeGreaterThan(baseMm(c.id) * 0.6);
     });
 
     it(`${c.id} exports an STL with every slot filled`, () => {

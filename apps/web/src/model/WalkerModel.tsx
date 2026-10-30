@@ -3,23 +3,23 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { WalkerInput } from '@brass-charter/rules';
-import { COMPANY_COLOURS, buildWalkerModel, loadPartLibrary, type PartLibrary } from './assemble';
+import { FACTION_COLOURS, buildWalkerModel, loadPartLibrary, type PartLibrary } from './assemble';
 import { exportGlb, exportStl } from './exporters';
-import { BASE_MM } from './parts';
+import { baseMm } from './parts';
 import { createStage, type Stage } from './stage';
 
 interface Props {
   walker: WalkerInput;
-  company: string;
+  faction: string;
   onPaint: (colour: string | undefined) => void;
 }
 
-export default function WalkerModel({ walker, company, onPaint }: Props) {
+export default function WalkerModel({ walker, faction, onPaint }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<{ stage: Stage; model: THREE.Object3D | null; renderer: THREE.WebGLRenderer } | null>(null);
   const [lib, setLib] = useState<PartLibrary | null>(null);
   const [failed, setFailed] = useState(false);
-  const colour = walker.paint ?? COMPANY_COLOURS[company] ?? '#7a2e22';
+  const colour = walker.paint ?? FACTION_COLOURS[faction] ?? '#7a2e22';
 
   useEffect(() => {
     loadPartLibrary().then(setLib);
@@ -103,7 +103,7 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
           </label>
           {walker.paint && (
             <button className="secondary" onClick={() => onPaint(undefined)}>
-              Company livery
+              Faction livery
             </button>
           )}
           <button disabled={failed} onClick={() => model() && exportStl(model()!, walker.name)} title="For 3D printing, in millimetres">
@@ -117,7 +117,7 @@ export default function WalkerModel({ walker, company, onPaint }: Props) {
       {failed ? <p className="hint">3D view needs WebGL, which this browser has turned off.</p> : <div ref={host} className="model-canvas" />}
       <p className="hint">
         Drag to orbit, scroll to zoom. Parts are procedural until Blender models are added; the STL prints at tabletop scale on a{' '}
-        {BASE_MM[walker.chassis]} mm base.
+        {baseMm(walker.chassis)} mm base.
       </p>
     </section>
   );

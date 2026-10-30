@@ -3,7 +3,7 @@
 import {
   LOCATIONS,
   getChassis,
-  getCompany,
+  getFaction,
   getEquipment,
   getTrait,
   hasTrait,
@@ -38,7 +38,7 @@ const Boxes = ({ n, label }: { n: number; label: string }) => (
 
 function UnitCard({ walker, lance }: { walker: WalkerInput; lance: LanceInput }) {
   const c = getChassis(walker.chassis);
-  const company = getCompany(lance.company);
+  const faction = getFaction(lance.faction);
   const stats = walkerStats(walker);
   const trait = walker.driver.trait && hasTrait(walker.driver.trait) ? getTrait(walker.driver.trait) : null;
   const items = LOCATIONS.flatMap((loc) => (walker.loadout[loc] ?? []).map((id) => ({ loc, def: getEquipment(id) })));
@@ -55,7 +55,7 @@ function UnitCard({ walker, lance }: { walker: WalkerInput; lance: LanceInput })
             {trait ? ` · ${trait.name}` : ''}
           </small>
         </div>
-        <span className="card-cost">{walkerCost(walker, company)}</span>
+        <span className="card-cost">{walkerCost(walker, faction)}</span>
       </header>
 
       <dl className="card-stats">
@@ -76,7 +76,7 @@ function UnitCard({ walker, lance }: { walker: WalkerInput; lance: LanceInput })
         </div>
         <div>
           <dt>Kill VP</dt>
-          <dd>{Math.ceil(walkerCost(walker, company) / 4)}</dd>
+          <dd>{Math.ceil(walkerCost(walker, faction) / 4)}</dd>
         </div>
       </dl>
 
@@ -174,19 +174,19 @@ function UnitCard({ walker, lance }: { walker: WalkerInput; lance: LanceInput })
 }
 
 function LanceCard({ lance }: { lance: LanceInput }) {
-  const company = getCompany(lance.company);
+  const faction = getFaction(lance.faction);
   const report = validateLance(lance);
   return (
     <article className="unit-card lance-card">
       <header>
         <div>
           <h3>{lance.name}</h3>
-          <small>{company.name}</small>
+          <small>{faction.name}</small>
         </div>
         <span className="card-cost">{report.total}</span>
       </header>
       <p>
-        <strong>Doctrine.</strong> {company.doctrine}
+        <strong>Doctrine.</strong> {faction.doctrine}
       </p>
       <ol className="card-roster">
         {lance.walkers.map((w, i) => (

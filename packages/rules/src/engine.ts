@@ -5,7 +5,7 @@ import {
   RANGE_BANDS,
   RULES,
   getChassis,
-  getCompany,
+  getFaction,
   getEquipment,
   getMap,
   getScenario,
@@ -100,7 +100,7 @@ export function createGame(setup: GameSetup): GameState {
     objectives: scenario.objectives.map((o) => ({ hex: offsetToHex(o), vp: o.vp })),
     smoke: [],
     wrecks: [],
-    lances: setup.lances.map((l) => ({ name: l.name, company: l.company })),
+    lances: setup.lances.map((l) => ({ name: l.name, faction: l.faction })),
     walkers: [],
     undeployed: [],
     surveyor: scenario.surveyor
@@ -110,7 +110,6 @@ export function createGame(setup: GameSetup): GameState {
     activeSide: 0,
     active: null,
     passesUsed: [0, 0],
-    meridianUsed: [false, false],
     pendingTactician: null,
     winner: null,
     log: [],
@@ -122,7 +121,7 @@ export function createGame(setup: GameSetup): GameState {
     const side = sideIndex as Side;
     const report = validateLance(lance);
     if (report.errors.length) throw new Error(`Lance "${lance.name}" is not legal: ${report.errors.join('; ')}`);
-    const company = getCompany(lance.company);
+    const faction = getFaction(lance.faction);
     const deploy = alternate ? null : (setup.deployments?.[side] ?? defaultDeployment(state, side, lance.walkers.length));
     lance.walkers.forEach((input, i) => {
       const c = getChassis(input.chassis);
@@ -160,7 +159,7 @@ export function createGame(setup: GameSetup): GameState {
         name: input.name,
         chassis: c.id,
         size: c.size,
-        cost: walkerCost(input, company),
+        cost: walkerCost(input, faction),
         command: input.driver.command,
         trait: input.driver.trait,
         pos,
@@ -226,14 +225,14 @@ export function deploymentZone(state: GameState, side: Side): Hex[] {
 const undeployedCount = (state: GameState, side: Side) => state.undeployed.filter((w) => w.side === side).length;
 
 /**
- * Calloway & Vane deploy their last war-walker after the enemy has finished.
- * If both sides are Calloway & Vane, the rule cancels out once both are down to one.
+ * The Reliquary deploy their last war-walker after the enemy has finished (From the Veil).
+ * If both sides are Reliquary, the rule cancels out once both are down to one.
  */
 function mustHold(state: GameState, side: Side): boolean {
   const other = (1 - side) as Side;
-  const calloway = (s: Side) => state.lances[s].company === 'calloway-vane';
-  if (!calloway(side) || undeployedCount(state, side) !== 1 || undeployedCount(state, other) === 0) return false;
-  return !(calloway(other) && undeployedCount(state, other) === 1);
+  const veiled = (s: Side) => state.lances[s].faction === 'reliquary';
+  if (!veiled(side) || undeployedCount(state, side) !== 1 || undeployedCount(state, other) === 0) return false;
+  return !(veiled(other) && undeployedCount(state, other) === 1);
 }
 
 const canDeploy = (state: GameState, side: Side) => undeployedCount(state, side) > 0 && !mustHold(state, side);
@@ -513,11 +512,11 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
   if ((hexInfo(state, w.pos)?.elevation ?? 0) > (hexInfo(state, tPos)?.elevation ?? 0)) tn -= 1;
   if (hasWorking(w, 'targeting-array')) tn -= 1;
   if (a.faults.includes('steam-scald')) tn += 1;
-  if (aliveWalkers(state, tSide).some((f) => hasWorking(f, 'static-choir') && distance(f.pos, tPos) <= 2)) tn += 1;
+  if (aliveWalkers(state, tSide).some((f) => hasWorking(f, 'soul-lantern') && distance(f.pos, tPos) <= 2)) tn += 1;
   tn = Math.max(2, tn);
 
   let dice = wp.dice;
-  if (def.tags?.includes('close') && dist === 1) dice += 1;
+  if (def.tags?.includes('charge') && w.lastMoveDistance >= 2) dice += 1;
   if (band === 'long' && w.anchored && hasWorking(w, 'anchor-spikes')) dice += 1;
   if (w.actuator[item.location]) dice -= 1;
   dice = Math.max(1, dice);
@@ -603,12 +602,6 @@ function doActivate(ctx: Ctx, walkerId: string, throttle: number) {
     emit('skip', `${w.name} is venting its blown safety valve and skips this activation.`, { walkerId: w.id });
     endActivation(ctx, w, false);
     return;
-  }
-
-  if (state.lances[w.side].company === 'meridian' && !state.meridianUsed[w.side] && w.overpressure > 0) {
-    state.meridianUsed[w.side] = true;
-    w.overpressure -= 1;
-    emit('vent', `${w.name} vents 1 Overpressure (Meridian doctrine).`, { walkerId: w.id });
   }
 
   if (w.overpressure >= faultThreshold(w)) {
@@ -746,7 +739,8 @@ function doWalkerAction(ctx: Ctx, w: WalkerState, a: Activation, action: Exclude
         targetId: t.id,
         itemId: def.id,
       });
-      const rolls = rollAttack(ctx, w, p.dice, p.tn, def.weapon!.critOn ?? 6);
+      const backstab = def.tags?.includes('backstab') && arcOf(t.pos, t.facing, w.pos) === 'rear';
+      const rolls = rollAttack(ctx, w, p.dice, p.tn, backstab ? 5 : (def.weapon!.critOn ?? 6));
       const melee = def.weapon!.range === 'melee';
       resolveHits(ctx, w, t, rolls, {
         damage: def.weapon!.damage + (melee && w.trait === 'brawler' ? 1 : 0),
@@ -1155,7 +1149,6 @@ function endPhase(ctx: Ctx) {
   }
   state.smoke = [];
   state.passesUsed = [0, 0];
-  state.meridianUsed = [false, false];
   emit('endPhase', `End of round ${state.round}. Score ${state.vp[0]} - ${state.vp[1]}.`, { vp: [...state.vp] });
   if (state.round >= state.rounds) {
     finish(ctx, state.vp[0] === state.vp[1] ? 'draw' : state.vp[0] > state.vp[1] ? 0 : 1);

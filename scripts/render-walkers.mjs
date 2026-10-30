@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 const { chromium } = createRequire(import.meta.url)('playwright');
 
 const [outDir = 'renders', ...picked] = process.argv.slice(2);
-const chassis = picked.length ? picked : ['scout', 'striker', 'bulwark', 'titan'];
+const chassis = picked.length ? picked : ['lancer', 'sentinel', 'paladin', 'scavenger', 'brute', 'artillery', 'wraith', 'seer', 'goliath'];
 const angles = (process.env.ANGLES ?? '35,145').split(',').map(Number);
 const paint = (process.env.PAINT ? `&paint=${encodeURIComponent(process.env.PAINT)}` : '') + (process.env.SET ? `&set=${process.env.SET}` : '');
 mkdirSync(outDir, { recursive: true });

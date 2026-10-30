@@ -1,0 +1,16 @@
+{
+  "factions": [
+    { "id": "covenant", "name": "Iron Covenant", "motto": "Faith. Honour. Dominion.",
+      "identity": "Noble houses and sworn orders. Few, elite, armoured knights who win in melee.",
+      "doctrine": "Sworn Knights: each Driver trait costs 1 point less.",
+      "pointModifiers": {}, "traitModifier": -1 },
+    { "id": "foundries", "name": "Ashen Foundries", "motto": "Build. Fight. Repeat.",
+      "identity": "Industrial warbands and mercenary legions. Cheap, tough gun walkers in numbers.",
+      "doctrine": "Forge Plate: Ablative Plating costs 1 point less.",
+      "pointModifiers": { "ablative-plating": -1 } },
+    { "id": "reliquary", "name": "Reliquary", "motto": "Ancient. Watchful. Eternal.",
+      "identity": "A forgotten order of relic machines. Frail, fast or strange, with one towering Goliath.",
+      "doctrine": "From the Veil: deploy one war-walker after the enemy has finished deploying.",
+      "pointModifiers": {} }
+  ]
+}

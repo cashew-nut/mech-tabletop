@@ -83,7 +83,7 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
   return (
     <div className="setup panel">
       <h2>Muster a Charter Trial</h2>
-      <p className="hint">You command the first lance. The Company AI commands the second.</p>
+      <p className="hint">You command the first lance. The rival AI commands the second.</p>
       <div className="setup-grid">
         <label className="field">
           <span>Your lance</span>
@@ -335,15 +335,15 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
                 </li>
               ))}
             </ul>
-            {state.lances[HUMAN].company === 'calloway-vane' && (
-              <p className="hint">Calloway &amp; Vane doctrine: your last war-walker deploys after the enemy has finished.</p>
+            {state.lances[HUMAN].faction === 'reliquary' && (
+              <p className="hint">From the Veil: your last war-walker deploys after the enemy has finished.</p>
             )}
           </div>
         ) : !myTurn ? (
           <div className="panel">
             <h3>Opponent's turn</h3>
             <p className="hint">
-              {state.phase === 'deployment' ? 'The Company AI is deploying…' : active ? `${active.name} is acting…` : 'The Company AI is choosing…'}
+              {state.phase === 'deployment' ? 'The rival AI is deploying…' : active ? `${active.name} is acting…` : 'The rival AI is choosing…'}
             </p>
           </div>
         ) : mineActive ? (

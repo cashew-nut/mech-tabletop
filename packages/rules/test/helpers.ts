@@ -1,4 +1,4 @@
-import { createGame, type Deployment, type GameState, type LanceInput, type WalkerInput } from '../src';
+import { createGame, getChassis, type Deployment, type GameState, type LanceInput, type WalkerInput } from '../src';
 
 export const walker = (name: string, chassis: string, loadout: WalkerInput['loadout'] = {}, trait: string | null = null): WalkerInput => ({
   name,
@@ -7,7 +7,12 @@ export const walker = (name: string, chassis: string, loadout: WalkerInput['load
   loadout,
 });
 
-export const lance = (name: string, walkers: WalkerInput[], company = 'halvorsen'): LanceInput => ({ name, company, walkers });
+/** A lance swears to the faction of its first war-walker unless told otherwise. */
+export const lance = (name: string, walkers: WalkerInput[], faction = walkers[0] ? getChassis(walkers[0].chassis).faction : 'foundries'): LanceInput => ({
+  name,
+  faction,
+  walkers,
+});
 
 /** A game on the open map with fixed deployments; side 0 activates first. */
 export function duel(
@@ -29,4 +34,4 @@ export function duel(
 }
 
 /** Three cheap filler walkers so a lance meets the 3-walker minimum. */
-export const fillers = (prefix: string) => [walker(`${prefix}1`, 'scout'), walker(`${prefix}2`, 'scout')];
+export const fillers = (prefix: string) => [walker(`${prefix}1`, 'scavenger'), walker(`${prefix}2`, 'scavenger')];
