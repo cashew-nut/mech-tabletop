@@ -21,6 +21,19 @@ export function stlBytes(model: THREE.Object3D): DataView {
   wrapper.add(copy);
   wrapper.rotation.x = Math.PI / 2; // three.js is Y up; slicers are Z up
   wrapper.updateMatrixWorld(true);
+  // Mirrored kit parts (scale x = -1) would export inside out: reverse their triangles.
+  copy.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh || mesh.matrixWorld.determinant() >= 0) return;
+    const g = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+    const pos = g.getAttribute('position');
+    for (let i = 0; i + 2 < pos.count; i += 3) {
+      const [x, y, z] = [pos.getX(i + 1), pos.getY(i + 1), pos.getZ(i + 1)];
+      pos.setXYZ(i + 1, pos.getX(i + 2), pos.getY(i + 2), pos.getZ(i + 2));
+      pos.setXYZ(i + 2, x, y, z);
+    }
+    mesh.geometry = g;
+  });
   return new STLExporter().parse(wrapper, { binary: true }) as DataView;
 }
 

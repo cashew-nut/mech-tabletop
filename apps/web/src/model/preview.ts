@@ -1,8 +1,10 @@
 // Standalone turntable for judging the walker models: render.html?chassis=brute&angle=35&set=b&paint=%231f5c63
+// kit=force shows a class's kit body even with parts missing (stand-ins fill in), kit=off the procedural one.
+// part=covenant_helm_titan shows one Blender part from the manifest on its own.
 // Used by scripts/render-walkers.mjs to save preview images without the full app.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
-import { buildWalkerModel, loadPartLibrary } from './assemble';
+import { buildWalkerModel, ensureKitParts, loadPartLibrary, type KitMode } from './assemble';
 import { createStage } from './stage';
 
 const SHOWCASE: Record<string, WalkerInput['loadout']> = {
@@ -33,9 +35,17 @@ renderer.setSize(w, h);
 document.body.appendChild(renderer.domElement);
 const { scene, fit } = createStage(renderer);
 
-const lib = await loadPartLibrary();
+const lib = await loadPartLibrary(renderer);
 const walker: WalkerInput = { name: chassis, chassis, driver: { command: 0, trait: null }, loadout: (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[chassis] ?? {} } as WalkerInput;
-const model = buildWalkerModel(walker, q.get('paint') ?? '#7a2e22', lib);
+const partName = q.get('part');
+let model: THREE.Object3D;
+if (partName) {
+  const file = lib.kitFiles.get(partName) ?? `${partName}.glb`;
+  model = lib.load ? await lib.load(file) : new THREE.Group();
+} else {
+  await ensureKitParts(lib, chassis);
+  model = buildWalkerModel(walker, q.get('paint') ?? '#7a2e22', lib, (q.get('kit') as KitMode) ?? 'auto');
+}
 scene.add(model);
 fit(model);
 

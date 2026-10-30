@@ -3,3 +3,6 @@ dist/
 .DS_Store
 __pycache__/
 *.blend1
+assets/blender/.cache/
+/renders/
+assets/blender/frames.blend

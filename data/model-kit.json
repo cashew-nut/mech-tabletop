@@ -1,0 +1,144 @@
+{
+  "$comment": "Shared by assets/blender/kit (builds the frames and parts) and apps/web/src/model/kitparts.ts (puts them together). Each class in chassis.json names its faction and frame. See assets/blender/kit/README.md.",
+  "factions": {
+    "covenant": {
+      "name": "Iron Covenant",
+      "proportions": {
+        "height": 1.0,
+        "width": 1.0,
+        "limbLength": 1.0,
+        "limbGirth": 1.0
+      }
+    },
+    "foundries": {
+      "name": "Ashen Foundries",
+      "proportions": {
+        "height": 0.85,
+        "width": 1.15,
+        "limbLength": 0.9,
+        "limbGirth": 1.15
+      }
+    },
+    "reliquary": {
+      "name": "Reliquary",
+      "proportions": {
+        "height": 1.12,
+        "width": 0.92,
+        "limbLength": 1.2,
+        "limbGirth": 0.8
+      }
+    }
+  },
+  "frames": {
+    "scout": {
+      "height": 28,
+      "base": 25,
+      "width": 0.9
+    },
+    "striker": {
+      "height": 36,
+      "base": 32,
+      "width": 1.0
+    },
+    "bulwark": {
+      "height": 42,
+      "base": 40,
+      "width": 1.15
+    },
+    "titan": {
+      "height": 50,
+      "base": 50,
+      "width": 1.2
+    }
+  },
+  "components": [
+    {
+      "id": "base",
+      "joint": "root",
+      "required": false
+    },
+    {
+      "id": "pelvis",
+      "joint": "pelvis",
+      "required": true
+    },
+    {
+      "id": "torso",
+      "joint": "spine",
+      "required": true
+    },
+    {
+      "id": "back",
+      "joint": "chest",
+      "required": false
+    },
+    {
+      "id": "cloth",
+      "joint": "chest",
+      "required": false
+    },
+    {
+      "id": "collar",
+      "joint": "neck",
+      "required": false
+    },
+    {
+      "id": "helm",
+      "joint": "head",
+      "required": true
+    },
+    {
+      "id": "crown",
+      "joint": "head",
+      "required": false
+    },
+    {
+      "id": "pauldron",
+      "joint": "shoulder",
+      "sided": true,
+      "required": false
+    },
+    {
+      "id": "arm",
+      "joint": "shoulder",
+      "sided": true,
+      "required": true
+    },
+    {
+      "id": "forearm",
+      "joint": "elbow",
+      "sided": true,
+      "required": true
+    },
+    {
+      "id": "hand",
+      "joint": "wrist",
+      "sided": true,
+      "required": true
+    },
+    {
+      "id": "thigh",
+      "joint": "hip",
+      "sided": true,
+      "required": true
+    },
+    {
+      "id": "shin",
+      "joint": "knee",
+      "sided": true,
+      "required": true
+    },
+    {
+      "id": "foot",
+      "joint": "ankle",
+      "sided": true,
+      "required": true
+    }
+  ],
+  "spareMounts": {
+    "armLeft": 3,
+    "armRight": 3,
+    "core": 4,
+    "legs": 2
+  }
+}
