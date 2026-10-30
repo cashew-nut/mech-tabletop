@@ -6,3 +6,4 @@ __pycache__/
 assets/blender/.cache/
 /renders/
 assets/blender/frames.blend
+assets/blender/parts/equipment/blend/
