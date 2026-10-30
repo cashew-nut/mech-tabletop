@@ -3,7 +3,7 @@
 // and +Z is forward. Chassis live in chassis.ts; this file holds the items,
 // each built at Scout scale with its origin where it attaches.
 import * as THREE from 'three';
-import { at, barrel, box, cyl, dome, gauge, gear, group, lathe, piston, pipe, plate, rivetRing, rivetRow, sphere, torus, type Palette } from './kit';
+import { archWindow, at, barrel, blade, box, cyl, dome, gauge, gear, group, lancet, lathe, piston, pipe, plate, rivetRow, sphere, spire, sunburst, torus, trimmed, type Palette } from './kit';
 
 export { makePalette, type Palette } from './kit';
 export { BASE_MM, buildChassis, type ChassisModel } from './chassis';
@@ -19,24 +19,20 @@ export const PARTS: Record<string, PartBuilder> = {
   // ------------------------------------------------ weapons
   scattergun: (p) =>
     group(
-      plate(3, 3, 3.8, p.iron, 0.4),
+      trimmed(3, 3, 3.8, p),
       ...[-0.75, 0.75].flatMap((x) => [-0.75, 0.75].map((y) => at(barrel(0.55, 4.4, p.iron, 12), x, y, 1.4))),
-      at(plate(3.3, 3.3, 0.8, p.trim, 0.3), 0, 0, 3.2),
       at(plate(3.3, 3.3, 0.7, p.trim, 0.3), 0, 0, 5.5),
       at(cyl(1.4, 1.4, 1.4, p.copper, 18), 0, -2.2, -0.4),
-      at(torus(1.4, 0.18, p.trim, 18), 0, -2.2, -0.4, Math.PI / 2),
-      rivetRow([-1.2, 1.55, -1.2], [1.2, 1.55, -1.2], 3, 0.2, p.trim, [0, 1, 0]),
+      at(spire(0.45, 2.4, p), 0, 1.5, -1.2),
     ),
   autocannon: (p) =>
     group(
-      plate(3, 3.2, 5.2, p.iron, 0.45),
-      at(plate(3.3, 0.6, 4.4, p.armour, 0.2), 0, 1.75, -0.2),
+      trimmed(3, 3.2, 5.2, p),
       at(barrel(0.6, 9, p.iron, 14), 0, 0.3, 2),
-      at(barrel(0.95, 3.4, p.trim, 16), 0, 0.3, 2.2),
-      ...[2.8, 3.8, 4.8].map((z) => at(torus(0.97, 0.12, p.iron, 14), 0, 0.3, z)),
-      at(plate(1.7, 1.7, 1.1, p.iron, 0.3), 0, 0.3, 10.6),
+      at(barrel(0.95, 3.4, p.armour, 16), 0, 0.3, 2.2),
+      ...[2.6, 4, 5.4].map((z) => at(torus(0.97, 0.14, p.trim, 14), 0, 0.3, z)),
+      at(lathe([[0.7, 0], [1.1, 0.6], [1.1, 1.4], [0.8, 1.6]], p.trim, 14), 0, 0.3, 10.4, Math.PI / 2),
       at(barrel(1.2, 1.6, p.copper, 18), 2.2, -0.4, -1.4, 0, Math.PI / 2),
-      pipe([[1.6, -0.9, -0.2], [2.4, -1.6, 1.2], [1.4, -1.4, 2]], 0.3, p.trim),
     ),
   'beam-cutter': (p) =>
     group(
@@ -59,14 +55,14 @@ export const PARTS: Record<string, PartBuilder> = {
       at(gauge(0.6, p, 0.6), 1.55, 1.6, 0, 0, Math.PI / 2),
     ),
   'missile-rack': (p) => {
-    const rack = group(plate(4.8, 3.8, 5.6, p.armour, 0.5), at(plate(5, 4, 0.6, p.iron, 0.2), 0, 0, 2.7), at(plate(5.2, 0.5, 5, p.iron, 0.2), 0, 2.1, -0.2));
+    const rack = group(trimmed(4.8, 3.8, 5.6, p), at(plate(5.2, 0.5, 5, p.trim, 0.2), 0, 2.1, -0.2));
     for (const x of [-1.5, 0, 1.5])
-      for (const y of [-0.85, 0.85]) {
-        rack.add(at(cyl(0.6, 0.6, 0.5, p.iron, 14), x, y, 3, Math.PI / 2));
-        rack.add(at(dome(0.45, p.trim, 10), x, y, 2.9, Math.PI / 2));
+      for (const y of [-0.9, 0.9]) {
+        rack.add(at(lancet(1.1, 1.5, 0.4, p.iron), x, y, 2.9));
+        rack.add(at(dome(0.38, p.trim, 10), x, y - 0.2, 2.95, Math.PI / 2));
       }
-    rack.add(rivetRow([-2.45, 1.2, -2], [-2.45, 1.2, 2], 4, 0.2, p.trim, [-1, 0, 0]));
-    rack.add(rivetRow([2.45, 1.2, -2], [2.45, 1.2, 2], 4, 0.2, p.trim, [1, 0, 0]));
+    rack.add(at(spire(0.5, 3, p), -1.8, 2.3, -2));
+    rack.add(at(spire(0.5, 3, p), 1.8, 2.3, -2));
     return rack;
   },
   'rail-lance': (p) =>
@@ -118,32 +114,19 @@ export const PARTS: Record<string, PartBuilder> = {
       rivetRow([1.8, 1.75, 6.4], [1.8, 1.75, 7.6], 2, 0.22, p.trim, [0, 1, 0]),
       at(cyl(0.6, 0.6, 2.4, p.copper, 10), 0, 1.4, 1.8, Math.PI / 2),
     ),
-  'shear-blade': (p) => {
-    const shape = new THREE.Shape();
-    shape.moveTo(0, -1);
-    shape.lineTo(7, -0.6);
-    shape.quadraticCurveTo(9.6, 0.2, 9.2, 1.4);
-    shape.lineTo(0, 1.3);
-    shape.lineTo(0, -1);
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.2, bevelSegments: 1 });
-    geo.translate(0, 0, -0.2);
-    const blade = new THREE.Mesh(geo, p.steel);
-    return group(
+  'shear-blade': (p) =>
+    group(
       plate(2, 2.2, 2.4, p.iron, 0.4),
-      at(plate(3, 3, 0.6, p.trim, 0.25), 0, 0, 1.4),
-      at(blade, 0, 0, 1.6, 0, -Math.PI / 2),
-      at(box(0.3, 0.25, 7.6, p.fire), 0, -0.98, 5.2),
-      rivetRow([0.5, 0, 2.4], [0.5, 0, 5.6], 3, 0.2, p.trim, [1, 0, 0]),
-    );
-  },
+      at(plate(3.4, 0.8, 0.8, p.trim, 0.25), 0, 0, 1.4),
+      at(blade(9, 2.2, p), 0, -0.4, 1.6),
+    ),
   // ------------------------------------------------ armour
   'ablative-plating': (p) =>
     group(
       at(plate(5.2, 4.2, 1.2, p.iron, 0.3), 0, 0, 0.6),
-      at(plate(4.8, 2.1, 0.9, p.armour, 0.3), 0, 1.05, 1.5, -0.12),
-      at(plate(4.8, 2.1, 0.9, p.armour, 0.3), 0, -1, 1.5, -0.12),
-      rivetRow([-2, 1.6, 2], [2, 1.6, 2], 4, 0.22, p.trim),
-      rivetRow([-2, -0.45, 2], [2, -0.45, 2], 4, 0.22, p.trim),
+      at(trimmed(4.8, 2.1, 0.9, p), 0, 1.05, 1.5, -0.12),
+      at(trimmed(4.8, 2.1, 0.9, p), 0, -1, 1.5, -0.12),
+      at(sunburst(0.9, p), 0, 1.05, 2.05, -0.12),
     ),
   'reactive-shell': (p) =>
     group(
@@ -153,15 +136,23 @@ export const PARTS: Record<string, PartBuilder> = {
       ),
     ),
   'kinetic-shield': (p) => {
-    const face = lathe([[4.6, 0], [4.6, 0.5], [3.2, 1.1], [1.2, 1.4]], p.armour, 32);
+    // A heater shield: flat top, curving to a point below.
+    const s = new THREE.Shape();
+    s.moveTo(-4, 3.6);
+    s.lineTo(4, 3.6);
+    s.lineTo(4, 0.6);
+    s.quadraticCurveTo(3.6, -3.6, 0, -6);
+    s.quadraticCurveTo(-3.6, -3.6, -4, 0.6);
+    s.lineTo(-4, 3.6);
+    const face = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.8, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelSegments: 2 }), p.armour);
+    const rim = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.55, bevelSegments: 1 }), p.trim);
     return group(
-      at(face, 0, 0, 1.2, Math.PI / 2),
-      at(torus(4.6, 0.38, p.trim, 36), 0, 0, 1.45),
-      at(rivetRing(3.9, 12, 0.22, p.trim, true), 0, 0, 1.55),
-      at(cyl(1.3, 1.3, 0.6, p.trim, 20), 0, 0, 2.6, Math.PI / 2),
-      at(sphere(0.9, p.glow, 16), 0, 0, 2.95),
-      ...[0, 1, 2, 3].map((i) => at(box(0.35, 2.2, 0.2, p.glow), Math.cos((i * Math.PI) / 2 + 0.785) * 2.4, Math.sin((i * Math.PI) / 2 + 0.785) * 2.4, 2.05, 0, 0, (i * Math.PI) / 2 + 0.785 + Math.PI / 2)),
-      at(plate(2, 2, 1.4, p.iron, 0.3), 0, 0, 0.5),
+      at(rim, 0, 0, 0.6),
+      at(face, 0, 0, 0.9),
+      at(sunburst(2.4, p), 0, 0.4, 2.15),
+      at(sphere(0.6, p.glow, 12), 0, 0.4, 2.2),
+      at(box(0.4, 7.4, 0.3, p.trim), 0, -1.4, 2.05),
+      at(plate(2, 2, 1.4, p.iron, 0.3), 0, 0, 0.3),
     );
   },
   'smoke-launcher': (p) =>
@@ -236,26 +227,32 @@ export const PARTS: Record<string, PartBuilder> = {
       at(gauge(0.5, p, 0.2), 0, 3.2, 1.15),
     );
   },
-  'overcharged-boiler': (p) =>
-    group(
-      lathe([[2, 0], [2, 0.4], [1.7, 0.7], [1.7, 4.6], [1.2, 5.6], [0.5, 6]], p.copper),
-      ...[1.2, 2.6, 4].map((y) => at(torus(1.75, 0.2, p.trim, 20), 0, y, 0, Math.PI / 2)),
-      at(cyl(0.65, 0.65, 0.3, p.fire, 14), 0, 1.9, 1.65, Math.PI / 2),
-      at(torus(0.7, 0.18, p.trim, 14), 0, 1.9, 1.75),
-      at(gauge(0.55, p, 0.85), 0, 3.4, 1.75),
-      at(cyl(0.35, 0.35, 1.6, p.trim, 10), 0, 6.4, 0),
-      at(sphere(0.5, p.trim, 10), 0, 7.2, 0),
-      pipe([[1.7, 4.2, 0], [2.5, 4.4, 0], [2.6, 0.5, 0]], 0.25, p.trim),
-    ),
-  'static-choir': (p) =>
-    group(
-      at(cyl(1.3, 1.5, 1, p.iron, 16), 0, 0.5, 0),
-      at(cyl(0.3, 0.4, 7.4, p.iron, 10), 0, 4.4, 0),
-      ...[2.4, 3.9, 5.4].map((y, i) => at(cyl(1.5 - i * 0.35, 1.5 - i * 0.35, 0.3, p.enamel, 18), 0, y, 0)),
-      ...[3.15, 4.65].map((y) => at(torus(0.9, 0.12, p.copper, 14), 0, y, 0, Math.PI / 2)),
-      at(torus(0.9, 0.22, p.glow, 18), 0, 7.6, 0, Math.PI / 2),
-      at(sphere(0.45, p.glow, 12), 0, 8.4, 0),
-    ),
+  'overcharged-boiler': (p) => {
+    // A reliquary furnace: an octagonal lantern tower with lit windows and a spire.
+    const g = group(at(cyl(1.9, 2.1, 0.6, p.trim, 8), 0, 0.3, 0), at(cyl(1.7, 1.7, 4.4, p.armour, 8), 0, 2.8, 0), at(cyl(1.95, 1.95, 0.4, p.trim, 8), 0, 5.1, 0));
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      g.add(at(archWindow(1, 2.4, p), Math.sin(a) * 1.62, 2.8, Math.cos(a) * 1.62, 0, a));
+    }
+    g.add(at(spire(1.2, 4.6, p), 0, 5.3, 0));
+    return g;
+  },
+  'static-choir': (p) => {
+    // A belfry: four posts round a gold bell, under a spire.
+    const g = group(at(plate(3.6, 0.8, 3.6, p.armour, 0.25), 0, 0.4, 0));
+    for (const [x, z] of [
+      [-1.4, -1.4],
+      [1.4, -1.4],
+      [-1.4, 1.4],
+      [1.4, 1.4],
+    ])
+      g.add(at(box(0.5, 3.6, 0.5, p.armour), x, 2.6, z));
+    g.add(at(lathe([[1.15, 0], [1.05, 0.3], [0.7, 1.4], [0.5, 2], [0, 2.1]], p.trim, 18), 0, 1.6, 0));
+    g.add(at(sphere(0.25, p.glow, 8), 0, 1.5, 0));
+    g.add(at(plate(3.8, 0.6, 3.8, p.trim, 0.2), 0, 4.6, 0));
+    g.add(at(spire(1.3, 5, p), 0, 4.9, 0));
+    return g;
+  },
   'spotter-drone': (p) =>
     group(
       at(cyl(1, 1.2, 0.8, p.iron, 14), 0, 0.4, 0),

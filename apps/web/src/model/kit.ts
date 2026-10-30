@@ -81,11 +81,11 @@ export function makePalette(hullColour: string): Palette {
     }),
     trim: new THREE.MeshStandardMaterial({ name: 'gold', color: '#c99a45', roughness: 0.36, roughnessMap: metal, metalness: 1 }),
     iron: new THREE.MeshStandardMaterial({ name: 'iron', color: '#35322f', roughness: 0.6, roughnessMap: metal, metalness: 0.85 }),
-    glow: new THREE.MeshStandardMaterial({ name: 'glow', color: '#3a2a10', emissive: '#ffc566', emissiveIntensity: 1.6, roughness: 0.3 }),
-    fire: new THREE.MeshStandardMaterial({ name: 'fire', color: '#3a1606', emissive: '#ff7a18', emissiveIntensity: 1.7, roughness: 0.4 }),
+    glow: new THREE.MeshStandardMaterial({ name: 'glow', color: '#2a1c08', emissive: '#ffb347', emissiveIntensity: 1.3, roughness: 0.3 }),
+    fire: new THREE.MeshStandardMaterial({ name: 'fire', color: '#2a0c02', emissive: '#ff6410', emissiveIntensity: 1.15, roughness: 0.4 }),
     copper: new THREE.MeshStandardMaterial({ name: 'bronze', color: '#7a5634', roughness: 0.45, roughnessMap: metal, metalness: 1 }),
     enamel: new THREE.MeshStandardMaterial({ name: 'enamel', color: '#efe4c6', roughness: 0.5, metalness: 0 }),
-    steel: new THREE.MeshStandardMaterial({ name: 'steel', color: '#9a9ea4', roughness: 0.25, roughnessMap: metal, metalness: 1 }),
+    steel: new THREE.MeshStandardMaterial({ name: 'steel', color: '#5c6066', roughness: 0.3, roughnessMap: metal, metalness: 1 }),
     ground: new THREE.MeshStandardMaterial({ name: 'ground', color: '#2b2824', roughness: 1, metalness: 0 }),
   };
 }
@@ -197,44 +197,6 @@ export function rivetRing(radius: number, count: number, r: number, m: THREE.Mat
     if (axial) h.rotation.x = Math.PI / 2;
     else h.rotation.z = a - Math.PI / 2;
     g.add(h);
-  }
-  return g;
-}
-
-/** A banded boiler drum lying along X: iron end caps, brass bands and rivet rings. */
-export function boilerDrum(r: number, len: number, p: Palette, bands = 3) {
-  const g = new THREE.Group();
-  g.add(bar(r, len, p.hull, 'x', 32));
-  for (const side of [-1, 1]) {
-    const cap = lathe(
-      [
-        [r * 1.04, 0],
-        [r * 1.04, r * 0.12],
-        [r * 0.9, r * 0.3],
-        [r * 0.55, r * 0.45],
-        [0, r * 0.5],
-      ],
-      p.iron,
-      32,
-    );
-    cap.rotation.z = -side * (Math.PI / 2);
-    cap.position.x = (side * len) / 2;
-    g.add(cap);
-    const ring = rivetRing(r * 0.8, 10, r * 0.06, p.trim, true);
-    ring.rotation.y = side * (Math.PI / 2);
-    ring.position.x = side * (len / 2 + r * 0.3);
-    g.add(ring);
-  }
-  for (let i = 0; i < bands; i++) {
-    const x = bands === 1 ? 0 : -len / 2 + r * 0.25 + ((len - r * 0.5) * i) / (bands - 1);
-    const band = torus(r * 1.01, r * 0.07, p.trim, 32);
-    band.rotation.y = Math.PI / 2;
-    band.position.x = x;
-    g.add(band);
-    const ring = rivetRing(r * 1.06, 14, r * 0.045, p.iron);
-    ring.rotation.y = Math.PI / 2;
-    ring.position.x = x + r * 0.15;
-    g.add(ring);
   }
   return g;
 }
@@ -362,14 +324,6 @@ export function spire(r: number, h: number, p: Palette) {
     [1, 1],
   ]) {
     g.add(at(cyl(r * 0.05, r * 0.32, h * 0.2, p.armour, 4), x * r * 0.78, h * 0.35 + h * 0.1, z * r * 0.78, 0, Math.PI / 4));
-  }
-  // Gold ribs up the faces of the spire.
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2;
-    const rib = box(r * 0.12, h * 0.58, r * 0.12, p.trim);
-    rib.position.set(Math.sin(a) * r * 0.42, h * 0.62, Math.cos(a) * r * 0.42);
-    rib.rotation.set(Math.cos(a) * 0.62, 0, -Math.sin(a) * 0.62);
-    g.add(rib);
   }
   g.add(at(sphere(r * 0.22, p.trim, 10), 0, h * 0.97, 0));
   g.add(at(cyl(r * 0.07, r * 0.07, h * 0.12, p.trim, 6), 0, h * 1.03, 0));
