@@ -14,8 +14,8 @@ Seizure) and maps (Open Field, Foundry Flats) rotate with each game. It runs two
   lances that include it.
 
 With 100 to 600 games behind each figure, differences under about 5 points are noise. Both sides
-use the same greedy AI, so these numbers measure the rules as that AI plays them. The AI rarely
-jumps, never lays smoke, and only repairs itself, so those items will read low.
+use the same greedy AI, so these numbers measure the rules as that AI plays them. The AI never
+jumps or lays smoke and only repairs itself, so those items will read low.
 
 ## Results
 
