@@ -30,7 +30,7 @@ export const PARTS: Record<string, PartBuilder> = {
   autocannon: (p) =>
     group(
       plate(3, 3.2, 5.2, p.iron, 0.45),
-      at(plate(3.3, 0.6, 4.4, p.hull, 0.2), 0, 1.75, -0.2),
+      at(plate(3.3, 0.6, 4.4, p.armour, 0.2), 0, 1.75, -0.2),
       at(barrel(0.6, 9, p.iron, 14), 0, 0.3, 2),
       at(barrel(0.95, 3.4, p.trim, 16), 0, 0.3, 2.2),
       ...[2.8, 3.8, 4.8].map((z) => at(torus(0.97, 0.12, p.iron, 14), 0, 0.3, z)),
@@ -59,7 +59,7 @@ export const PARTS: Record<string, PartBuilder> = {
       at(gauge(0.6, p, 0.6), 1.55, 1.6, 0, 0, Math.PI / 2),
     ),
   'missile-rack': (p) => {
-    const rack = group(plate(4.8, 3.8, 5.6, p.hull, 0.5), at(plate(5, 4, 0.6, p.iron, 0.2), 0, 0, 2.7), at(plate(5.2, 0.5, 5, p.iron, 0.2), 0, 2.1, -0.2));
+    const rack = group(plate(4.8, 3.8, 5.6, p.armour, 0.5), at(plate(5, 4, 0.6, p.iron, 0.2), 0, 0, 2.7), at(plate(5.2, 0.5, 5, p.iron, 0.2), 0, 2.1, -0.2));
     for (const x of [-1.5, 0, 1.5])
       for (const y of [-0.85, 0.85]) {
         rack.add(at(cyl(0.6, 0.6, 0.5, p.iron, 14), x, y, 3, Math.PI / 2));
@@ -113,7 +113,7 @@ export const PARTS: Record<string, PartBuilder> = {
       at(cyl(1.25, 1.25, 0.6, p.trim, 14), 0, 0, 3.2, Math.PI / 2),
       at(plate(4.4, 3.4, 3.4, p.iron, 0.4), 0, 0, 7),
       ...[5.9, 8.1].map((z) => at(plate(4.7, 3.7, 0.5, p.trim, 0.15), 0, 0, z)),
-      at(plate(3.6, 2.6, 0.8, p.hull, 0.25), 0, 0, 8.9),
+      at(plate(3.6, 2.6, 0.8, p.armour, 0.25), 0, 0, 8.9),
       rivetRow([-1.8, 1.75, 6.4], [-1.8, 1.75, 7.6], 2, 0.22, p.trim, [0, 1, 0]),
       rivetRow([1.8, 1.75, 6.4], [1.8, 1.75, 7.6], 2, 0.22, p.trim, [0, 1, 0]),
       at(cyl(0.6, 0.6, 2.4, p.copper, 10), 0, 1.4, 1.8, Math.PI / 2),
@@ -140,8 +140,8 @@ export const PARTS: Record<string, PartBuilder> = {
   'ablative-plating': (p) =>
     group(
       at(plate(5.2, 4.2, 1.2, p.iron, 0.3), 0, 0, 0.6),
-      at(plate(4.8, 2.1, 0.9, p.hull, 0.3), 0, 1.05, 1.5, -0.12),
-      at(plate(4.8, 2.1, 0.9, p.hull, 0.3), 0, -1, 1.5, -0.12),
+      at(plate(4.8, 2.1, 0.9, p.armour, 0.3), 0, 1.05, 1.5, -0.12),
+      at(plate(4.8, 2.1, 0.9, p.armour, 0.3), 0, -1, 1.5, -0.12),
       rivetRow([-2, 1.6, 2], [2, 1.6, 2], 4, 0.22, p.trim),
       rivetRow([-2, -0.45, 2], [2, -0.45, 2], 4, 0.22, p.trim),
     ),
@@ -149,11 +149,11 @@ export const PARTS: Record<string, PartBuilder> = {
     group(
       at(plate(5, 3.8, 0.8, p.iron, 0.2), 0, 0, 0.4),
       ...[-1.6, 0, 1.6].flatMap((x) =>
-        [-0.9, 0.9].flatMap((y) => [at(plate(1.4, 1.6, 1.2, p.hull, 0.25), x, y, 1.3), at(dome(0.25, p.trim, 8), x, y, 1.9, Math.PI / 2)]),
+        [-0.9, 0.9].flatMap((y) => [at(plate(1.4, 1.6, 1.2, p.armour, 0.25), x, y, 1.3), at(dome(0.25, p.trim, 8), x, y, 1.9, Math.PI / 2)]),
       ),
     ),
   'kinetic-shield': (p) => {
-    const face = lathe([[4.6, 0], [4.6, 0.5], [3.2, 1.1], [1.2, 1.4]], p.hull, 32);
+    const face = lathe([[4.6, 0], [4.6, 0.5], [3.2, 1.1], [1.2, 1.4]], p.armour, 32);
     return group(
       at(face, 0, 0, 1.2, Math.PI / 2),
       at(torus(4.6, 0.38, p.trim, 36), 0, 0, 1.45),
@@ -260,7 +260,7 @@ export const PARTS: Record<string, PartBuilder> = {
     group(
       at(cyl(1, 1.2, 0.8, p.iron, 14), 0, 0.4, 0),
       at(cyl(0.25, 0.25, 2.2, p.iron, 8), 0, 1.8, 0),
-      at(lathe([[0.5, 0], [1.6, 0.4], [1.8, 0.9], [1.3, 1.4], [0, 1.6]], p.hull, 20), 0, 2.8, 0),
+      at(lathe([[0.5, 0], [1.6, 0.4], [1.8, 0.9], [1.3, 1.4], [0, 1.6]], p.armour, 20), 0, 2.8, 0),
       at(torus(1.8, 0.16, p.trim, 20), 0, 3.7, 0, Math.PI / 2),
       at(sphere(0.45, p.glow, 12), 0, 3.6, 1.5),
       at(torus(0.5, 0.12, p.trim, 12), 0, 3.6, 1.7),

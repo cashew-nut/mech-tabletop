@@ -38,12 +38,12 @@ function floorTexture() {
   c.width = c.height = 512;
   const g = c.getContext('2d')!;
   const grad = g.createRadialGradient(256, 256, 0, 256, 256, 256);
-  grad.addColorStop(0, '#3a322b');
-  grad.addColorStop(1, '#2a241f');
+  grad.addColorStop(0, '#34302b');
+  grad.addColorStop(1, '#23201d');
   g.fillStyle = grad;
   g.fillRect(0, 0, 512, 512);
   // Faint hex grid, like the game table.
-  g.strokeStyle = 'rgba(214, 178, 110, 0.05)';
+  g.strokeStyle = 'rgba(210, 170, 100, 0.045)';
   g.lineWidth = 1.5;
   const r = 26;
   for (let row = -1; row < 14; row++) {
@@ -63,17 +63,50 @@ function floorTexture() {
   return tex;
 }
 
+/** An overcast sky: storm grey at the top, a pale break low down, dark at the horizon. */
+function skyTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const g = c.getContext('2d')!;
+  const grad = g.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#15171b');
+  grad.addColorStop(0.42, '#3a3d42');
+  grad.addColorStop(0.58, '#4a463f');
+  grad.addColorStop(0.75, '#1d1c1b');
+  grad.addColorStop(1, '#121112');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 512, 512);
+  // Soft cloud masses.
+  let s = 11;
+  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 90; i++) {
+    const x = rand() * 512;
+    const y = rand() * 300;
+    const r = 30 + rand() * 90;
+    const cg = g.createRadialGradient(x, y, 0, x, y, r);
+    const light = rand() > 0.6;
+    cg.addColorStop(0, light ? 'rgba(150,150,150,0.08)' : 'rgba(5,5,8,0.18)');
+    cg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = cg;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 export function createStage(renderer: THREE.WebGLRenderer): Stage {
   setupRenderer(renderer);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#1b1815');
+  scene.background = skyTexture();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = 0.8;
   pmrem.dispose();
 
-  scene.add(new THREE.HemisphereLight('#ffe9c4', '#2a2018', 0.5));
-  const key = new THREE.DirectionalLight('#ffd9a0', 3.2);
+  scene.add(new THREE.HemisphereLight('#aab4c4', '#221a14', 0.7));
+  const key = new THREE.DirectionalLight('#f1e6d2', 3);
   key.position.set(60, 110, 70);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -81,11 +114,11 @@ export function createStage(renderer: THREE.WebGLRenderer): Stage {
   key.shadow.normalBias = 0.02;
   key.shadow.radius = 4;
   scene.add(key, key.target);
-  const rim = new THREE.DirectionalLight('#9cc8ff', 2.4);
-  rim.position.set(-70, 60, -90);
+  const rim = new THREE.DirectionalLight('#b8ccff', 3.2);
+  rim.position.set(-80, 70, -80);
   scene.add(rim);
-  const fill = new THREE.PointLight('#ff9a4a', 900, 0, 2);
-  fill.position.set(-45, 45, 55);
+  const fill = new THREE.PointLight('#ff8a3a', 700, 0, 2);
+  fill.position.set(-40, 12, 50);
   scene.add(fill);
 
   const floor = new THREE.Mesh(

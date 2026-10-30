@@ -6,13 +6,15 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export interface Palette {
-  /** Painted armour; recoloured with the Company livery. */
+  /** Company livery: banners, tabards and painted panels. Recoloured with the walker's paint. */
   hull: THREE.Material;
-  /** Polished brass fittings. */
+  /** Blackened, oiled armour plate. */
+  armour: THREE.Material;
+  /** Gold filigree and fittings. */
   trim: THREE.Material;
   /** Dark gunmetal frame, joints and barrels. */
   iron: THREE.Material;
-  /** Aether glow of energy weapons. */
+  /** Pale lamp-light of energy weapons. */
   glow: THREE.Material;
   /** Firebox and furnace light. */
   fire: THREE.Material;
@@ -67,23 +69,24 @@ const shared = () => (wear ??= { metal: wearTexture(7), paint: wearTexture(31) }
 export function makePalette(hullColour: string): Palette {
   const { metal, paint } = shared();
   return {
-    hull: new THREE.MeshPhysicalMaterial({
-      name: 'hull',
-      color: hullColour,
-      roughness: 0.55,
+    hull: new THREE.MeshStandardMaterial({ name: 'hull', color: hullColour, roughness: 0.95, metalness: 0, side: THREE.DoubleSide }),
+    armour: new THREE.MeshPhysicalMaterial({
+      name: 'armour',
+      color: '#242327',
+      roughness: 0.4,
       roughnessMap: paint,
-      metalness: 0.2,
-      clearcoat: 0.2,
-      clearcoatRoughness: 0.45,
+      metalness: 0.9,
+      clearcoat: 0.25,
+      clearcoatRoughness: 0.5,
     }),
-    trim: new THREE.MeshStandardMaterial({ name: 'brass', color: '#d9a94e', roughness: 0.42, roughnessMap: metal, metalness: 1 }),
-    iron: new THREE.MeshStandardMaterial({ name: 'iron', color: '#4a443e', roughness: 0.62, roughnessMap: metal, metalness: 0.8 }),
-    glow: new THREE.MeshStandardMaterial({ name: 'glow', color: '#0d3b36', emissive: '#19d6bf', emissiveIntensity: 1.25, roughness: 0.3 }),
-    fire: new THREE.MeshStandardMaterial({ name: 'fire', color: '#3a1606', emissive: '#ff5a0a', emissiveIntensity: 1.5, roughness: 0.4 }),
-    copper: new THREE.MeshStandardMaterial({ name: 'copper', color: '#c46a3c', roughness: 0.38, roughnessMap: metal, metalness: 1 }),
+    trim: new THREE.MeshStandardMaterial({ name: 'gold', color: '#c99a45', roughness: 0.36, roughnessMap: metal, metalness: 1 }),
+    iron: new THREE.MeshStandardMaterial({ name: 'iron', color: '#35322f', roughness: 0.6, roughnessMap: metal, metalness: 0.85 }),
+    glow: new THREE.MeshStandardMaterial({ name: 'glow', color: '#3a2a10', emissive: '#ffc566', emissiveIntensity: 1.6, roughness: 0.3 }),
+    fire: new THREE.MeshStandardMaterial({ name: 'fire', color: '#3a1606', emissive: '#ff7a18', emissiveIntensity: 1.7, roughness: 0.4 }),
+    copper: new THREE.MeshStandardMaterial({ name: 'bronze', color: '#7a5634', roughness: 0.45, roughnessMap: metal, metalness: 1 }),
     enamel: new THREE.MeshStandardMaterial({ name: 'enamel', color: '#efe4c6', roughness: 0.5, metalness: 0 }),
-    steel: new THREE.MeshStandardMaterial({ name: 'steel', color: '#c9ccd0', roughness: 0.28, roughnessMap: metal, metalness: 1 }),
-    ground: new THREE.MeshStandardMaterial({ name: 'ground', color: '#3d362e', roughness: 1, metalness: 0 }),
+    steel: new THREE.MeshStandardMaterial({ name: 'steel', color: '#9a9ea4', roughness: 0.25, roughnessMap: metal, metalness: 1 }),
+    ground: new THREE.MeshStandardMaterial({ name: 'ground', color: '#2b2824', roughness: 1, metalness: 0 }),
   };
 }
 
@@ -311,6 +314,159 @@ export function piston(a: V3, b: V3, r: number, p: Palette) {
   g.position.copy(va);
   g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.clone().sub(va).normalize());
   return g;
+}
+
+// ---------------------------------------------------------------- gothic
+
+/** The outline of a pointed (lancet) arch, `w` wide and `h` tall, standing on y = 0. */
+function lancetShape(w: number, h: number) {
+  const s = new THREE.Shape();
+  const side = Math.max(0, h - w * 0.85);
+  s.moveTo(-w / 2, 0);
+  s.lineTo(-w / 2, side);
+  s.quadraticCurveTo(-w / 2, side + (h - side) * 0.7, 0, h);
+  s.quadraticCurveTo(w / 2, side + (h - side) * 0.7, w / 2, side);
+  s.lineTo(w / 2, 0);
+  s.lineTo(-w / 2, 0);
+  return s;
+}
+
+/** A solid pointed arch facing +Z, `depth` thick. */
+export function lancet(w: number, h: number, depth: number, m: THREE.Material) {
+  const g = new THREE.ExtrudeGeometry(lancetShape(w, h), { depth, bevelEnabled: false, curveSegments: 6 });
+  g.translate(0, -h / 2, -depth / 2);
+  return mesh(g, m);
+}
+
+/** A lit cathedral window facing +Z: gold frame, glowing glass and a mullion. */
+export function archWindow(w: number, h: number, p: Palette, light: THREE.Material = p.fire) {
+  return group(
+    lancet(w + 0.6, h + 0.5, 0.5, p.trim),
+    at(lancet(w, h, 0.5, light), 0, -0.1, 0.12),
+    at(box(0.22, h * 0.85, 0.3, p.trim), 0, -0.2, 0.4),
+    at(box(w, 0.22, 0.3, p.trim), 0, -h * 0.12, 0.4),
+  );
+}
+
+/** A gothic pinnacle standing on the origin: plinth, gold band, four-sided spire, corner pinnacles and a finial. */
+export function spire(r: number, h: number, p: Palette) {
+  const g = new THREE.Group();
+  g.add(at(plate(r * 2, h * 0.32, r * 2, p.armour, r * 0.2), 0, h * 0.16, 0));
+  g.add(at(plate(r * 2.2, h * 0.04, r * 2.2, p.trim, r * 0.08), 0, h * 0.33, 0));
+  const point = cyl(r * 0.08, r * 1.05, h * 0.6, p.armour, 4);
+  g.add(at(point, 0, h * 0.35 + h * 0.3, 0, 0, Math.PI / 4));
+  for (const [x, z] of [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ]) {
+    g.add(at(cyl(r * 0.05, r * 0.32, h * 0.2, p.armour, 4), x * r * 0.78, h * 0.35 + h * 0.1, z * r * 0.78, 0, Math.PI / 4));
+  }
+  // Gold ribs up the faces of the spire.
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 2;
+    const rib = box(r * 0.12, h * 0.58, r * 0.12, p.trim);
+    rib.position.set(Math.sin(a) * r * 0.42, h * 0.62, Math.cos(a) * r * 0.42);
+    rib.rotation.set(Math.cos(a) * 0.62, 0, -Math.sin(a) * 0.62);
+    g.add(rib);
+  }
+  g.add(at(sphere(r * 0.22, p.trim, 10), 0, h * 0.97, 0));
+  g.add(at(cyl(r * 0.07, r * 0.07, h * 0.12, p.trim, 6), 0, h * 1.03, 0));
+  return g;
+}
+
+/** A gold sunburst emblem facing +Z. */
+export function sunburst(r: number, p: Palette, rays = 12) {
+  const g = group(at(cyl(r * 0.36, r * 0.36, r * 0.12, p.trim, 20), 0, 0, 0, Math.PI / 2), at(torus(r * 0.48, r * 0.05, p.trim, 24), 0, 0, 0.02));
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2;
+    const len = i % 2 ? r * 0.55 : r * 0.75;
+    const ray = cyl(0.02, r * 0.09, len, p.trim, 4);
+    ray.position.set(Math.cos(a) * (r * 0.45 + len / 2), Math.sin(a) * (r * 0.45 + len / 2), 0);
+    ray.rotation.z = a - Math.PI / 2;
+    g.add(ray);
+  }
+  return g;
+}
+
+/**
+ * A knight's helm facing +Z: a tall dome with a gold crest, a visor with
+ * glowing slits, cheek guards and a gorget ring.
+ */
+export function helm(r: number, p: Palette) {
+  const g = new THREE.Group();
+  const skull = sphere(r, p.armour, 24);
+  skull.scale.set(0.92, 1.12, 1);
+  g.add(skull);
+  g.add(at(lathe([[r * 0.5, 0], [r * 0.12, r * 0.6], [0, r * 0.75]], p.armour, 4), 0, r * 0.95, 0, 0, Math.PI / 4));
+  g.add(at(plate(r * 0.16, r * 0.5, r * 1.9, p.trim, r * 0.06), 0, r * 0.92, -0.1));
+  const visor = group(plate(r * 1.5, r * 0.95, r * 0.5, p.armour, r * 0.2));
+  for (const y of [0.2, -0.08, -0.34]) visor.add(at(box(r * (y > 0 ? 1.1 : 0.8), r * 0.09, r * 0.2, p.glow), 0, y * r, r * 0.2));
+  visor.add(at(box(r * 0.12, r * 0.9, r * 0.24, p.trim), 0, 0, r * 0.22));
+  visor.add(at(box(r * 1.55, r * 0.08, r * 0.2, p.trim), 0, r * 0.46, r * 0.18));
+  g.add(at(visor, 0, -r * 0.05, r * 0.72, -0.08));
+  for (const s of [-1, 1]) g.add(at(plate(r * 0.4, r * 0.9, r * 0.9, p.armour, r * 0.12), s * r * 0.75, -r * 0.35, r * 0.25, 0, s * 0.35));
+  g.add(at(torus(r * 0.78, r * 0.14, p.trim, 24), 0, -r * 0.95, 0, Math.PI / 2));
+  return g;
+}
+
+/** Torn cloth hanging from the origin, `w` wide and `h` long, facing +Z, gently rippled. */
+export function banner(w: number, h: number, m: THREE.Material, p: Palette, seed = 1, tails = 2) {
+  let s = seed * 7919;
+  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, 0);
+  shape.lineTo(-w / 2, -h * (0.82 + rand() * 0.1));
+  // Ragged bottom edge, cut into swallow-tails.
+  const steps = 7;
+  for (let i = 1; i <= steps; i++) {
+    const x = -w / 2 + (w * i) / steps;
+    const notch = tails > 1 && Math.abs(x) < w * 0.12 ? 0.62 : 1;
+    shape.lineTo(x - w / steps / 2, -h * (0.8 + rand() * 0.2) * notch);
+    shape.lineTo(x, -h * (0.88 + rand() * 0.12) * (Math.abs(x) < w * 0.1 && tails > 1 ? 0.6 : 1));
+  }
+  shape.lineTo(w / 2, 0);
+  shape.lineTo(-w / 2, 0);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.35, bevelEnabled: false, curveSegments: 1 });
+  const tess = geo.toNonIndexed();
+  const pos = tess.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const t = -y / h;
+    pos.setZ(i, pos.getZ(i) + Math.sin(x * 1.3 + t * 4) * 0.35 * t + t * t * 0.8);
+  }
+  tess.computeVertexNormals();
+  return group(mesh(tess, m), at(bar(0.25, w + 1, p.trim, 'x', 8), 0, 0, 0.15), at(sphere(0.35, p.trim, 8), -(w + 1) / 2, 0, 0.15), at(sphere(0.35, p.trim, 8), (w + 1) / 2, 0, 0.15));
+}
+
+/** An armour plate with a raised gold border on its +Z face. */
+export function trimmed(w: number, h: number, d: number, p: Palette, edge = Math.min(w, h) * 0.08) {
+  const z = d / 2;
+  return group(
+    plate(w, h, d, p.armour, Math.min(w, h, d) * 0.25),
+    at(box(w * 0.96, edge, edge, p.trim), 0, h / 2 - edge * 1.2, z),
+    at(box(w * 0.96, edge, edge, p.trim), 0, -h / 2 + edge * 1.2, z),
+    at(box(edge, h * 0.92, edge, p.trim), w / 2 - edge * 1.2, 0, z),
+    at(box(edge, h * 0.92, edge, p.trim), -w / 2 + edge * 1.2, 0, z),
+  );
+}
+
+/** A long tapering blade pointing +Z from the origin, with a gold spine. */
+export function blade(len: number, w: number, p: Palette) {
+  const s = new THREE.Shape();
+  s.moveTo(0, -w * 0.35);
+  s.lineTo(len * 0.8, -w * 0.25);
+  s.lineTo(len, w * 0.15);
+  s.lineTo(len * 0.7, w * 0.5);
+  s.lineTo(0, w * 0.5);
+  s.lineTo(0, -w * 0.35);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.15, bevelSize: 0.12, bevelSegments: 1 });
+  g.translate(0, 0, -0.15);
+  const b = mesh(g, p.steel);
+  b.rotation.y = -Math.PI / 2;
+  return group(b, at(box(0.32, 0.25, len * 0.72, p.trim), 0, w * 0.5, len * 0.36));
 }
 
 // ---------------------------------------------------------------- baking
