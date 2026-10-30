@@ -1,0 +1,642 @@
+{
+ "$comment": "Named boxes [left, top, right, bottom] in pixels on the concept boards, for kit.render.compare(). Boxes are by eye; tighten them as packages need.",
+ "crops": {
+  "swatches_covenant": {
+   "board": "three-factions-board.png",
+   "box": [
+    14,
+    726,
+    245,
+    758
+   ],
+   "note": "Colour & Materials strip"
+  },
+  "swatches_foundries": {
+   "board": "three-factions-board.png",
+   "box": [
+    524,
+    726,
+    755,
+    758
+   ],
+   "note": "Colour & Materials strip"
+  },
+  "swatches_reliquary": {
+   "board": "three-factions-board.png",
+   "box": [
+    1040,
+    726,
+    1271,
+    758
+   ],
+   "note": "Colour & Materials strip"
+  },
+  "swatch_covenant_cloth": {
+   "board": "three-factions-board.png",
+   "box": [
+    21,
+    731,
+    48,
+    755
+   ]
+  },
+  "swatch_covenant_bone": {
+   "board": "three-factions-board.png",
+   "box": [
+    52,
+    731,
+    79,
+    755
+   ]
+  },
+  "swatch_covenant_gold": {
+   "board": "three-factions-board.png",
+   "box": [
+    83,
+    731,
+    110,
+    755
+   ]
+  },
+  "swatch_covenant_iron": {
+   "board": "three-factions-board.png",
+   "box": [
+    114,
+    731,
+    141,
+    755
+   ]
+  },
+  "swatch_covenant_steel": {
+   "board": "three-factions-board.png",
+   "box": [
+    145,
+    731,
+    172,
+    755
+   ]
+  },
+  "swatch_covenant_worn_gold": {
+   "board": "three-factions-board.png",
+   "box": [
+    176,
+    731,
+    203,
+    755
+   ]
+  },
+  "swatch_foundries_rust": {
+   "board": "three-factions-board.png",
+   "box": [
+    532,
+    731,
+    559,
+    755
+   ]
+  },
+  "swatch_foundries_worn_paint": {
+   "board": "three-factions-board.png",
+   "box": [
+    563,
+    731,
+    590,
+    755
+   ]
+  },
+  "swatch_foundries_enamel": {
+   "board": "three-factions-board.png",
+   "box": [
+    594,
+    731,
+    621,
+    755
+   ]
+  },
+  "swatch_foundries_iron": {
+   "board": "three-factions-board.png",
+   "box": [
+    625,
+    731,
+    652,
+    755
+   ]
+  },
+  "swatch_foundries_steel": {
+   "board": "three-factions-board.png",
+   "box": [
+    656,
+    731,
+    683,
+    755
+   ]
+  },
+  "swatch_foundries_brass": {
+   "board": "three-factions-board.png",
+   "box": [
+    687,
+    731,
+    714,
+    755
+   ]
+  },
+  "swatch_reliquary_ceramic": {
+   "board": "three-factions-board.png",
+   "box": [
+    1049,
+    731,
+    1076,
+    755
+   ]
+  },
+  "swatch_reliquary_tarnish": {
+   "board": "three-factions-board.png",
+   "box": [
+    1080,
+    731,
+    1107,
+    755
+   ]
+  },
+  "swatch_reliquary_teal": {
+   "board": "three-factions-board.png",
+   "box": [
+    1111,
+    731,
+    1138,
+    755
+   ]
+  },
+  "swatch_reliquary_teal_steel": {
+   "board": "three-factions-board.png",
+   "box": [
+    1142,
+    731,
+    1169,
+    755
+   ]
+  },
+  "swatch_reliquary_bronze": {
+   "board": "three-factions-board.png",
+   "box": [
+    1173,
+    731,
+    1200,
+    755
+   ]
+  },
+  "swatch_reliquary_pale_gold": {
+   "board": "three-factions-board.png",
+   "box": [
+    1204,
+    731,
+    1231,
+    755
+   ]
+  },
+  "swatches_covenant_board": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    1248,
+    950,
+    1294,
+    1126
+   ],
+   "note": "Iron Covenant board swatches"
+  },
+  "hero_covenant": {
+   "board": "three-factions-board.png",
+   "box": [
+    0,
+    0,
+    505,
+    342
+   ]
+  },
+  "hero_foundries": {
+   "board": "three-factions-board.png",
+   "box": [
+    512,
+    0,
+    1020,
+    342
+   ]
+  },
+  "hero_reliquary": {
+   "board": "three-factions-board.png",
+   "box": [
+    1028,
+    0,
+    1536,
+    342
+   ]
+  },
+  "class_paladin": {
+   "board": "three-factions-board.png",
+   "box": [
+    16,
+    350,
+    165,
+    505
+   ]
+  },
+  "class_sentinel": {
+   "board": "three-factions-board.png",
+   "box": [
+    165,
+    350,
+    320,
+    505
+   ]
+  },
+  "class_lancer": {
+   "board": "three-factions-board.png",
+   "box": [
+    320,
+    350,
+    495,
+    505
+   ]
+  },
+  "class_brute": {
+   "board": "three-factions-board.png",
+   "box": [
+    516,
+    350,
+    680,
+    505
+   ]
+  },
+  "class_artillery": {
+   "board": "three-factions-board.png",
+   "box": [
+    680,
+    350,
+    850,
+    505
+   ]
+  },
+  "class_scavenger": {
+   "board": "three-factions-board.png",
+   "box": [
+    850,
+    350,
+    1020,
+    505
+   ]
+  },
+  "class_seer": {
+   "board": "three-factions-board.png",
+   "box": [
+    1035,
+    350,
+    1190,
+    505
+   ]
+  },
+  "class_wraith": {
+   "board": "three-factions-board.png",
+   "box": [
+    1190,
+    350,
+    1345,
+    505
+   ]
+  },
+  "class_goliath": {
+   "board": "three-factions-board.png",
+   "box": [
+    1345,
+    350,
+    1520,
+    505
+   ]
+  },
+  "detail_covenant_helm": {
+   "board": "three-factions-board.png",
+   "box": [
+    16,
+    538,
+    150,
+    636
+   ]
+  },
+  "detail_covenant_banner": {
+   "board": "three-factions-board.png",
+   "box": [
+    155,
+    538,
+    270,
+    636
+   ]
+  },
+  "detail_covenant_gauntlet": {
+   "board": "three-factions-board.png",
+   "box": [
+    277,
+    538,
+    393,
+    636
+   ]
+  },
+  "detail_covenant_lance_tip": {
+   "board": "three-factions-board.png",
+   "box": [
+    397,
+    538,
+    495,
+    636
+   ]
+  },
+  "detail_foundries_furnace": {
+   "board": "three-factions-board.png",
+   "box": [
+    526,
+    538,
+    645,
+    636
+   ]
+  },
+  "detail_foundries_hull_07": {
+   "board": "three-factions-board.png",
+   "box": [
+    650,
+    538,
+    768,
+    636
+   ]
+  },
+  "detail_foundries_piston_arm": {
+   "board": "three-factions-board.png",
+   "box": [
+    775,
+    538,
+    895,
+    636
+   ]
+  },
+  "detail_foundries_autocannon": {
+   "board": "three-factions-board.png",
+   "box": [
+    900,
+    538,
+    1010,
+    636
+   ]
+  },
+  "detail_reliquary_helm": {
+   "board": "three-factions-board.png",
+   "box": [
+    1042,
+    538,
+    1163,
+    636
+   ]
+  },
+  "detail_reliquary_sunburst": {
+   "board": "three-factions-board.png",
+   "box": [
+    1168,
+    538,
+    1286,
+    636
+   ]
+  },
+  "detail_reliquary_arm": {
+   "board": "three-factions-board.png",
+   "box": [
+    1290,
+    538,
+    1405,
+    636
+   ]
+  },
+  "detail_reliquary_claw": {
+   "board": "three-factions-board.png",
+   "box": [
+    1409,
+    538,
+    1518,
+    636
+   ]
+  },
+  "weapon_lance": {
+   "board": "three-factions-board.png",
+   "box": [
+    16,
+    655,
+    150,
+    712
+   ]
+  },
+  "weapon_carapace-gun": {
+   "board": "three-factions-board.png",
+   "box": [
+    150,
+    655,
+    270,
+    712
+   ]
+  },
+  "weapon_melee-blade": {
+   "board": "three-factions-board.png",
+   "box": [
+    270,
+    655,
+    380,
+    712
+   ]
+  },
+  "weapon_missile-rack": {
+   "board": "three-factions-board.png",
+   "box": [
+    380,
+    655,
+    495,
+    712
+   ]
+  },
+  "weapon_autocannon": {
+   "board": "three-factions-board.png",
+   "box": [
+    526,
+    655,
+    650,
+    712
+   ]
+  },
+  "weapon_rail-cannon": {
+   "board": "three-factions-board.png",
+   "box": [
+    650,
+    655,
+    780,
+    712
+   ]
+  },
+  "weapon_rocket-pod": {
+   "board": "three-factions-board.png",
+   "box": [
+    780,
+    655,
+    880,
+    712
+   ]
+  },
+  "weapon_industrial-claw": {
+   "board": "three-factions-board.png",
+   "box": [
+    880,
+    655,
+    1010,
+    712
+   ]
+  },
+  "weapon_arc-cannon": {
+   "board": "three-factions-board.png",
+   "box": [
+    1040,
+    655,
+    1180,
+    712
+   ]
+  },
+  "weapon_hellfire-missiles": {
+   "board": "three-factions-board.png",
+   "box": [
+    1180,
+    655,
+    1300,
+    712
+   ]
+  },
+  "weapon_kinetic-claws": {
+   "board": "three-factions-board.png",
+   "box": [
+    1300,
+    655,
+    1420,
+    712
+   ]
+  },
+  "weapon_soul-lantern": {
+   "board": "three-factions-board.png",
+   "box": [
+    1430,
+    655,
+    1500,
+    712
+   ]
+  },
+  "ortho_covenant": {
+   "board": "three-factions-board.png",
+   "box": [
+    95,
+    775,
+    330,
+    866
+   ]
+  },
+  "ortho_foundries": {
+   "board": "three-factions-board.png",
+   "box": [
+    520,
+    775,
+    760,
+    866
+   ]
+  },
+  "ortho_reliquary": {
+   "board": "three-factions-board.png",
+   "box": [
+    1040,
+    775,
+    1310,
+    866
+   ]
+  },
+  "covenant_hero": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    0,
+    0,
+    730,
+    530
+   ]
+  },
+  "covenant_helm": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    748,
+    20,
+    1048,
+    524
+   ],
+   "note": "helm close-up"
+  },
+  "covenant_gauntlet": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    1068,
+    20,
+    1290,
+    162
+   ]
+  },
+  "covenant_lantern": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    1068,
+    170,
+    1290,
+    310
+   ],
+   "note": "furnace lantern"
+  },
+  "covenant_pauldron": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    1068,
+    318,
+    1290,
+    432
+   ],
+   "note": "sunburst pauldron"
+  },
+  "covenant_turnaround": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    0,
+    950,
+    470,
+    1145
+   ]
+  },
+  "covenant_variant_a": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    0,
+    548,
+    640,
+    888
+   ]
+  },
+  "covenant_variant_b": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    655,
+    548,
+    983,
+    888
+   ]
+  },
+  "covenant_variant_c": {
+   "board": "iron-covenant-board.png",
+   "box": [
+    997,
+    548,
+    1312,
+    888
+   ]
+  }
+ }
+}

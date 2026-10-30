@@ -58,9 +58,10 @@ def empty(name, loc=(0, 0, 0), parent=None):
 
 
 def make_chassis(c, x):
-    k = PART_SCALE[c["id"]]
+    frame = c.get("frame", c["id"])
+    k = PART_SCALE[frame]
     root = empty(f"chassis_{c['id']}", (x, 0, 0))
-    base_r = BASE_MM[c["id"]] / 2
+    base_r = BASE_MM[frame] / 2
     bpy.ops.mesh.primitive_cylinder_add(radius=base_r, depth=3, location=(0, 0, 1.5))
     base = bpy.context.object
     base.data.materials.append(IRON)

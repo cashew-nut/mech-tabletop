@@ -1,1 +1,21 @@
-{ "chassis": {}, "items": {} }
+{
+  "chassis": {},
+  "items": {},
+  "kit": {
+    "covenant_frame_bulwark": "kit/covenant_frame_bulwark.glb",
+    "covenant_frame_scout": "kit/covenant_frame_scout.glb",
+    "covenant_frame_striker": "kit/covenant_frame_striker.glb",
+    "covenant_frame_titan": "kit/covenant_frame_titan.glb",
+    "covenant_testplate_kit": "kit/covenant_testplate_kit.glb",
+    "foundries_frame_bulwark": "kit/foundries_frame_bulwark.glb",
+    "foundries_frame_scout": "kit/foundries_frame_scout.glb",
+    "foundries_frame_striker": "kit/foundries_frame_striker.glb",
+    "foundries_frame_titan": "kit/foundries_frame_titan.glb",
+    "foundries_testplate_kit": "kit/foundries_testplate_kit.glb",
+    "reliquary_frame_bulwark": "kit/reliquary_frame_bulwark.glb",
+    "reliquary_frame_scout": "kit/reliquary_frame_scout.glb",
+    "reliquary_frame_striker": "kit/reliquary_frame_striker.glb",
+    "reliquary_frame_titan": "kit/reliquary_frame_titan.glb",
+    "reliquary_testplate_kit": "kit/reliquary_testplate_kit.glb"
+  }
+}

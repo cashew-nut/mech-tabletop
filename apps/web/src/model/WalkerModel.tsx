@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { WalkerInput } from '@brass-charter/rules';
-import { FACTION_COLOURS, buildWalkerModel, loadPartLibrary, type PartLibrary } from './assemble';
+import { FACTION_COLOURS, buildWalkerModel, ensureKitParts, loadPartLibrary, type PartLibrary } from './assemble';
 import { exportGlb, exportStl } from './exporters';
 import { baseMm } from './parts';
 import { createStage, type Stage } from './stage';
@@ -18,12 +18,9 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<{ stage: Stage; model: THREE.Object3D | null; renderer: THREE.WebGLRenderer } | null>(null);
   const [lib, setLib] = useState<PartLibrary | null>(null);
+  const [kitVersion, setKitVersion] = useState(0);
   const [failed, setFailed] = useState(false);
   const colour = walker.paint ?? FACTION_COLOURS[faction] ?? '#7a2e22';
-
-  useEffect(() => {
-    loadPartLibrary().then(setLib);
-  }, []);
 
   // One renderer for the life of the component.
   useEffect(() => {
@@ -48,6 +45,7 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
     controls.autoRotateSpeed = 1.2;
     controls.addEventListener('start', () => (controls.autoRotate = false));
     scene.current = { stage, model: null, renderer };
+    loadPartLibrary(renderer).then(setLib);
 
     const resize = () => {
       const w = el.clientWidth;
@@ -76,6 +74,16 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
     };
   }, []);
 
+  // Fetch this class's Blender kit parts, if it has any, then rebuild.
+  useEffect(() => {
+    if (!lib) return;
+    let live = true;
+    ensureKitParts(lib, walker.chassis).then((added) => live && added && setKitVersion((v) => v + 1));
+    return () => {
+      live = false;
+    };
+  }, [lib, walker.chassis]);
+
   // Rebuild the model whenever the build or paint changes.
   useEffect(() => {
     const s = scene.current;
@@ -88,7 +96,7 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
     } catch (e) {
       console.error(e);
     }
-  }, [walker, colour, lib]);
+  }, [walker, colour, lib, kitVersion]);
 
   const model = () => scene.current?.model ?? null;
 

@@ -88,9 +88,21 @@ for (const f of factions) {
   }
   if (f.traitModifier !== undefined && !Number.isInteger(f.traitModifier)) fail(`faction "${f.id}"`, 'traitModifier must be an integer');
 }
+// The model kit (data/model-kit.json) must cover every faction, frame and slot.
+const modelKit = load('model-kit.json');
+const JOINTS = ['root', 'pelvis', 'spine', 'chest', 'neck', 'head', 'shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle'];
+for (const comp of modelKit.components) {
+  if (!JOINTS.includes(comp.joint)) fail(`model-kit component "${comp.id}"`, `unknown joint "${comp.joint}"`);
+  if (/[_@]/.test(comp.id)) fail(`model-kit component "${comp.id}"`, 'ids cannot contain _ or @ (they are part of kit part names)');
+}
 for (const c of chassis) {
   if (!factionsById.has(c.faction)) fail(`chassis "${c.id}"`, `unknown faction "${c.faction}"`);
   if (!c.frame) fail(`chassis "${c.id}"`, 'missing frame (the 3D model skeleton it uses)');
+  else if (!modelKit.frames[c.frame]) fail(`chassis "${c.id}"`, `frame "${c.frame}" is not in model-kit.json`);
+  if (!modelKit.factions[c.faction]) fail(`chassis "${c.id}"`, `faction "${c.faction}" has no proportions in model-kit.json`);
+  for (const loc of LOCATIONS) {
+    if ((c.slots[loc] ?? 0) > (modelKit.spareMounts[loc] ?? 0)) fail(`chassis "${c.id}"`, `${c.slots[loc]} ${loc} slots but the frames only have ${modelKit.spareMounts[loc]} mounts`);
+  }
 }
 for (const e of equipment) {
   if (e.faction !== undefined && !factionsById.has(e.faction)) fail(`equipment "${e.id}"`, `unknown faction "${e.faction}"`);
