@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import {
   CHASSIS,
   EQUIPMENT,
@@ -13,6 +14,9 @@ import {
   type TraitDef,
   type WalkerInput,
 } from '@brass-charter/rules';
+
+// Three.js is large, so the 3D view loads on demand.
+const WalkerModel = lazy(() => import('./model/WalkerModel'));
 
 const LOCATION_NAMES: Record<Location, string> = {
   armLeft: 'Left arm',
@@ -167,6 +171,14 @@ export function WalkerEditor({ walker, company, commandCosts, traits, onChange }
           );
         })}
       </section>
+
+      <Suspense fallback={<section className="panel model"><p className="hint">Loading 3D view…</p></section>}>
+        <WalkerModel
+          walker={walker}
+          company={company.id}
+          onPaint={(colour) => edit((w) => void (colour ? (w.paint = colour) : delete w.paint))}
+        />
+      </Suspense>
 
       {errors.length > 0 && (
         <ul className="errors">
