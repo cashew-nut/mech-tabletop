@@ -32,6 +32,7 @@ import {
 import examples from '../../../../data/lances/examples.json';
 import { loadDraft, loadSaved } from '../storage';
 import { Board3D } from './Board3D';
+import { BoardHud } from './BoardHud';
 import { HexMap, type Highlight } from './HexMap';
 
 function webglAvailable() {
@@ -79,7 +80,7 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
   const [mine, setMine] = useState(0);
   const [theirs, setTheirs] = useState(Math.max(0, choices.findIndex((c) => c.lance.name === EXAMPLES[2].name)));
   const [scenario, setScenario] = useState(PLAYABLE_SCENARIOS[0].id);
-  const [map, setMap] = useState('foundry-flats');
+  const [map, setMap] = useState('chapel-ruins');
   const [deploy, setDeploy] = useState<'alternate' | 'auto'>('alternate');
   const myErrors = validateLance(choices[mine].lance).errors;
   const theirErrors = validateLance(choices[theirs].lance).errors;
@@ -255,6 +256,18 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     return h;
   }, [mode, moves, escorts, state, mineActive, jetUid, smokeUid, deploying, selectedId]);
 
+  // Red target rings: everything within short range of the active walker.
+  const threat = useMemo(() => {
+    const t = new Set<string>();
+    if (!mineActive || mode !== 'move') return t;
+    for (const k of Object.keys(state.map.hexes)) {
+      const [q, r] = k.split(',').map(Number);
+      const d = distance(mineActive.pos, { q, r });
+      if (d >= 1 && d <= 3) t.add(k);
+    }
+    return t;
+  }, [state, mineActive, mode]);
+
   const onHex = (hex: Hex) => {
     const key = hexKey(hex);
     if (deploying && selectedId && highlights.has(key)) {
@@ -324,7 +337,10 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
           <button className={view === '2d' ? 'on' : ''} onClick={() => chooseView('2d')}>Flat map</button>
         </div>
         {view === '3d' ? (
-          <Board3D state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
+          <div className="board3d-wrap">
+            <Board3D state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} threat={threat} onHex={onHex} onWalker={onWalker} />
+            <BoardHud state={state} focus={selected ?? mineActive} order={deploying ? 'DEPLOY' : mode.toUpperCase()} />
+          </div>
         ) : (
           <HexMap state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
         )}
