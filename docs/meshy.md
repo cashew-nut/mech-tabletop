@@ -27,3 +27,10 @@ Concept inspiration, props, scenery (ruins, crates, spires), and silhouette stud
 
 ## Skill
 Meshy publishes an open `meshy-3d-agent` skill pack (linked from https://docs.meshy.ai/en/api/ai.). Nothing in testing needs it: the API surface we use is three calls, wrapped by `tools/meshy/meshy.py`. This doc plus the script are enough for any session to call Meshy.
+
+## Weapons (2026-10-31)
+Clean reference first: `python3 tools/meshy/meshy.py text-to-image "PROMPT" --out ref.png` (3 credits, model nano-banana). Prompt for an isolated
+side-on prop, no stand or hands, flat grey background. Then `image-to-3d` (30 credits). Board crops (about 130x57 px) were too blurry.
+Bake: `python3 -I cut.py extract GLB WORK`, then `~/bvenv/bin/python -I weapon.py WORK ITEM --length L --rear Y --zc Z [--muzzle +x] [--upright] [--keep-x lo,hi] [--tris N]`.
+Check the muzzle points left (-Y) in a side render; use `--muzzle +x` when it does not. Boxy props need more triangles (rocket pod 14k).
+Ten signature weapons done this way (not Covenant lance or carapace gun, which stay procedural except the Paladin variants).

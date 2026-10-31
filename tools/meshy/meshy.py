@@ -8,6 +8,7 @@ The key is never printed or stored.
   meshy.py balance
   meshy.py image-to-3d IMAGE [--no-texture] [--out DIR]   # create, wait, download GLB
   meshy.py status TASK_ID
+  meshy.py text-to-image "PROMPT" [--out FILE] [--model nano-banana]   # clean reference image for image-to-3d
 """
 import argparse, base64, json, mimetypes, os, sys, time, urllib.request, urllib.error
 
@@ -39,6 +40,8 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("balance")
     s = sub.add_parser("status"); s.add_argument("task")
+    t = sub.add_parser("text-to-image")
+    t.add_argument("prompt"); t.add_argument("--out", default="ref.png"); t.add_argument("--model", default="nano-banana")
     g = sub.add_parser("image-to-3d")
     g.add_argument("image"); g.add_argument("--out", default="renders/meshy")
     g.add_argument("--no-texture", action="store_true")
@@ -46,6 +49,16 @@ def main():
     a = ap.parse_args()
     if a.cmd == "balance":
         print(call("GET", "/balance"))
+    elif a.cmd == "text-to-image":
+        tid = call("POST", "/text-to-image", {"ai_model": a.model, "prompt": a.prompt})["result"]
+        while True:
+            t = call("GET", f"/text-to-image/{tid}")
+            if t["status"] in ("SUCCEEDED", "FAILED", "CANCELED"):
+                break
+            time.sleep(4)
+        if t["status"] != "SUCCEEDED":
+            sys.exit(f"text-to-image {t['status']}: {t.get('task_error')}")
+        download(t["image_urls"][0], a.out)
     elif a.cmd == "status":
         print(call("GET", f"/image-to-3d/{a.task}"))
     else:
