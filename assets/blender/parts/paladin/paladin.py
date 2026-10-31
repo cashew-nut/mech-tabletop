@@ -77,6 +77,13 @@ def cape(sk, m, root):
     # Gold hem along the shoulder line, and a trim down the open edge.
     top = [surf(i / 24, 0.0) + Vector((0, 0.15, 0.1)) for i in range(25)]
     shapes.sweep("cape_yoke", top, 0.28, m["trim"], parent=root)
+    # Clasps: the cape hangs from two gold bars bolted to the back of the shoulder yokes.
+    for u, side in ((0.12, "R"), (0.88, "L")):
+        p0 = surf(u, 0.0)
+        p1 = Vector((p0.x * 1.05, 0.03 * H, sh.z + 0.05 * H))
+        shapes.sweep(f"cape_clasp{side}", [p0 + Vector((0, 0.1, 0.2)), (p0 + p1) / 2 + Vector((0, 0, 0.01 * H)), p1], 0.3, m["trim"], parent=root, profile="square")
+        shapes.sphere(f"cape_clasp_boss{side}", 0.012 * H, m["trim"], loc=p0 + Vector((0, 0.2, 0.1)), parent=root, segments=12)
+        shapes.sphere(f"cape_clasp_bolt{side}", 0.009 * H, m["trim"], loc=p1, parent=root, segments=10)
     for edge, name in ((0.0, "cape_edge_r"), (1.0, "cape_edge_l")):
         pts = [surf(edge, j / 30) + Vector((0, 0.1, 0)) for j in range(31)]
         shapes.sweep(name, pts, 0.17, m["trim"], parent=root)
@@ -221,7 +228,7 @@ def pauldron(sk, m, root):
         return surf
 
     # Cap: the big plate over the top and outside, crimson panel on its face.
-    patch("pauldron_cap", shell(), -80, 80, 2, 86, 0.0, 1.2, m["filigree"], root, m["trim"], 0.26, n=4)
+    patch("pauldron_cap", shell(), -125, 125, 2, 86, 0.0, 1.2, m["filigree"], root, m["trim"], 0.26, n=4)
     # The crimson shield panel on the outer face, gold framed.
     patch("pauldron_panel", shell(), -34, 34, 10, 52, 0.45, 0.5, m["hull"], root, m["trim"], 0.2, n=2)
     # Lames: three overlapping bands below, each flaring further out.
@@ -353,12 +360,13 @@ def torso(sk, m, root):
     narrow-waisted, keeled core, after the north-star render."""
     H = sk.H
     z0 = sk.joint("spine").z - 0.01 * H
-    z1 = sk.joint("neck").z - 0.012 * H
+    z1 = sk.joint("shoulder").z + 0.015 * H
     Z = z1 - z0
 
     def half(t):
         # Half width and half depth of the core at height fraction t (0 waist, 1 top).
-        hx = 0.07 + 0.075 * min(t / 0.72, 1.0) ** 1.2 - 0.05 * max(0.0, (t - 0.82) / 0.18) ** 1.5
+        # Broad at the shoulders so the pauldrons and shoulder drums bolt onto it.
+        hx = 0.07 + 0.09 * min(t / 0.75, 1.0) ** 1.2 - 0.03 * max(0.0, (t - 0.86) / 0.14) ** 1.5
         hy = 0.052 + 0.03 * min(t / 0.7, 1.0) - 0.012 * max(0.0, (t - 0.85) / 0.15)
         return hx * H, hy * H
 
@@ -416,6 +424,25 @@ def torso(sk, m, root):
     ring.rotation_euler = boss.rotation_euler
     eye = shapes.cylinder("rondel_core", 0.012 * H, 0.4, m["glow"], loc=c + nrm * 1.3, parent=root, verts=16, bevel=0.05)
     eye.rotation_euler = boss.rotation_euler
+    # Shoulder drums: the arm's pivot, bolted through the breastplate's top
+    # corners, gold-ringed, with a bracket rising into the pauldron above.
+    for s_, side in ((1, "L"), (-1, "R")):
+        S = sk.joint("shoulder", side)
+        x0 = s_ * half(0.8)[0] * 0.7
+        length = abs(S.x + s_ * 0.015 * H - x0)
+        mid = Vector(((S.x + s_ * 0.015 * H + x0) / 2, 0.0, S.z))
+        drum = shapes.cylinder(f"shoulder_drum{side}", 0.05 * H, length, m["metal"], loc=mid, rot=(0, math.pi / 2, 0), parent=root, verts=10, bevel=0.2)
+        for k, f_ in enumerate((0.15, 0.85)):
+            shapes.cylinder(f"shoulder_ring{side}{k}", 0.056 * H, 0.012 * H, m["trim"], loc=Vector((x0 + (S.x + s_ * 0.015 * H - x0) * f_, 0, S.z)),
+                            rot=(0, math.pi / 2, 0), parent=root, verts=10, bevel=0.1)
+        for a in range(0, 360, 60):
+            ar = math.radians(a)
+            shapes.sphere(f"shoulder_bolt{side}{a}", 0.008 * H, m["trim"], loc=Vector((S.x + s_ * 0.016 * H, 0.04 * H * math.cos(ar), S.z + 0.04 * H * math.sin(ar))), parent=root, segments=8)
+        # The yoke: a plate from the breastplate's top edge out over the drum.
+        shapes.box_plate(f"yoke{side}", (abs(S.x - x0) + 0.02 * H, 0.11 * H, 0.025 * H), m["armour"], bevel=0.3,
+                         loc=Vector(((S.x + x0) / 2, 0.0, S.z + 0.055 * H)), parent=root)
+        shapes.box_plate(f"yoke_trim{side}", (abs(S.x - x0) + 0.022 * H, 0.112 * H, 0.006 * H), m["trim"], bevel=0.1,
+                         loc=Vector(((S.x + x0) / 2, 0.0, S.z + 0.043 * H)), parent=root)
     # Gorget rim and waist belt.
     shapes.sweep("gorget", [p + Vector((0, 0, 0.1)) for p in section(1.0, 20)], 0.3, m["trim"], cyclic=True, parent=root, profile="square")
     shapes.sweep("waist", [p * 1.0 + Vector((0, 0, 0.3)) for p in section(0.0, 20)], 0.35, m["trim"], cyclic=True, parent=root, profile="square")
