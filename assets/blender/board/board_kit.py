@@ -16,6 +16,12 @@ import bmesh
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
+sys.path.insert(0, str(Path(__file__).parent))
+from masonry import (  # noqa: E402
+    BED, BRICK, CORE, DIRT, GLOW as K_GLOW, METAL as K_METAL, MOSS as K_MOSS, ROOF as K_ROOF, SLAB, SOOT as K_SOOT, TRIM as K_TRIM, WINDOW,
+    Face, TaggedMesh, coursed, crack, flagstones, lancet, lancet_hole, string_course,
+)
+
 OUT = Path(__file__).resolve().parents[3] / "apps" / "web" / "public" / "board"
 TILE_R = 0.97
 TILE_DEPTH = 0.4
@@ -119,6 +125,7 @@ def colourise(obj, classify, seed, ao_len=0.45, ao_strength=0.35, rays=18):
     bm.normal_update()
     tree = BVHTree.FromBMesh(bm)
     layer = bm.loops.layers.float_color.new("Col")
+    tags = bm.faces.layers.int.get("kind")
     dirs = []
     for i in range(rays):  # fibonacci hemisphere around +Z
         z = (i + 0.5) / rays
@@ -128,7 +135,7 @@ def colourise(obj, classify, seed, ao_len=0.45, ao_strength=0.35, rays=18):
     face_rng = {}
     for f in bm.faces:
         face_rng[f.index] = rng.random()
-        base = classify(f, face_rng[f.index])
+        base = classify(f, face_rng[f.index], f[tags] if tags else 0)
         n = f.normal
         t = n.cross(Vector((0, 0, 1)) if abs(n.z) < 0.9 else Vector((1, 0, 0))).normalized()
         b = n.cross(t)
@@ -170,190 +177,248 @@ def vary(base, k):
     return tuple(min(1.0, c * (0.82 + 0.36 * k)) for c in base[:3]) + (1.0,)
 
 
+# ---------------------------------------------------------------- colour
+WINDOW_DARK = lin(0x121318)
+DIRT_C = lin(0x6e5c45)
+
+
+def kind_colour(f, tag, soot_above=None):
+    """Colour for a tagged face: one shade per brick or slab, so stones read as separate blocks."""
+    kind, pid = divmod(tag, 1000)
+    h = random.Random(pid * 7919 + kind).random()
+    up = f.normal.z > 0.5
+    c = f.calc_center_median()
+    if kind == BRICK:
+        col = vary(WALL[pid % 3], h)
+    elif kind == K_TRIM:
+        col = vary(TRIM, 0.35 + h * 0.3)
+    elif kind == WINDOW:
+        return WINDOW_DARK
+    elif kind == K_ROOF:
+        col = vary(ROOF, h)
+    elif kind == SLAB:
+        col = vary(STONE[pid % 4], 0.3 + h * 0.4)  # flagstones vary less than masonry, so the paving reads calm
+    elif kind == K_MOSS:
+        base = vary(STONE[pid % 4], h)
+        col = tuple(a * 0.45 + b * 0.55 for a, b in zip(base, MOSS))
+    elif kind == DIRT:
+        col = vary(DIRT_C, h)
+    elif kind == K_METAL:
+        col = vary(METAL, 0.5)
+    elif kind == K_GLOW:
+        return GLOW
+    elif kind == K_SOOT:
+        col = vary(SOOT, h)
+    elif kind == BED:
+        return MORTAR if up else DARK
+    elif kind == CORE:
+        col = MORTAR
+    else:
+        col = DARK
+    if kind in (SLAB, K_MOSS, DIRT, K_SOOT) and not up:
+        col = tuple(x * 0.72 for x in col[:3])
+    if soot_above is not None and kind in (BRICK, K_TRIM) and c.z > soot_above:
+        t = min(1.0, (c.z - soot_above) / 0.6)
+        col = tuple(a * (1 - t * 0.75) + b * t * 0.75 for a, b in zip(col[:3], SOOT))
+    return tuple(col[:3]) + (1.0,)
+
+
 # ---------------------------------------------------------------- tiles
-def hex_prism(bm, top=0.0, depth=TILE_DEPTH, r=TILE_R):
-    res = bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=r, radius2=r, depth=depth)
-    bmesh.ops.transform(bm, matrix=Matrix.Translation((0, 0, top - depth / 2)) @ Matrix.Rotation(math.pi / 6, 4, "Z"), verts=res["verts"])
-    return res["verts"]
+def hex_poly(r):
+    return [(r * math.cos(math.radians(30 + 60 * k)), r * math.sin(math.radians(30 + 60 * k))) for k in range(6)]
 
 
-def paving(bm, rng, cuts=2, gap=0.03, jitter=0.006, ragged=0.0):
-    """Break the hex top into irregular flagstones separated by mortar gaps."""
-    top = [f for f in bm.faces if f.normal.z > 0.9]
-    bmesh.ops.poke(bm, faces=top)
-    top = [f for f in bm.faces if f.normal.z > 0.9]
-    if cuts:
-        edges = list({e for f in top for e in f.edges})
-        bmesh.ops.subdivide_edges(bm, edges=[e for e in edges if all(f.normal.z > 0.9 for f in e.link_faces)], cuts=cuts, use_grid_fill=True)
-    top = [f for f in bm.faces if f.normal.z > 0.9]
-    bmesh.ops.join_triangles(bm, faces=top, angle_face_threshold=0.2, angle_shape_threshold=1.2)
-    top = [f for f in bm.faces if f.normal.z > 0.9]
-    bmesh.ops.inset_individual(bm, faces=top, thickness=gap, use_even_offset=True)
-    stones = [f for f in top if f.is_valid]  # inset keeps the original face as the inner stone; the new ring stays at 0 as mortar
-    for f in stones:
-        dz = rng.uniform(-jitter, jitter)
-        for v in f.verts:
-            v.co.z += 0.035 + dz
-        if ragged and rng.random() < ragged:
-            for v in f.verts:
-                v.co.z -= rng.uniform(0.015, 0.03)
-    # cut the stones into soft, chipped blocks
-    return stones
+TILE_SPECS = {
+    "plain": dict(rows=(0.34, 0.48), widths=(0.3, 0.62)),
+    "cracked": dict(rows=(0.34, 0.5), widths=(0.32, 0.66)),
+    "slab": dict(rows=(0.62, 0.9), widths=(0.6, 1.0)),
+    "moss": dict(rows=(0.32, 0.46), widths=(0.28, 0.58)),
+    "rough": dict(rows=(0.3, 0.44), widths=(0.26, 0.5)),
+    "rubble": dict(rows=(0.34, 0.48), widths=(0.3, 0.62)),
+    "scorched": dict(rows=(0.34, 0.48), widths=(0.3, 0.62)),
+}
 
 
 def tile(name, variant, seed):
     rng = random.Random(seed)
-    bm = bmesh.new()
-    hex_prism(bm)
-    big = variant in ("slab",)
-    if variant == "plate":
-        pass
-    else:
-        paving(bm, rng, cuts=0 if big else 1, gap=0.05 if big else 0.035, ragged=0.1 if variant in ("rough", "rubble") else 0.0)
-    bm.normal_update()
-    verts_before = len(bm.verts)
-    extra = []
+    m = TaggedMesh()
+    bed_kind = DIRT if variant == "rough" else (K_SOOT if variant == "scorched" else BED)
+    m.prism(hex_poly(TILE_R), -TILE_DEPTH, 0.0, chamfer=0.025, kind=bed_kind)
     if variant == "plate":
         # a riveted steel plate with a raised rim, like the grey hex in the concept art
-        top = [f for f in bm.faces if f.normal.z > 0.9][0]
-        ring = bmesh.ops.inset_individual(bm, faces=[top], thickness=0.1)
-        top = [f for f in bm.faces if f.normal.z > 0.9][0]
-        for v in top.verts:
-            v.co.z += 0.045
+        m.prism(hex_poly(TILE_R - 0.06), 0.0, 0.05, chamfer=0.02, kind=K_METAL)
+        m.prism(hex_poly(TILE_R - 0.2), 0.05, 0.065, chamfer=0.01, kind=K_METAL)
         for k in range(6):
-            a = math.radians(30 + 60 * k + 0.0)
-            res = bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=0.035, radius2=0.03, depth=0.04)
-            bmesh.ops.transform(bm, matrix=Matrix.Translation((0.74 * math.cos(a), 0.74 * math.sin(a), 0.067)), verts=res["verts"])
-    if variant == "rubble":
-        for i in range(7):
-            s = rng.uniform(0.1, 0.22)
-            ang = rng.uniform(0, math.tau)
-            d = rng.uniform(0.0, 0.62)
-            box(bm, (s * 1.3, s, s * 0.8), (d * math.cos(ang), d * math.sin(ang), s * 0.35), rng.uniform(0, 3), bevel=0.025)
-    obj = new_obj(name, bm)
-    mossy = variant in ("moss", "rough")
-
-    def classify(f, k):
-        c = f.calc_center_median()
-        if f.normal.z > 0.5:
-            if variant == "plate":
-                return METAL if c.z > 0.03 else DARK
-            if c.z < 0.012:
-                return MORTAR
-            base = STONE[int(k * 4) % 4]
-            if variant == "scorched":
-                return vary(SOOT, k)
-            if variant == "rough":
-                return vary(lin(0x8a7b62), k)
-            if variant == "moss":
-                tint = (math.sin(c.x * 5.1 + seed) + math.sin(c.y * 4.3) + 2) / 4
-                return tuple(a * (1 - tint * 0.8) + b * tint * 0.8 for a, b in zip(vary(base, k), MOSS)) 
-            return vary(base, k)
-        return DARK if f.normal.z > -0.5 else DARK
-
-    colourise(obj, classify, seed)
+            a = math.radians(30 + 60 * k)
+            for rr in (0.74,):
+                ring = [(rr * math.cos(a) + 0.03 * math.cos(t), rr * math.sin(a) + 0.03 * math.sin(t)) for t in (i * math.tau / 6 for i in range(6))]
+                m.prism(ring, 0.05, 0.075, chamfer=0.008, kind=K_METAL)
+    else:
+        spec = TILE_SPECS[variant]
+        stones = flagstones(rng, TILE_R - 0.04, angle=rng.choice([0.0, math.pi / 6, math.pi / 2, -math.pi / 6]), **spec)
+        for poly in stones:
+            if variant == "rough" and rng.random() < 0.35:
+                continue  # missing stones leave bare earth
+            pieces = crack(poly, rng) if (variant == "cracked" and rng.random() < 0.45) or (variant in ("rough", "rubble") and rng.random() < 0.2) else [poly]
+            kind = {"moss": K_MOSS if rng.random() < 0.5 else SLAB, "scorched": K_SOOT}.get(variant, SLAB)
+            for piece in pieces:
+                top = rng.uniform(0.035, 0.055) - (rng.uniform(0.0, 0.02) if variant == "rough" else 0.0)
+                m.prism(piece, -0.01, top, chamfer=0.012, kind=kind)
+        if variant in ("moss", "rough"):
+            for _ in range(10 if variant == "moss" else 5):  # tufts of moss and weeds in the seams
+                ang, d = rng.uniform(0, math.tau), rng.uniform(0, 0.75)
+                x, y = d * math.cos(ang), d * math.sin(ang)
+                s2 = rng.uniform(0.03, 0.06)
+                m.prism([(x - s2, y - s2 * 0.6), (x + s2, y - s2 * 0.6), (x + s2 * 0.7, y + s2), (x - s2 * 0.7, y + s2)], 0.0, 0.03, kind=K_MOSS)
+        if variant in ("rough", "rubble"):
+            for _ in range(6 if variant == "rough" else 9):
+                ang, d = rng.uniform(0, math.tau), rng.uniform(0.05, 0.7)
+                sz = rng.uniform(0.06, 0.16) if variant == "rubble" else rng.uniform(0.03, 0.06)
+                m.box((sz * 1.3, sz, sz * 0.8), Vector((d * math.cos(ang), d * math.sin(ang), sz * 0.35 + 0.02)), Matrix.Rotation(rng.uniform(0, 3), 3, "Z"), BRICK)
+    obj = new_obj(name, m.bm)
+    colourise(obj, lambda f, k, tag: kind_colour(f, tag), seed, ao_len=0.3, ao_strength=0.4)
     export([obj], name)
 
 
 # ---------------------------------------------------------------- towers and walls
-def wall_classify(f, k):
-    if f.normal.z > 0.5:
-        return TRIM
-    c = f.calc_center_median()
-    return vary(WALL[int(k * 3) % 3], k) if c.z > 0.02 else DARK
+def square_faces(width, depth):
+    """The four outward faces of a square core of the given width centred on the origin."""
+    faces = []
+    for n in (Vector((0, 1, 0)), Vector((0, -1, 0)), Vector((1, 0, 0)), Vector((-1, 0, 0))):
+        wide = abs(n.y) > 0.5  # the Y faces run long so their stones cover the corners
+        faces.append(Face(n * (width / 2), n.cross(Vector((0, 0, 1))), n, width + (2 * depth if wide else 0)))
+    return faces
+
+
+def shaft(m, rng, width, z0, z1, tiers, depth=0.045, top=None, win=(0.2, 0.42), mullion=True, quoins=True):
+    """A square masonry shaft with a lancet per face on each tier and a string course above it."""
+    zc = z1 if top is None else min(top(x / 10) for x in range(-5, 6)) - 0.05  # keep the core under a ragged top
+    m.box((width, width, zc - z0), Vector((0, 0, (z0 + zc) / 2)), kind=CORE)
+    for face in square_faces(width, depth):
+        holes = [lancet_hole(0.0, tz - 0.05, win[0] + 0.09, win[1] + 0.06) for tz in tiers]
+        coursed(m, face, z1, rng, depth=depth, holes=holes, top=top, z0=z0, quoins=quoins, brick=(0.14, 0.24))
+        for tz in tiers:
+            if top is None or top(0.0) > tz + win[1] + win[0] * 0.7:
+                lancet(m, face, 0.0, tz, win[0], win[1], depth, mullion=mullion)
+                string_course(m, face, tz + win[1] + win[0] * 0.62 + 0.13, depth)
+        string_course(m, face, z0 + 0.02, depth + 0.02)
 
 
 def tower(name, kind, seed):
     rng = random.Random(seed)
-    bm = bmesh.new()
-    h = rng.uniform(1.9, 2.5)
-    box(bm, (1.18, 1.18, 0.22), (0, 0, 0.11), bevel=0.02)
-    box(bm, (1.02, 1.02, 0.14), (0, 0, 0.29), bevel=0.02)
-    base = 0.36
-    box(bm, (0.82, 0.82, h), (0, 0, base + h / 2), bevel=0.012)
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            box(bm, (0.15, 0.15, h + 0.06), (sx * 0.43, sy * 0.43, base + h / 2), bevel=0.02)
-            box(bm, (0.21, 0.21, 0.06), (sx * 0.43, sy * 0.43, base + h * 0.5), bevel=0.01)
-            box(bm, (0.2, 0.2, 0.1), (sx * 0.43, sy * 0.43, base + 0.1), bevel=0.01)
-    levels = max(2, int(h / 0.78))
-    for i in range(levels):
-        box(bm, (0.92, 0.92, 0.055), (0, 0, base + 0.82 + i * 0.64), bevel=0.01)  # string course
-    box(bm, (0.98, 0.98, 0.1), (0, 0, base + h), bevel=0.02)  # corbel table
-    # flying buttresses on the long sides
-    for sx in (-1, 1):
-        box(bm, (0.24, 0.16, 0.68), (sx * 0.55, 0, base + 0.34), bevel=0.02)
-        box(bm, (0.26, 0.16, 0.12), (sx * 0.5, 0, base + 0.74), 0.0, bevel=0.02)
-        slab = box(bm, (0.5, 0.12, 0.09), (sx * 0.5, 0, base + 1.0), bevel=0.01)
-        bmesh.ops.rotate(bm, cent=(sx * 0.5, 0, base + 1.0), matrix=Matrix.Rotation(sx * 0.55, 3, "Y"), verts=slab)
-    obj = new_obj(name + "_body", bm)
-    cutters = []
-    for i in range(levels):
-        z = base + 0.5 + i * 0.64
-        for face, pos in (("+Y", (0, 0.41, z)), ("-Y", (0, -0.41, z)), ("+X", (0.41, 0, z)), ("-X", (-0.41, 0, z))):
-            cutters.append(arch_cutter(0.17, 0.3, 0.22, pos, face))
-    boolean_cut(obj, cutters)
-    top = base + h
-    bm2 = bmesh.new()
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            box(bm2, (0.17, 0.17, 0.3), (sx * 0.42, sy * 0.42, top + 0.2), bevel=0.015)
-            pyramid(bm2, 0.2, 0.32, (sx * 0.42, sy * 0.42, top + 0.35))
-    parts = [obj]
-    if kind == "spire":
-        box(bm2, (0.62, 0.62, 0.55), (0, 0, top + 0.32), bevel=0.012)
-        pyramid(bm2, 0.74, 1.25, (0, 0, top + 0.6))
-        box(bm2, (0.04, 0.04, 0.34), (0, 0, top + 1.95))
-    elif kind == "chimney":
-        box(bm2, (0.26, 0.26, 0.95), (0.25, 0.25, top + 0.55), bevel=0.02)
-        box(bm2, (0.34, 0.34, 0.09), (0.25, 0.25, top + 1.04), bevel=0.02)
-    elif kind == "ruined":
-        # a jagged, collapsed top: scatter broken blocks and lop the pinnacles
-        for i in range(6):
-            box(bm2, (rng.uniform(0.15, 0.3), rng.uniform(0.15, 0.3), rng.uniform(0.15, 0.4)), (rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), top + 0.1), rng.uniform(0, 3), bevel=0.02)
-    head = new_obj(name + "_head", bm2)
-    parts.append(head)
-    obj = join(parts, name)
+    m = TaggedMesh()
+    W = 0.84
+    # stepped plinth
+    m.box((1.22, 1.22, 0.16), Vector((0, 0, 0.08)), kind=K_TRIM)
+    m.box((1.08, 1.08, 0.14), Vector((0, 0, 0.23)), kind=BRICK)
+    base = 0.3
+    soot = None
+    anchor = None
     if kind == "chimney":
-        bpy.ops.object.empty_add(location=(0.25, 0.25, top + 1.12))
-        anchor = bpy.context.object
-        anchor.name = "smoke"
-        anchor.parent = obj
-        anchor.matrix_parent_inverse = obj.matrix_world.inverted()
-
-    def classify(f, k):
-        c = f.calc_center_median()
-        if f.normal.z > 0.5 and c.z > top + 0.3:
-            return ROOF
-        if c.z > top + 0.2 and abs(f.normal.z) < 0.5 and kind == "spire" and c.z > top + 0.75:
-            return vary(ROOF, k)
-        return wall_classify(f, k)
-
-    colourise(obj, classify, seed, ao_len=0.4)
-    export([obj] + ([anchor] if kind == "chimney" else []), name)
+        # a squat furnace house carrying a tall soot-blackened stack, like the stacks in the concept art
+        bh = base + 0.95
+        shaft(m, rng, 0.9, base, bh, tiers=[base + 0.25], win=(0.22, 0.34))
+        for face in square_faces(0.9, 0.045):
+            string_course(m, face, bh, 0.06)
+        sw, top = 0.46, bh + 2.2
+        shaft(m, rng, sw, bh, top, tiers=[bh + 0.6, bh + 1.4], win=(0.07, 0.24), mullion=False, quoins=False)
+        for face in square_faces(sw, 0.04):
+            string_course(m, face, top - 0.02, 0.08, extra=0.08)
+        m.box((sw + 0.18, sw + 0.18, 0.09), Vector((0, 0, top + 0.07)), kind=K_SOOT)
+        m.box((sw - 0.06, sw - 0.06, 0.03), Vector((0, 0, top + 0.115)), kind=K_GLOW)
+        soot = top - 0.9
+        anchor = (0.0, 0.0, top + 0.14)
+    else:
+        h = rng.uniform(2.0, 2.3)
+        top_z = base + h
+        ragged = None
+        if kind == "ruined":
+            # a collapsed crown: the courses stop along a jagged line
+            notch = rng.uniform(-0.2, 0.2)
+            ragged = lambda x: top_z - 0.25 - 0.55 * max(0.0, 1 - abs(x - notch) / 0.3) - 0.08 * math.sin(x * 23 + seed)  # noqa: E731
+        shaft(m, rng, W, base, top_z, tiers=[base + 0.45, base + 1.3], top=ragged)
+        if kind == "spire":
+            for face in square_faces(W, 0.045):
+                string_course(m, face, top_z - 0.06, 0.1, extra=0.14)  # cornice
+            for sx in (-1, 1):
+                for sy in (-1, 1):
+                    m.box((0.15, 0.15, 0.34), Vector((sx * 0.45, sy * 0.45, top_z + 0.17)), kind=K_TRIM)
+                    m.pyramid(0.17, 0.32, (sx * 0.45, sy * 0.45, top_z + 0.34), kind=K_ROOF)
+            bw = 0.56  # belfry with a small lancet on each face
+            shaft(m, rng, bw, top_z, top_z + 0.55, tiers=[top_z + 0.1], win=(0.12, 0.24), quoins=False)
+            for face in square_faces(bw, 0.04):
+                string_course(m, face, top_z + 0.53, 0.07, extra=0.08)
+            m.pyramid(bw + 0.14, 1.35, (0, 0, top_z + 0.58), kind=K_ROOF)
+            for sx in (-1, 1):  # gablets at the foot of the spire
+                for axis in ("x", "y"):
+                    pos = (sx * (bw / 2 + 0.02), 0, top_z + 0.6) if axis == "x" else (0, sx * (bw / 2 + 0.02), top_z + 0.6)
+                    m.pyramid(0.16, 0.3, pos, kind=K_ROOF)
+            m.box((0.035, 0.035, 0.36), Vector((0, 0, top_z + 2.05)), kind=K_SOOT)
+            m.box((0.16, 0.035, 0.035), Vector((0, 0, top_z + 2.12)), kind=K_SOOT)
+        else:
+            for _ in range(7):  # fallen masonry round the foot and on the broken top
+                sz = rng.uniform(0.1, 0.2)
+                ang = rng.uniform(0, math.tau)
+                d = rng.uniform(0.62, 0.85)
+                m.box((sz * 1.4, sz, sz * 0.8), Vector((d * math.cos(ang), d * math.sin(ang), sz * 0.4)), Matrix.Rotation(rng.uniform(0, 3), 3, "Z"), BRICK)
+    obj = new_obj(name, m.bm)
+    objs = [obj]
+    if anchor:
+        bpy.ops.object.empty_add(location=anchor)
+        empty = bpy.context.object
+        empty.name = "smoke"
+        empty.parent = obj
+        objs.append(empty)
+    colourise(obj, lambda f, k, tag: kind_colour(f, tag, soot), seed, ao_len=0.35, ao_strength=0.5)
+    export(objs, name)
 
 
 def wall(name, length, seed, kind="arched"):
+    """A free-standing ruined wall: two leaves of coursed stone, buttresses between bays, lancets right through it."""
     rng = random.Random(seed)
-    bm = bmesh.new()
+    m = TaggedMesh()
+    T = 0.24
     bays = max(2, round(length / 0.75))
-    seg = length / bays
-    box(bm, (length + 0.1, 0.44, 0.16), (0, 0, 0.08), bevel=0.02)
-    cutters = []
-    for i in range(bays):
-        x = -length / 2 + seg * (i + 0.5)
-        hh = rng.uniform(0.8, 1.7) if kind != "low" else rng.uniform(0.35, 0.6)
-        box(bm, (seg, 0.3, hh), (x, 0, 0.16 + hh / 2), bevel=0.012)
-        box(bm, (0.13, 0.4, hh + 0.12), (x - seg / 2, 0, 0.16 + hh / 2 + 0.04), bevel=0.02)  # pier
-        if kind != "low" and hh > 1.0:
-            for s in (1, -1):
-                cutters.append(arch_cutter(0.2, 0.38, 0.5, (x, 0, 0.16 + hh * 0.38), "+Y" if s > 0 else "-Y"))
-        box(bm, (0.12, 0.2, 0.22), (x + seg * 0.2, rng.uniform(-0.4, 0.4), 0.11 + 0.1), rng.uniform(0, 3), bevel=0.02)  # fallen blocks
-    box(bm, (0.13, 0.4, 0.9), (length / 2, 0, 0.16 + 0.45), bevel=0.02)
-    obj = new_obj(name, bm)
-    boolean_cut(obj, cutters)
-    colourise(obj, wall_classify, seed, ao_len=0.4)
+    bay = length / bays
+    heights = [rng.uniform(1.15, 1.75) if kind != "low" else rng.uniform(0.35, 0.65) for _ in range(bays)]
+    heights[rng.randrange(bays)] *= 0.62 if kind != "low" else 1.0  # one bay has fallen further
+
+    def top_world(x):
+        i = min(bays - 1, max(0, int((x + length / 2) / bay)))
+        return 0.12 + heights[i] - 0.1 * abs(math.sin(x * 17 + seed)) - 0.06 * math.sin(x * 41)
+
+    m.box((length + 0.12, T + 0.14, 0.12), Vector((0, 0, 0.06)), kind=K_TRIM)
+    centres = [-length / 2 + bay * (i + 0.5) for i in range(bays)]
+    windows = [(x, 0.42) for x, hgt in zip(centres, heights) if kind != "low" and hgt > 1.05]
+    for side in (1, -1):
+        n = Vector((0, side, 0))
+        face = Face(Vector((0, 0, 0)), n.cross(Vector((0, 0, 1))), n, length)
+        sx = face.u.x  # +1 or -1: local x runs along world x or against it
+        holes = [lancet_hole(wx * sx, wz - 0.05, 0.33, 0.61) for wx, wz in windows]
+        coursed(m, face, 2.2, rng, depth=T / 2, holes=holes, top=lambda x: top_world(x * sx), z0=0.12, brick=(0.16, 0.3))
+        if side == 1:
+            for wx, wz in windows:
+                lancet(m, face, wx * sx, wz, 0.24, 0.55, T / 2, through=T / 2)
+        # stepped buttresses between the bays and at the ends
+        for i in range(bays + 1):
+            x = -length / 2 + bay * i
+            hb = min(top_world(x - 0.05), top_world(x + 0.05)) - 0.12
+            if hb < 0.3:
+                continue
+            fb = face_basis_world(n)
+            m.box((0.17, 0.2, hb * 0.6), Vector((x, side * (T / 2 + 0.1), 0.12 + hb * 0.3)), fb, BRICK)
+            m.box((0.13, 0.12, hb * 0.38), Vector((x, side * (T / 2 + 0.06), 0.12 + hb * 0.6 + hb * 0.19)), fb, BRICK)
+            m.box((0.19, 0.24, 0.05), Vector((x, side * (T / 2 + 0.11), 0.12 + hb * 0.6 + 0.02)), fb, K_TRIM)
+    for _ in range(5 if kind != "low" else 3):  # fallen blocks at the foot
+        sz = rng.uniform(0.08, 0.18)
+        m.box((sz * 1.5, sz, sz * 0.8), Vector((rng.uniform(-length / 2, length / 2), rng.choice((-1, 1)) * rng.uniform(0.25, 0.5), sz * 0.4)), Matrix.Rotation(rng.uniform(0, 3), 3, "Z"), BRICK)
+    obj = new_obj(name, m.bm)
+    colourise(obj, lambda f, k, tag: kind_colour(f, tag), seed, ao_len=0.35, ao_strength=0.5)
     export([obj], name)
+
+
+def face_basis_world(n):
+    return Matrix.Identity(3)
 
 
 def crate(name, seed):
@@ -364,7 +429,7 @@ def crate(name, seed):
         box(bm, (0.07, 0.54, 0.54), (s * 0.22, 0, 0.25), bevel=0.01)
     obj = new_obj(name, bm)
 
-    def classify(f, k):
+    def classify(f, k, tag):
         return vary(WOOD, k) if f.normal.z > 0.5 or abs(f.calc_center_median().z - 0.25) < 0.3 else DARK
 
     colourise(obj, classify, seed, ao_len=0.3)
@@ -380,7 +445,7 @@ def rubble_pile(name, seed):
         d = rng.uniform(0, 0.5)
         box(bm, (s * 1.3, s, s * 0.8), (d * math.cos(ang), d * math.sin(ang), s * 0.3 + (0.12 if d < 0.2 else 0)), rng.uniform(0, 3), bevel=0.03)
     obj = new_obj(name, bm)
-    colourise(obj, lambda f, k: vary(WALL[int(k * 3) % 3], k), seed, ao_len=0.3)
+    colourise(obj, lambda f, k, tag: vary(WALL[int(k * 3) % 3], k), seed, ao_len=0.3)
     export([obj], name)
 
 

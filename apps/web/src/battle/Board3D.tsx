@@ -8,7 +8,7 @@ import { hexCentre, type Highlight } from './HexMap';
 import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
 import { PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
 
-const PIXEL = 3;
+const PIXEL = 2;
 const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
 const ELEVATION_STEP = 0.35;
 
@@ -387,7 +387,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     loadBoardKit().then((k) => {
       if (!k || disposed) return;
       kit = k;
-      tileLift = 0.08;
+      tileLift = 0.05;
       builtMap = '';
       rebuild();
     });
