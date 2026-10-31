@@ -120,9 +120,48 @@ h3 {
 
 .layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 340px 1fr;
   gap: 16px;
   align-items: start;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+
+.fold {
+  background: var(--parchment);
+  border: 1px solid #c9b48a;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.fold > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+}
+
+.fold-body {
+  padding: 0 12px 12px;
+}
+
+.sidebar .doll {
+  grid-template-columns: 1fr;
+  grid-template-areas: 'core' 'armLeft' 'armRight' 'legs';
+}
+
+.sidebar .location {
+  border: 1px solid #c9b48a;
+  border-radius: var(--radius);
+  padding: 8px;
 }
 
 .panel {

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, type ReactNode } from 'react';
 import {
   CHASSIS,
   EQUIPMENT,
@@ -37,7 +37,7 @@ interface Props {
   onChange: (w: WalkerInput) => void;
 }
 
-export function WalkerEditor({ walker, faction, commandCosts, traits, onChange }: Props) {
+function useWalker({ walker, faction, onChange }: Props) {
   const chassis = getChassis(walker.chassis);
   const errors = validateWalker(walker, faction.id);
   const stats = walkerStats(walker);
@@ -54,10 +54,26 @@ export function WalkerEditor({ walker, faction, commandCosts, traits, onChange }
   const countOf = (id: string) => Object.values(walker.loadout).flat().filter((x) => x === id).length;
 
   const pressureOk = stats.fullTurnPressure <= stats.boiler;
+  return { chassis, errors, stats, cost, edit, addItem, removeItem, countOf, pressureOk };
+}
 
+function Fold({ title, children, open = true }: { title: string; children: ReactNode; open?: boolean }) {
   return (
-    <div className="walker">
-      <section className="panel identity">
+    <details className="fold" open={open}>
+      <summary>{title}</summary>
+      <div className="fold-body">{children}</div>
+    </details>
+  );
+}
+
+/** Every selectable control for the war-walker, as collapsible sections for the sidebar. */
+export function WalkerControls(props: Props) {
+  const { walker, faction, commandCosts, traits } = props;
+  const { chassis, stats, cost, edit, addItem, removeItem, countOf } = useWalker(props);
+  return (
+    <>
+      <Fold title="War-walker">
+      <section className="identity">
         <label className="field grow">
           <span>Name</span>
           <input value={walker.name} onChange={(e) => edit((w) => void (w.name = e.target.value))} />
@@ -106,14 +122,16 @@ export function WalkerEditor({ walker, faction, commandCosts, traits, onChange }
         </div>
       </section>
       {walker.driver.trait && <p className="trait-rule">{traits.find((t) => t.id === walker.driver.trait)?.rules}</p>}
+      </Fold>
 
+      <Fold title="Loadout">
       <section className="doll" aria-label="Loadout">
         {(['armLeft', 'core', 'armRight', 'legs'] as Location[]).map((loc) => {
           const items = walker.loadout[loc] ?? [];
           const free = stats.slotsFree[loc];
           const options = mountableItems(loc, EQUIPMENT).filter((o) => !o.faction || o.faction === faction.id);
           return (
-            <div key={loc} className={`panel location loc-${loc} ${free < 0 ? 'overfull' : ''}`}>
+            <div key={loc} className={`location loc-${loc} ${free < 0 ? 'overfull' : ''}`}>
               <div className="location-head">
                 <h3>{LOCATION_NAMES[loc]}</h3>
                 <span className="pips" aria-label={`${stats.slotsUsed[loc]} of ${chassis.slots[loc]} slots used`}>
@@ -172,7 +190,17 @@ export function WalkerEditor({ walker, faction, commandCosts, traits, onChange }
           );
         })}
       </section>
+      </Fold>
+    </>
+  );
+}
 
+/** The 3D view, problems and stats: fills the width beside the sidebar. */
+export function WalkerView(props: Props) {
+  const { walker, faction } = props;
+  const { chassis, errors, stats, edit, pressureOk } = useWalker(props);
+  return (
+    <div className="walker">
       <Suspense fallback={<section className="panel model"><p className="hint">Loading 3D view…</p></section>}>
         <WalkerModel
           walker={walker}
