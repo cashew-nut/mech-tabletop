@@ -57,7 +57,12 @@ def main(args):
     u = ((V[:, ax].max() - V[:, ax]) if plus else (V[:, ax] - V[:, ax].min())) * s   # distance back from the muzzle
     side, up = [i for i in range(3) if i != ax and i != 2][0], 2
     sg = 1.0 if plus else -1.0
-    if "--upright" in args:  # stands up from a mount (core items): z from 0 to --length, centred on x/y
+    if "--fit" in args:  # equipment: keep the Meshy pose (front -Y, Z up), scale to fit a W,D,H box centred on --centre x,y,z
+        W_, D_, H_ = [float(v) for v in opt(args, "--fit", "1,1,1").split(",")]
+        cx, cy, cz = [float(v) for v in opt(args, "--centre", "0,0,0").split(",")]
+        ss = min(W_ / ext[0], D_ / ext[1], H_ / ext[2])
+        P = ((V - c) * ss + np.array([cx, cy, cz])).astype(np.float32)
+    elif "--upright" in args:  # stands up from a mount (core items): z from 0 to --length, centred on x/y
         ss = length / ext[2]
         P = np.stack([(V[:, 0] - c[0]) * ss, (V[:, 1] - c[1]) * ss, (V[:, 2] - V[:, 2].min()) * ss], 1).astype(np.float32)
     else:
@@ -108,10 +113,10 @@ def main(args):
                 L.new(em.outputs["Emission"], out.inputs["Surface"])
             mats[mode] = m
         return mats
-    hm = high_materials()
+    hm = high_materials(); print("T hm", flush=True)
 
     # High mesh, welded by position (Meshy splits vertices along UV seams).
-    key = np.round(P[F.ravel()] * 400).astype(np.int64)
+    key = np.round(P[F.ravel()] * opt(args, "--weld", 400, float)).astype(np.int64)
     _, first, inv = np.unique(key, axis=0, return_index=True, return_inverse=True)
     inv = inv.ravel()
     wv = P[F.ravel()][first]
@@ -128,18 +133,31 @@ def main(args):
     hi = bpy.data.objects.new("hi", me)
     bpy.context.scene.collection.objects.link(hi)
     # The handedness of the axis swap may mirror the mesh; flip faces if so.
+    print("T hi", len(hi.data.polygons), flush=True)
     lo = hi.copy()
     lo.data = hi.data.copy()
+    if "--lo-weld" in args:  # stalled decimation: cluster the low mesh's vertices on a coarse grid first
+        kk = np.round(P[F[ok].ravel()] * opt(args, "--lo-weld", 30, float)).astype(np.int64)
+        _, fi, iv = np.unique(kk, axis=0, return_index=True, return_inverse=True)
+        iv = iv.ravel()
+        ff = iv.reshape(-1, 3)
+        good = (ff[:, 0] != ff[:, 1]) & (ff[:, 1] != ff[:, 2]) & (ff[:, 0] != ff[:, 2])
+        lm = bpy.data.meshes.new("lo")
+        lm.from_pydata(P[F[ok].ravel()][fi].tolist(), [], ff[good].tolist())
+        lo.data = lm
     lo.name = f"lo_{item}"
     bpy.context.scene.collection.objects.link(lo)
     bpy.ops.object.select_all(action="DESELECT")
     lo.select_set(True)
     bpy.context.view_layer.objects.active = lo
-    for kind in ("TRIANGULATE", "DECIMATE"):
+    for kind in ("TRIANGULATE", "DECIMATE", "DECIMATE", "DECIMATE"):
+        if kind == "DECIMATE" and len(lo.data.polygons) <= tris * 1.15:
+            break
         m = lo.modifiers.new(kind.lower(), kind)
-        if kind == "DECIMATE":
+        if kind == "DECIMATE":  # Noisy Meshy meshes stall before the target; repeat the pass until close
             m.ratio = min(1.0, tris / max(1, len(lo.evaluated_get(bpy.context.evaluated_depsgraph_get()).data.polygons)))
         bpy.ops.object.modifier_apply(modifier=m.name)
+    print("T dec", len(lo.data.polygons), flush=True)
     import xatlas
     me = lo.data
     n = len(me.vertices)
@@ -171,6 +189,7 @@ def main(args):
         p.use_smooth = True
     me.normals_split_custom_set_from_vertices(vn[vmap].tolist())
 
+    print("T unwrap", flush=True)
     size = sizes[0]
 
     def bake_one(mode):
