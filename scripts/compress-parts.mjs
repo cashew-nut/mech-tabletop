@@ -1,7 +1,8 @@
 // Convert the PNG/JPEG textures packed in exported part GLBs to KTX2 (Basis
 // Universal), so they stay small on disk and on the GPU.
 //   node scripts/compress-parts.mjs [file.glb ...]     (default: every GLB under apps/web/public/parts)
-// Base colour and ORM use ETC1S (small); normal maps use UASTC, which keeps their relief clean.
+// Base colour and ORM use ETC1S (small); normal maps use UASTC, which keeps their relief clean
+// (KTX2_NORMAL=etc1s encodes them as ETC1S too: about a quarter of the size, a little blockier).
 // Needs the `basisu` encoder: set BASISU=/path/to/basisu, put it on PATH, or
 // `npm i --no-save basisu` (prebuilt binaries). Already-compressed GLBs are skipped.
 // Vertex data is quantised too (KHR_mesh_quantization: 16-bit positions and UVs,
@@ -62,9 +63,10 @@ try {
       const dst = join(work, `t${i}.ktx2`);
       writeFileSync(src, tex.getImage());
       const args = ['-ktx2', '-mipmap', src, '-output_file', dst];
-      if (role.get(tex) === 'normal') args.unshift('-uastc', '-uastc_level', '2', '-uastc_rdo_l', '2', '-linear', '-normal_map');
+      if (role.get(tex) === 'normal' && process.env.KTX2_NORMAL === 'etc1s') args.unshift('-q', '255', '-linear', '-normal_map');
+      else if (role.get(tex) === 'normal') args.unshift('-uastc', '-uastc_level', '2', '-uastc_rdo_l', '2', '-linear', '-normal_map');
       else if (role.get(tex) === 'data') args.unshift('-q', '255', '-linear');
-      else args.unshift('-q', '200');
+      else args.unshift('-q', process.env.KTX2_BASE_Q ?? '200');
       execFileSync(basisu, args, { stdio: 'ignore' });
       tex.setImage(new Uint8Array(readFileSync(dst))).setMimeType('image/ktx2');
       if (tex.getURI()) tex.setURI(tex.getURI().replace(/\.(png|jpe?g)$/i, '.ktx2'));

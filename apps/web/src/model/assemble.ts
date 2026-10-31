@@ -90,6 +90,33 @@ export async function ensureKitParts(lib: PartLibrary, chassisId: string): Promi
   return added;
 }
 
+/** A baked material whose crimson texels take the livery and everything else (black iron, gold, steel) stays as baked.
+ * Models cut from a painted source (the Meshy Paladin) have one texture, so the paintable areas are found by hue in the
+ * shader: texels that are mostly red keep their brightness (wear, filigree shading) and swap to the livery's hue. */
+function liveryMaterial(mat: THREE.MeshStandardMaterial, livery: THREE.Color) {
+  const painted = mat.clone();
+  const lh = new THREE.Vector3(livery.r, livery.g, livery.b);
+  lh.divideScalar(Math.max(lh.x, lh.y, lh.z, 1e-3));
+  painted.onBeforeCompile = (shader) => {
+    shader.uniforms.uLivery = { value: lh };
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uLivery;')
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        {
+          vec3 c = diffuseColor.rgb;
+          float red = smoothstep(0.55, 0.8, 1.0 - max(c.g, c.b) / (c.r + 1e-4)) * smoothstep(0.01, 0.05, c.r);
+          float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+          float lumL = max(dot(uLivery, vec3(0.2126, 0.7152, 0.0722)), 0.02);
+          diffuseColor.rgb = mix(c, uLivery * (lum / lumL), red);
+        }`,
+      );
+  };
+  painted.customProgramCacheKey = () => 'livery-hue-mask';
+  return painted;
+}
+
 /** Recolour the hull materials of a Blender part, keeping their trim and glow.
  * Baked hull textures keep their wear: the livery is multiplied into them. */
 function repaint(obj: THREE.Object3D, palette: Palette) {
@@ -98,7 +125,9 @@ function repaint(obj: THREE.Object3D, palette: Palette) {
     if (!mesh.isMesh) return;
     const mat = mesh.material as THREE.MeshStandardMaterial;
     if (!mat?.name?.toLowerCase().startsWith('hull')) return;
-    if (mat.map) {
+    if (mat.map && mat.name.toLowerCase().includes('livery')) {
+      mesh.material = liveryMaterial(mat, (palette.hull as THREE.MeshStandardMaterial).color);
+    } else if (mat.map) {
       const painted = mat.clone();
       painted.color.copy((palette.hull as THREE.MeshStandardMaterial).color);
       mesh.material = painted;
@@ -176,12 +205,14 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       const anchor = mounts[loc][slot];
       slot += def.slots;
       if (!anchor) continue; // over-full location: nothing left to attach to
-      const libName = lib ? itemPartName(lib.items, id, c.faction) : null;
+      const libName = lib ? itemPartName(lib.items, id, c.faction, c.id) : null;
       const fromLib = libName ? lib!.items.get(libName) : undefined;
       const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());
       if (fromLib) repaint(part, palette);
       part.name = `part_${id}`;
       part.scale.setScalar(scale);
+      // A class's own item (lance@paladin) is modelled for the left; flip it for the right arm and the second core mount.
+      if (libName?.endsWith(`@${c.id}`) && (loc === 'armRight' || (loc === 'core' && (slot - def.slots) % 2 === 1))) part.scale.x *= -1;
       anchor.add(part);
     }
   }
