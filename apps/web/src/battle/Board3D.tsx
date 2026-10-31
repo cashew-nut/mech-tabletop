@@ -246,6 +246,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
             if (anchor) chimneySmoke(t, anchor.position, i);
           } else if (info.terrain === 'heavy') {
             const w = kit.make('wall_arched');
+            w.scale.setScalar(1.2); // ruins stand tall beside the walkers, as in the concept art
             w.rotation.y = Math.floor(rnd01(i * 2.9) * 3) * (Math.PI / 3);
             prop.add(w);
           } else if (info.terrain === 'light') {

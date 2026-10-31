@@ -80,7 +80,7 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
   const [mine, setMine] = useState(0);
   const [theirs, setTheirs] = useState(Math.max(0, choices.findIndex((c) => c.lance.name === EXAMPLES[2].name)));
   const [scenario, setScenario] = useState(PLAYABLE_SCENARIOS[0].id);
-  const [map, setMap] = useState('foundry-flats');
+  const [map, setMap] = useState('chapel-ruins');
   const [deploy, setDeploy] = useState<'alternate' | 'auto'>('alternate');
   const myErrors = validateLance(choices[mine].lance).errors;
   const theirErrors = validateLance(choices[theirs].lance).errors;
