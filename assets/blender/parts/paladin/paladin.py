@@ -227,35 +227,14 @@ def pauldron(sk, m, root):
             return p, n
         return surf
 
-    # Cap: the big plate over the top and outside, crimson panel on its face.
-    patch("pauldron_cap", shell(), -125, 125, 2, 86, 0.0, 1.2, m["filigree"], root, m["trim"], 0.26, n=4)
-    # The crimson shield panel on the outer face, gold framed.
-    patch("pauldron_panel", shell(), -34, 34, 10, 52, 0.45, 0.5, m["hull"], root, m["trim"], 0.2, n=2)
-    # Lames: three overlapping bands below, each flaring further out.
-    # Lames: overlapping plates that step out and down like the render's,
-    # each narrower and flared further, so the side reads as layers, not a box.
-    for i in range(3):
-        e1 = 8 - i * 11
-        patch(f"pauldron_lame{i}", shell(flare=0.16 + 0.1 * i, drop=0.004 * H * i, q=0.75), -66 + i * 12, 66 - i * 12, e1 - 19, e1, 0.3 + 0.35 * i, 0.9,
-              m["filigree"] if i == 1 else m["armour"], root, m["trim"], 0.2, n=4)
-    # Crest: a gold ridge over the cap from front to back, and a flange behind it.
-    # Gothic flange: a pointed-arch plate standing up along the top, front to back.
-    base = C + Vector((0.045 * H, 0.0, rz * 0.7))
-    L = 0.07 * H
-    arch = [(-L, 0.0), (L, 0.0), (L, 0.045 * H), (L * 0.6, 0.09 * H), (0.0, 0.12 * H), (-L * 0.6, 0.09 * H), (-L, 0.045 * H)]
-    facet("pauldron_flange", base, (0, -1, 0), (-0.25, 0, 1), arch, 0.9, m["filigree"], root, m["trim"], m["hull"], inlay=0.55, frame_r=0.24)
-    # Gothic arch on the outer face, over the crimson panel.
-    p, n = shell()(0, 16)
-    arch = shapes.lancet("pauldron_arch", 0.032 * H, 0.045 * H, 0.3, m["trim"], loc=p + n * 0.9, parent=root)
-    arch.rotation_euler = (n.to_track_quat("-Y", "Z")).to_euler()
-    # Peak spike at the top.
-    p = base + Vector((-0.25, 0, 1)).normalized() * 0.12 * H
-    shapes.sphere("pauldron_spike_ball", 0.011 * H, m["trim"], loc=p, parent=root, segments=12)
-    shapes.cylinder("pauldron_spike", 0.008 * H, 0.04 * H, m["trim"], loc=p + Vector((0, 0, 0.02 * H)), parent=root, verts=8, bevel=0.05, r2=0.0005)
-    # Studs round the cap's rim.
-    for a in range(-70, 75, 20):
-        q, nn = shell()(a, 8)
-        shapes.sphere("pauldron_stud", 0.0055 * H, m["trim"], loc=q + nn * 1.4, parent=root, segments=8)
+    # Simple, as in the render: one big angular plate with a gold rim, a
+    # crimson panel on its outer face, and two plain lames below.
+    patch("pauldron_cap", shell(), -125, 125, 2, 86, 0.0, 1.2, m["armour"], root, m["trim"], 0.22, n=4)
+    patch("pauldron_panel", shell(), -40, 40, 12, 60, 0.4, 0.4, m["hull"], root, m["trim"], 0.16, n=2)
+    for i in range(2):
+        e1 = 8 - i * 12
+        patch(f"pauldron_lame{i}", shell(flare=0.16 + 0.12 * i, drop=0.004 * H * i, q=0.75), -64 + i * 12, 64 - i * 12, e1 - 20, e1, 0.3 + 0.35 * i, 0.9,
+              m["armour"], root, m["trim"], 0.18, n=4)
     # Turn the pauldron about the shoulder so its crimson face looks forward-out.
     bpy.context.view_layer.update()
     turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-28), 4, "Z") @ Matrix.Translation(-S)
@@ -512,13 +491,14 @@ def helm(sk, m, root):
         ar, er = math.radians(a), math.radians(e)
         sq = lambda v, q=0.6: math.copysign(abs(v) ** q, v)  # noqa: E731
         up = max(0.0, math.sin(er))
-        rx, ry, rz = 1.22 * R, 1.3 * R, 1.25 * R
+        front = max(0.0, math.cos(ar))
+        rx, ry, rz = 1.22 * R, 1.3 * R * (1 + 0.22 * front), 1.25 * R
         p = c + Vector((sq(math.sin(ar)) * sq(math.cos(er)) * rx * (1 - 0.45 * up ** 2),
                         -sq(math.cos(ar)) * sq(math.cos(er)) * ry * (1 - 0.4 * up ** 2) + 0.45 * R * up ** 2,
                         math.sin(er) * rz * (1 + 0.55 * up ** 3) - 0.15 * R))
         n = Vector((math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er))).normalized()
         return p, n
-    patch("hood", cowl, 58, 302, -48, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=8)
+    patch("hood", cowl, 26, 334, -52, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=10)
     patch("hood_band", cowl, 120, 240, -10, 60, 0.18, 0.3, m["filigree"], root, m["trim"], 0.04 * R, n=4)
     # Gold ribs from the band up the four corners to the point, and a finial.
     tip = c + Vector((0, 0, 1.64)) * R
