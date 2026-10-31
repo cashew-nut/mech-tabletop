@@ -144,7 +144,7 @@ def main():
             anchor = mounts.get(f"mount_{loc}_{slot}")
             slot += equipment[item_id]["slots"]
             items = manifest.get("items", {})
-            file = items.get(f"{item_id}@{faction}") or items.get(item_id)
+            file = items.get(f"{item_id}@{cls}") or items.get(f"{item_id}@{faction}") or items.get(item_id)
             if anchor is None or file is None:
                 print(f"skip {item_id} in {loc}: {'no mount' if anchor is None else 'no exported part'}")
                 continue

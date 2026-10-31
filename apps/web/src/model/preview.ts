@@ -3,6 +3,7 @@
 // part=covenant_helm_titan shows one Blender part from the manifest on its own.
 // Used by scripts/render-walkers.mjs to save preview images without the full app.
 // backdrop=covenant|foundries|reliquary picks the world; elev=0.12 drops the camera for a low hero shot.
+// loadout=armLeft:lance,armRight:lance sets the equipment; fov=24 and dist=1.2 tighten the camera.
 // lineup=8 stands that many walkers in a row; bench=120 then times that many frames into data-bench.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
@@ -41,8 +42,13 @@ const { scene, fit } = stage;
 
 const lib = await loadPartLibrary(renderer);
 const kit = (q.get('kit') as KitMode) ?? 'auto';
+// loadout=armLeft:lance,armRight:lance,core:ablative-plating overrides the showcase loadout.
+const custom = q.get('loadout');
+const customLoadout = custom
+  ? Object.fromEntries([...new Set(custom.split(',').map((x) => x.split(':')[0]))].map((loc) => [loc, custom.split(',').filter((x) => x.startsWith(loc + ':')).map((x) => x.split(':')[1])]))
+  : null;
 const build = (id: string) =>
-  buildWalkerModel({ name: id, chassis: id, driver: { command: 0, trait: null }, loadout: (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[id] ?? {} } as WalkerInput, q.get('paint') ?? '#7a2e22', lib, kit);
+  buildWalkerModel({ name: id, chassis: id, driver: { command: 0, trait: null }, loadout: customLoadout ?? (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[id] ?? {} } as WalkerInput, q.get('paint') ?? '#7a2e22', lib, kit);
 const lineup = Number(q.get('lineup') ?? 1);
 const model = new THREE.Group();
 const ids = Object.keys(SHOWCASE);
@@ -66,9 +72,9 @@ fit(model);
 const box = new THREE.Box3().setFromObject(model);
 const centre = box.getCenter(new THREE.Vector3());
 const size = box.getSize(new THREE.Vector3()).length();
-const camera = new THREE.PerspectiveCamera(30, w / h, 1, 4000);
+const camera = new THREE.PerspectiveCamera(Number(q.get('fov') ?? 30), w / h, 1, 4000);
 const rad = (angle * Math.PI) / 180;
-const dist = size * 1.55;
+const dist = size * 1.55 * Number(q.get('dist') ?? 1);
 camera.position.set(centre.x + Math.sin(rad) * dist, centre.y + dist * Number(q.get('elev') ?? 0.38), centre.z + Math.cos(rad) * dist);
 camera.lookAt(centre);
 stage.render(camera);

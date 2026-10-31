@@ -45,7 +45,12 @@ CLASS_HANDS = {
     "lancer": ("covenant", "striker", "grip"),
     "brute": ("foundries", "bulwark", "fist"),
     "goliath": ("reliquary", "titan", "grip"),
+    "paladin": ("covenant", "titan", "grip"),
 }
+# Class hands cocked at the wrist (degrees about X, the fist's grip turning
+# from level to point down and forward): the Paladin holds its swords
+# point-down as in the north-star render.
+HAND_PITCH = {"paladin": None}   # None: read gripPitch / gripYaw from the frame tune
 # Curl per finger joint (degrees, towards the palm), thumb curl, finger splay.
 POSES = {
     "open": {"curl": (10, 14, 10), "thumb": (5, 12, 10), "splay": 7},
@@ -383,12 +388,30 @@ def finger(b, name, M, segs, r, pose_curl, style):
     return M
 
 
-def hand(b, sk, pose):
+def hand_frame(sk, pitch=0.0, yaw=0.0):
+    """The hand's frame at the wrist: local -Z down the palm, +X the back of the hand.
+    `pitch` cocks the fist so its grip points down-forward, `yaw` turns it outward."""
     el, wr = sk.joint("elbow"), sk.joint("wrist")
-    rf = sk.radius("forearm")
     # The hand carries on along the forearm, tipped a little back towards vertical.
     d = (wr - el).normalized().lerp(Vector((0, 0, -1)), 0.5)
     M, _ = axis(wr, wr + d)
+    if pitch or yaw:
+        M = T(*wr) @ R(0, 0, yaw) @ R(pitch, 0, 0) @ T(*(-wr)) @ M
+    return M
+
+
+def grip_point(sk, pitch=0.0, yaw=0.0):
+    """Where a gripping Covenant fist closes, in world space (left side): the
+    point a held weapon's grip should pass through."""
+    rf = sk.radius("forearm")
+    pt, pl, flen = rf * 0.72, rf * 1.45, rf * 2.7
+    return hand_frame(sk, pitch, yaw) @ Vector((-pt * 0.5 - flen * 0.3, 0.0, -pl - flen * 0.15))
+
+
+def hand(b, sk, pose, pitch=0.0, yaw=0.0):
+    wr = sk.joint("wrist")
+    rf = sk.radius("forearm")
+    M = hand_frame(sk, pitch, yaw)
     m = b.m
     f = b.faction
     P = POSES[pose]
@@ -488,7 +511,11 @@ def build(name, faction, frame, comp, pose):
     elif comp == "forearm":
         forearm(b, sk)
     else:
-        hand(b, sk, pose)
+        cls = name.rsplit("_", 1)[-1]
+        if cls in HAND_PITCH:
+            hand(b, sk, pose, sk.tune.get("gripPitch", 0.0), sk.tune.get("gripYaw", 0.0))
+        else:
+            hand(b, sk, pose)
     b.finish(root)
     root["kit_pose"] = pose if comp == "hand" else ""
     return root

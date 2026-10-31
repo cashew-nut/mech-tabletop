@@ -129,7 +129,7 @@ def clamp_block(m, root, w=2.0, h=2.2, d=2.4):
 # ------------------------------------------------------------------ Iron Covenant
 
 
-def lance(m, root):
+def lance(m, root, reach=13.0):
     """A jousting lance: a gold-bound grip, a flared vamplate with a crimson
     inlay, and a long fluted black spike."""
     clamp_block(m, root)
@@ -148,20 +148,40 @@ def lance(m, root):
         shapes.rivet_row(f"vamplate_stud{k}", (1.1 * math.cos(a), -2.75, 1.1 * math.sin(a)), (1.1 * math.cos(a), -2.75, 1.1 * math.sin(a)),
                          1, 0.12, m["trim"], parent=root, normal=(math.cos(a), -0.6, math.sin(a)))
     # The spike, round-sectioned, with gold flutes on its first third.
-    n = 24
-    path = [(0, -4.4 - 13.0 * i / (n - 1), 0) for i in range(n)]
-    loft("spike", path, lambda u: 1.0 * (1 - u) ** 1.1, lambda u: 1.0 * (1 - u) ** 1.1, m["armour"], root, shape="round", sides=16)
+    n = 24 if reach < 18 else 48
+    path = [(0, -4.4 - reach * i / (n - 1), 0) for i in range(n)]
+    thin = 1.0 if reach < 18 else 0.85
+    loft("spike", path, lambda u: thin * (1 - u) ** 1.1, lambda u: thin * (1 - u) ** 1.1, m["armour"], root, shape="round", sides=16)
     for k in range(6):
         a = 2 * math.pi * k / 6
         pts = [(0.98 * (1 - i / 9 * 0.33) * math.cos(a), -4.6 - 4.0 * i / 9, 0.98 * (1 - i / 9 * 0.33) * math.sin(a)) for i in range(10)]
         shapes.sweep(f"spike_flute{k}", pts, 0.07, m["trim"], parent=root)
     ring("spike_collar", 1.02, 0.16, -4.5, m["trim"], root)
     ring("spike_band", 0.7, 0.1, -8.7, m["trim"], root)
+    if reach >= 18:
+        for y in (-14.0, -19.0):
+            ring(f"spike_band{int(-y)}", 0.5 * thin * (1 - (-y - 4.4) / reach) ** 1.1 + 0.25, 0.09, y, m["trim"], root)
 
 
-def melee_blade(m, root):
+def lance_paladin(m, root):
+    """The Paladin's siege-blade: a long gold-hilted sword (the Covenant blade at
+    twice the reach), hung point-down and forward as in the north-star render
+    (about 52 degrees below the horizontal), its tip meeting the ground ahead
+    of the feet."""
+    # No clamp: the grip's middle (y = 0.4) sits on the origin, which the
+    # Paladin's frame puts inside its gripping fist (gripMount in model-kit.json).
+    pivot = empty("siege_pivot", size=2)
+    pivot.parent = root
+    hilt = empty("siege_hilt", (0, -0.4, 0), size=1)
+    hilt.parent = pivot
+    melee_blade(m, hilt, reach=16.5, width=0.95, clamp=False)
+    pivot.rotation_euler = (math.radians(55), 0, 0)   # = gripPitch; the frame's mount adds gripYaw
+
+
+def melee_blade(m, root, reach=10.0, width=1.05, clamp=True):
     """A long straight sword-blade on a gold-housed hilt with a swept guard."""
-    clamp_block(m, root)
+    if clamp:
+        clamp_block(m, root)
     along("grip", 0.45, 1.6, -0.8, m["metal"], root)
     turned("pommel", [(0.0, 0.0), (0.5, 0.1), (0.62, 0.35), (0.45, 0.6)], m["trim"], root, y=2.2)
     # Crossguard: a gold bar swept back at the tips, with ball finials.
@@ -178,12 +198,14 @@ def melee_blade(m, root):
     shapes.lancet("ricasso_arch", 0.55, 0.85, 0.2, m["trim"], loc=(0, -2.2, 0.81), rot=(-math.pi / 2, 0, 0), parent=root)
     # The blade: flat-faced with a fuller, tapering to a needle point.
     n = 20
-    path = [(0, -3.3 - 10.0 * i / (n - 1), 0) for i in range(n)]
-    w = lambda u: 1.05 * (1 - u ** 1.6) * (1 - 0.2 * u) + 0.01  # noqa: E731
+    n = max(n, int(reach * 2))
+    path = [(0, -3.3 - reach * i / (n - 1), 0) for i in range(n)]
+    w = lambda u: width * (1 - u ** 1.6) * (1 - 0.2 * u) + 0.01  # noqa: E731
     t = lambda u: 0.55 * (1 - u ** 1.6) + 0.01  # noqa: E731
     loft("blade", path, w, t, m["metal"], root, shape="blade", up=(0, 0, 1))
     # Gold edging up the spine of the blade's first third.
-    shapes.sweep("blade_spine", [(0, -3.4 - 3.5 * i / 7, 0.52 * (1 - (i / 7 * 0.35) ** 1.6)) for i in range(8)], 0.08, m["trim"], parent=root)
+    spine = 3.5 * reach / 10.0
+    shapes.sweep("blade_spine", [(0, -3.4 - spine * i / 7, 0.52 * (1 - (i / 7 * 0.35) ** 1.6)) for i in range(8)], 0.08, m["trim"], parent=root)
 
 
 def carapace_gun(m, root):
@@ -529,14 +551,14 @@ def soul_lantern(m, root):
 
 
 BUILDERS = {
-    "lance": lance, "melee-blade": melee_blade, "carapace-gun": carapace_gun, "missile-rack": missile_rack,
+    "lance": lance, "lance@paladin": lance_paladin, "melee-blade": melee_blade, "carapace-gun": carapace_gun, "missile-rack": missile_rack,
     "autocannon": autocannon, "rail-cannon": rail_cannon, "rocket-pod": rocket_pod, "industrial-claw": industrial_claw,
     "arc-cannon": arc_cannon, "hellfire-missiles": hellfire_missiles, "kinetic-claws": kinetic_claws, "soul-lantern": soul_lantern,
 }
 
 
 def build(item):
-    faction = FACTION[item]
+    faction = FACTION[item.split("@")[0]]
     m = kit.materials.library(faction)
     root = empty(f"item_{item}", size=2)
     BUILDERS[item](m, root)

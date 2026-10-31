@@ -59,6 +59,15 @@ class Skeleton:
         self.L = L = p["limbLength"]
         self.G = p["limbGirth"] * math.sqrt(W)
         self.base = f["base"]
+        # A frame can be re-proportioned for one faction (the Paladin is tall and narrow).
+        tune = KIT.get("frameTunes", {}).get(f"{faction}/{frame}", {})
+        self.tune = tune
+        if tune:
+            self.H = H = tune.get("height", self.H)
+            self.W = W = tune.get("width", self.W)
+            self.L = L = tune.get("limbLength", self.L)
+            self.G = p["limbGirth"] * math.sqrt(W) * tune.get("girth", 1.0)
+        self.arm_girth = tune.get("armGirth", 1.0) if tune else 1.0
         ankle_z = BASE_THICKNESS + 0.05 * H
         knee_z = ankle_z + 0.22 * H * L
         hip_z = knee_z + 0.22 * H * L
@@ -81,6 +90,15 @@ class Skeleton:
             "knee": Vector((0.085 * H * W, -0.02 * H, knee_z)),
             "ankle": Vector((0.10 * H * W, 0.0, ankle_z)),
         }
+        # A tune can also pose the frame: joints given outright, in fractions of H (left side).
+        for name, v in (tune.get("joints", {}) if tune else {}).items():
+            self._j[name] = Vector(v) * H
+        # A wider stance splays the legs: knees and ankles move out from the hips.
+        stance = tune.get("stance", 1.0) if tune else 1.0
+        if stance != 1.0:
+            hip_x = self._j["hip"].x
+            for j, k in (("knee", 1.0), ("ankle", 1.0)):
+                self._j[j].x = hip_x + (self._j[j].x - hip_x) * stance + (stance - 1.0) * 0.06 * H * k * (1.0 if j == "knee" else 1.9)
 
     def joint(self, name, side="L"):
         """World position of a joint; side "R" mirrors X."""
@@ -95,7 +113,7 @@ class Skeleton:
     def radius(self, part):
         """Nominal stand-in radius of a limb segment, a guide for real parts."""
         k = {"arm": 0.05, "forearm": 0.045, "thigh": 0.065, "shin": 0.055}[part]
-        return k * self.H * self.G
+        return k * self.H * self.G * (getattr(self, "arm_girth", 1.0) if part in ("arm", "forearm") else 1.0)
 
     def socket(self, component, side="L"):
         """World position of the joint a component hangs on."""
@@ -106,14 +124,17 @@ class Skeleton:
         H, sp = self.H, KIT["spareMounts"]
         out = []
         for loc, side, sx in (("armLeft", "L", 1), ("armRight", "R", -1)):
+            g = self.tune.get("gripMount")   # put arm mount 0 inside a gripping fist
             spots = [
-                ("wrist", Vector((sx * 0.03 * H, -0.03 * H, -0.02 * H))),
+                ("wrist", Vector((sx * g[0] * H, g[1] * H, g[2] * H)) if g else Vector((sx * 0.03 * H, -0.03 * H, -0.02 * H))),
                 ("elbow", Vector((sx * 0.07 * H, -0.02 * H, -0.06 * H))),
                 ("shoulder", Vector((sx * 0.03 * H, 0.0, 0.07 * H))),
             ]
             for i in range(sp[loc]):
                 j, off = spots[min(i, len(spots) - 1)]
-                out.append((f"mount_{loc}_{i}", j, side, off, 0.0))
+                # A gripped weapon turns outward with the fist (gripYaw, degrees).
+                rz = math.radians(self.tune.get("gripYaw", 0.0)) * sx if (i == 0 and g) else 0.0
+                out.append((f"mount_{loc}_{i}", j, side, off, rz))
         core = [
             (Vector((0.10 * H * self.W, 0.02 * H, 0.15 * H)), 0.0),
             (Vector((-0.10 * H * self.W, 0.02 * H, 0.15 * H)), 0.0),
