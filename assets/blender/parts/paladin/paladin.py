@@ -227,14 +227,10 @@ def pauldron(sk, m, root):
             return p, n
         return surf
 
-    # Simple, as in the render: one big angular plate with a gold rim, a
-    # crimson panel on its outer face, and two plain lames below.
-    patch("pauldron_cap", shell(), -125, 125, 2, 86, 0.0, 1.2, m["armour"], root, m["trim"], 0.22, n=4)
-    patch("pauldron_panel", shell(), -40, 40, 12, 60, 0.4, 0.4, m["hull"], root, m["trim"], 0.16, n=2)
-    for i in range(2):
-        e1 = 8 - i * 12
-        patch(f"pauldron_lame{i}", shell(flare=0.16 + 0.12 * i, drop=0.004 * H * i, q=0.75), -64 + i * 12, 64 - i * 12, e1 - 20, e1, 0.3 + 0.35 * i, 0.9,
-              m["armour"], root, m["trim"], 0.18, n=4)
+    # One big plate, as in the render: a single gold-rimmed shell from the
+    # top of the shoulder down over the upper arm, crimson on its lower face.
+    patch("pauldron_cap", shell(flare=0.3, q=0.55), -115, 115, -48, 86, 0.0, 1.2, m["armour"], root, m["trim"], 0.24, n=6)
+    patch("pauldron_panel", shell(flare=0.3, q=0.55), -48, 48, -42, 12, 0.35, 0.4, m["hull"], root, m["trim"], 0.16, n=4)
     # Turn the pauldron about the shoulder so its crimson face looks forward-out.
     bpy.context.view_layer.update()
     turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-28), 4, "Z") @ Matrix.Translation(-S)
@@ -440,7 +436,7 @@ def helm(sk, m, root):
     c = sk.joint("head") + Vector((0, 0, 0.03 * H))
     # (height, half width, half depth, keel pull): chin up to the flat crown.
     rows = [(-1.15, 0.3, 0.42, 0.62), (-0.7, 0.66, 0.8, 0.5), (-0.18, 0.78, 0.9, 0.36),
-            (0.24, 0.8, 0.96, 0.55), (0.62, 0.66, 0.84, 0.26), (1.0, 0.46, 0.6, 0.12), (1.32, 0.24, 0.32, 0.05), (1.62, 0.04, 0.05, 0.0)]
+            (0.24, 0.8, 0.96, 0.55), (0.62, 0.66, 0.84, 0.26), (0.9, 0.5, 0.62, 0.12), (1.06, 0.28, 0.36, 0.04), (1.12, 0.04, 0.05, 0.0)]
 
     def ring(z, hx, hy, keel, sides=8):
         pts = []
@@ -492,20 +488,17 @@ def helm(sk, m, root):
         sq = lambda v, q=0.6: math.copysign(abs(v) ** q, v)  # noqa: E731
         up = max(0.0, math.sin(er))
         front = max(0.0, math.cos(ar))
-        rx, ry, rz = 1.22 * R, 1.3 * R * (1 + 0.22 * front), 1.25 * R
+        rx, ry, rz = 1.22 * R, 1.3 * R * (1 + 0.22 * front), 1.42 * R
         p = c + Vector((sq(math.sin(ar)) * sq(math.cos(er)) * rx * (1 - 0.45 * up ** 2),
-                        -sq(math.cos(ar)) * sq(math.cos(er)) * ry * (1 - 0.4 * up ** 2) + 0.45 * R * up ** 2,
-                        math.sin(er) * rz * (1 + 0.55 * up ** 3) - 0.15 * R))
+                        -sq(math.cos(ar)) * sq(math.cos(er)) * ry * (1 - 0.4 * up ** 2) + 0.12 * R * up ** 2,
+                        math.sin(er) * rz - 0.15 * R))
         n = Vector((math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er))).normalized()
         return p, n
     patch("hood", cowl, 26, 334, -52, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=10)
     patch("hood_band", cowl, 120, 240, -10, 60, 0.18, 0.3, m["filigree"], root, m["trim"], 0.04 * R, n=4)
-    # Gold ribs from the band up the four corners to the point, and a finial.
-    tip = c + Vector((0, 0, 1.64)) * R
-    for i in (1, 3, 5, 7):
-        pts = [ring(*r)[i] for r in rows[4:7]] + [tip]
-        shapes.sweep(f"helm_rib{i}", pts, 0.045 * R, m["trim"], parent=root, profile="square")
-    shapes.sphere("helm_finial", 0.09 * R, m["trim"], loc=tip + Vector((0, 0, 0.05 * R)), parent=root, segments=12)
+    # The hood's brow comes down over the top of the helm, so from the front
+    # only the glowing slit and breaths show under it.
+    patch("hood_brow", cowl, -30, 30, 20, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=6)
 
 
 def collar(sk, m, root):
