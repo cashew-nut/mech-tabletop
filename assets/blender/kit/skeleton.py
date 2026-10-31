@@ -90,6 +90,9 @@ class Skeleton:
             "knee": Vector((0.085 * H * W, -0.02 * H, knee_z)),
             "ankle": Vector((0.10 * H * W, 0.0, ankle_z)),
         }
+        # A tune can also pose the frame: joints given outright, in fractions of H (left side).
+        for name, v in (tune.get("joints", {}) if tune else {}).items():
+            self._j[name] = Vector(v) * H
         # A wider stance splays the legs: knees and ankles move out from the hips.
         stance = tune.get("stance", 1.0) if tune else 1.0
         if stance != 1.0:
@@ -129,7 +132,9 @@ class Skeleton:
             ]
             for i in range(sp[loc]):
                 j, off = spots[min(i, len(spots) - 1)]
-                out.append((f"mount_{loc}_{i}", j, side, off, 0.0))
+                # A gripped weapon turns outward with the fist (gripYaw, degrees).
+                rz = math.radians(self.tune.get("gripYaw", 0.0)) * sx if (i == 0 and g) else 0.0
+                out.append((f"mount_{loc}_{i}", j, side, off, rz))
         core = [
             (Vector((0.10 * H * self.W, 0.02 * H, 0.15 * H)), 0.0),
             (Vector((-0.10 * H * self.W, 0.02 * H, 0.15 * H)), 0.0),

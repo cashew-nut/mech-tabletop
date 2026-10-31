@@ -31,7 +31,15 @@
   },
   "frameTunes": {
     "$comment": "Per faction/frame overrides of the proportions: the Paladin is tall and narrow in the north-star render.",
-    "covenant/titan": { "height": 62, "width": 0.82, "limbLength": 1.12, "girth": 0.76, "armGirth": 0.9, "stance": 1.5, "gripMount": [-0.0328, 0.0356, -0.0379] }
+    "covenant/titan": {
+      "height": 62, "width": 0.82, "limbLength": 1.12, "girth": 0.76, "armGirth": 0.9,
+      "gripMount": [-0.0414, 0.0165, -0.0419], "gripPitch": 55, "gripYaw": 38,
+      "joints": {
+        "neck": [0, 0, 0.915], "head": [0, -0.01, 0.955],
+        "shoulder": [0.175, 0, 0.915], "elbow": [0.225, 0.01, 0.705], "wrist": [0.296, -0.081, 0.54],
+        "hip": [0.075, 0, 0.592], "knee": [0.125, -0.055, 0.34], "ankle": [0.165, 0, 0.098]
+      }
+    }
   },
   "frames": {
     "scout": {

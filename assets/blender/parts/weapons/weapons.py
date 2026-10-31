@@ -175,7 +175,7 @@ def lance_paladin(m, root):
     hilt = empty("siege_hilt", (0, -0.4, 0), size=1)
     hilt.parent = pivot
     melee_blade(m, hilt, reach=16.5, width=0.95, clamp=False)
-    pivot.rotation_euler = (math.radians(52), 0, 0)
+    pivot.rotation_euler = (math.radians(55), 0, 0)   # = gripPitch; the frame's mount adds gripYaw
 
 
 def melee_blade(m, root, reach=10.0, width=1.05, clamp=True):

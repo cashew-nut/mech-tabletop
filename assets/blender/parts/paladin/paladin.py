@@ -133,7 +133,7 @@ def sash(sk, m, root):
     """A crimson banner hung over the left pauldron's front, as in the render."""
     H = sk.H
     sh, el = sk.joint("shoulder"), sk.joint("elbow")
-    top = sh + Vector((0.03 * H, -0.104 * H, -0.035 * H))   # under the pauldron's front lame
+    top = sh + Vector((0.035 * H, -0.125 * H, -0.045 * H))   # under the pauldron's front lame
     drop = top.z - (el.z + 0.02 * H)
     half = 0.028 * H
 
@@ -205,8 +205,8 @@ def pauldron(sk, m, root):
     mirrored on the right)."""
     H = sk.H
     S = sk.joint("shoulder")
-    C = S + Vector((0.008 * H, 0.0, -0.018 * H))
-    rx, ry, rz = 0.074 * H, 0.08 * H, 0.068 * H
+    C = S + Vector((0.016 * H, 0.0, -0.01 * H))
+    rx, ry, rz = 0.094 * H, 0.1 * H, 0.084 * H
 
     def shell(flare=0.0, drop=0.0):
         def surf(a, e):
@@ -231,16 +231,16 @@ def pauldron(sk, m, root):
               m["armour"], root, m["trim"], 0.2, n=3)
     # Crest: a gold ridge over the cap from front to back, and a flange behind it.
     # Gothic flange: a pointed-arch plate standing up along the top, front to back.
-    base = C + Vector((0.035 * H, 0.0, rz * 0.7))
-    L = 0.055 * H
-    arch = [(-L, 0.0), (L, 0.0), (L, 0.035 * H), (L * 0.6, 0.07 * H), (0.0, 0.095 * H), (-L * 0.6, 0.07 * H), (-L, 0.035 * H)]
+    base = C + Vector((0.045 * H, 0.0, rz * 0.7))
+    L = 0.07 * H
+    arch = [(-L, 0.0), (L, 0.0), (L, 0.045 * H), (L * 0.6, 0.09 * H), (0.0, 0.12 * H), (-L * 0.6, 0.09 * H), (-L, 0.045 * H)]
     facet("pauldron_flange", base, (0, -1, 0), (-0.25, 0, 1), arch, 0.9, m["filigree"], root, m["trim"], m["hull"], inlay=0.55, frame_r=0.24)
     # Gothic arch on the outer face, over the crimson panel.
     p, n = shell()(0, 16)
     arch = shapes.lancet("pauldron_arch", 0.032 * H, 0.045 * H, 0.3, m["trim"], loc=p + n * 0.9, parent=root)
     arch.rotation_euler = (n.to_track_quat("-Y", "Z")).to_euler()
     # Peak spike at the top.
-    p = base + Vector((-0.25, 0, 1)).normalized() * 0.095 * H
+    p = base + Vector((-0.25, 0, 1)).normalized() * 0.12 * H
     shapes.sphere("pauldron_spike_ball", 0.011 * H, m["trim"], loc=p, parent=root, segments=12)
     shapes.cylinder("pauldron_spike", 0.008 * H, 0.04 * H, m["trim"], loc=p + Vector((0, 0, 0.02 * H)), parent=root, verts=8, bevel=0.05, r2=0.0005)
     # Studs round the cap's rim.
@@ -498,7 +498,162 @@ def collar(sk, m, root):
         shapes.sweep(f"gorget_rim{k}", [p + Vector((0, 0, 0.1)) for p in ring], 0.22, m["trim"], cyclic=True, parent=root, profile="square")
 
 
-BUILDERS = {"cloth": cloth, "back": back, "pauldron": pauldron, "torso": torso, "helm": helm, "collar": collar}
+# ------------------------------------------------------------------ angular limbs
+
+def basis(a, b, front=(0, -1, 0)):
+    """(d, f, x): unit vectors along the bone a->b, its front and its side."""
+    d = (Vector(b) - Vector(a)).normalized()
+    f = Vector(front)
+    f = (f - f.dot(d) * d).normalized()
+    return d, f, f.cross(d).normalized()
+
+
+def hexa(c, f, x, rf, rx, keel=0.0, back=1.0, sides=6):
+    """A faceted section round centre c: a vertex at the front pushed out by
+    `keel`, `rf`/`rx` the half-depth/half-width, the back scaled by `back`."""
+    pts = []
+    for i in range(sides):
+        t = 2 * math.pi * i / sides
+        cf, cx = math.cos(t), math.sin(t)
+        k = (rf + keel) if i == 0 else rf * (1.0 if cf >= 0 else back)
+        pts.append(c + f * cf * k + x * cx * rx)
+    return pts
+
+
+def segment(name, a, b, prof, mat, root, front=(0, -1, 0), edge_mat=None, edge_r=0.2, edges=(0, 1, 5)):
+    """A faceted limb plate from a to b. prof: [(t, rf, rx, keel)] along the
+    bone. Gold sweeps run down the listed section vertices (0 = the keel)."""
+    d, f, x = basis(a, b, front)
+    L = (Vector(b) - Vector(a)).length
+    rings = [hexa(Vector(a) + d * L * t, f, x, rf, rx, keel) for t, rf, rx, keel in prof]
+    ob = loft(name, rings, mat, root)
+    mod(ob, "BEVEL", width=edge_r * 0.6, segments=1, limit_method="ANGLE", angle_limit=math.radians(25))
+    if edge_mat is not None:
+        for i in edges:
+            pts = [r[i] + (r[i] - (Vector(a) + d * L * t)).normalized() * edge_r * 0.6 for r, (t, *_) in zip(rings, prof)]
+            shapes.sweep(f"{name}_edge{i}", pts, edge_r, edge_mat, parent=root, profile="square")
+        for k in (0, len(rings) - 1):
+            shapes.sweep(f"{name}_rim{k}", rings[k], edge_r * 0.9, edge_mat, cyclic=True, parent=root, profile="square")
+    return ob, (d, f, x, L)
+
+
+def point_cop(name, at, out, up, size, mat, root, trim=None):
+    """A pointed four-sided cop (elbow or knee guard): a pyramid on a diamond plate."""
+    out, up = Vector(out).normalized(), Vector(up).normalized()
+    side = out.cross(up).normalized()
+    up = side.cross(out).normalized()
+    base = [at + up * size, at + side * size * 0.8, at - up * size * 1.3, at - side * size * 0.8]
+    mid = [at + out * size * 0.35 + (p - at) * 0.7 for p in base]
+    tip = at + out * size * 1.1 - up * size * 0.2
+    loft(name, [base, mid, [tip] * 4], mat, root, cap=True)
+    if trim is not None:
+        shapes.sweep(f"{name}_rim", mid, size * 0.08, trim, cyclic=True, parent=root, profile="square")
+
+
+def arm(sk, m, root):
+    """Upper arm: a faceted rerebrace over a dark steel core."""
+    H = sk.H
+    a, b = sk.joint("shoulder"), sk.joint("elbow")
+    r = sk.radius("arm")
+    d, f, x = basis(a, b)
+    L = (b - a).length
+    shapes.cylinder("arm_core", r * 0.55, L, m["metal"], loc=(a + b) / 2, parent=root, verts=8, bevel=0.1).rotation_euler = \
+        Vector((0, 0, 1)).rotation_difference(d).to_euler()
+    segment("rerebrace", a + d * L * 0.12, b - d * L * 0.08,
+            [(0.0, r * 0.95, r * 0.95, 0.0), (0.25, r * 1.08, r * 1.02, r * 0.25), (0.8, r * 1.0, r * 0.95, r * 0.2), (1.0, r * 0.82, r * 0.8, 0.0)],
+            m["filigree"], root, edge_mat=m["trim"], edge_r=0.0055 * H)
+    shapes.sphere("elbow_ball", r * 0.75, m["metal"], loc=b, parent=root, segments=12)
+
+
+def forearm(sk, m, root):
+    """A long angular vambrace flaring to the wrist, crimson-inlaid on its outer face,
+    with a pointed couter at the elbow."""
+    H = sk.H
+    a, b = sk.joint("elbow"), sk.joint("wrist")
+    r = sk.radius("forearm")
+    seg, (d, f, x, L) = segment("vambrace", a + (b - a) * 0.08, b + (b - a).normalized() * 0.01 * H,
+                                [(0.0, r * 0.95, r * 0.95, 0.0), (0.2, r * 1.15, r * 1.1, r * 0.35), (0.85, r * 1.35, r * 1.3, r * 0.45), (1.0, r * 1.2, r * 1.2, r * 0.2)],
+                                m["armour"], root, edge_mat=m["trim"], edge_r=0.0055 * H, edges=(0, 1, 2, 4, 5))
+    # Crimson panel on the outer (+X) face, gold framed.
+    def outer(u, t):
+        c = a + (b - a) * (0.08 + 0.9 * t)
+        rr = r * (1.15 + 0.2 * t)
+        ang = math.radians(u)
+        n = (x * math.cos(ang) + f * math.sin(ang)).normalized()
+        return c + n * rr * 1.02, n
+    patch("vambrace_panel", outer, -28, 28, 0.22, 0.82, 0.25, 0.6, m["hull"], root, m["trim"], 0.15, n=2)
+    point_cop("couter", a + d * 0.01 * H, -f * 0.3 + x * 0.6 - d * 0.5 + Vector((0, 0.6, 0)), d, r * 1.25, m["armour"], root, m["trim"])
+
+
+def thigh(sk, m, root):
+    """Faceted cuisse with a keel, gold edges and a crimson inlay, over a steel core."""
+    H = sk.H
+    a, b = sk.joint("hip"), sk.joint("knee")
+    r = sk.radius("thigh")
+    d, f, x = basis(a, b)
+    L = (b - a).length
+    shapes.sphere("hip_ball", r * 0.65, m["metal"], loc=a, parent=root, segments=12)
+    shapes.cylinder("thigh_core", r * 0.5, L, m["metal"], loc=(a + b) / 2, parent=root, verts=8, bevel=0.1).rotation_euler = \
+        Vector((0, 0, 1)).rotation_difference(d).to_euler()
+    segment("cuisse", a + d * L * 0.06, b - d * L * 0.1,
+            [(0.0, r * 0.95, r * 1.05, r * 0.2), (0.3, r * 1.1, r * 1.05, r * 0.4), (0.85, r * 0.95, r * 0.9, r * 0.35), (1.0, r * 0.75, r * 0.75, r * 0.1)],
+            m["filigree"], root, edge_mat=m["trim"], edge_r=0.0055 * H)
+
+    def front(u, t):
+        c = a + d * L * (0.15 + 0.62 * t)
+        ang = math.radians(u)
+        n = (f * math.cos(ang) + x * math.sin(ang)).normalized()
+        return c + n * r * (1.15 - 0.15 * t), n
+    patch("cuisse_panel", front, 12, 62, 0.0, 1.0, 0.3, 0.5, m["hull"], root, m["trim"], 0.14, n=2)
+    shapes.sphere("knee_ball", r * 0.6, m["metal"], loc=b, parent=root, segments=12)
+
+
+def shin(sk, m, root):
+    """An angular greave, keeled hard at the front and widening to the ankle, with a
+    big pointed poleyn over the knee."""
+    H = sk.H
+    a, b = sk.joint("knee"), sk.joint("ankle")
+    r = sk.radius("shin")
+    _, (d, f, x, L) = segment("greave", a + (b - a) * 0.1, b + (b - a).normalized() * 0.02 * H,
+                              [(0.0, r * 1.0, r * 1.0, r * 0.3), (0.25, r * 1.15, r * 1.1, r * 0.6), (0.8, r * 1.25, r * 1.2, r * 0.55), (1.0, r * 1.05, r * 1.1, r * 0.2)],
+                              m["armour"], root, edge_mat=m["trim"], edge_r=0.0055 * H, edges=(0, 1, 2, 4, 5))
+
+    def face(u, t):
+        c = a + d * L * (0.25 + 0.55 * t)
+        ang = math.radians(u)
+        n = (f * math.cos(ang) + x * math.sin(ang)).normalized()
+        return c + n * r * 1.35, n
+    patch("greave_panel", face, 22, 64, 0.0, 1.0, 0.25, 0.6, m["filigree"], root, m["trim"], 0.14, n=2)
+    point_cop("poleyn", a + f * r * 0.6, f + d * 0.25, -d, r * 1.25, m["filigree"], root, m["trim"])
+    for s_ in (-1, 1):
+        point_cop(f"poleyn_wing{'LR'[s_ > 0]}", a + x * s_ * r * 0.8 + f * r * 0.2, x * s_ + f * 0.3, -d, r * 0.7, m["armour"], root, m["trim"])
+
+
+def foot(sk, m, root):
+    """A long, pointed sabaton of lames with a heel spur."""
+    H = sk.H
+    an = sk.joint("ankle")
+    g = 3.0   # base thickness
+    W, Lf = 0.06 * H, 0.17 * H
+    toe = an + Vector((0.01 * H, -Lf * 0.72, 0))
+
+    def sec(y, w, h, z0=g):
+        return [Vector((an.x - w, y, z0)), Vector((an.x + w, y, z0)), Vector((an.x + w * 0.85, y, z0 + h)), Vector((an.x, y, z0 + h * 1.25)), Vector((an.x - w * 0.85, y, z0 + h))]
+    ys = [an.y + Lf * 0.28, an.y + Lf * 0.05, an.y - Lf * 0.25, an.y - Lf * 0.5, an.y - Lf * 0.7]
+    rows = [sec(ys[0], W * 0.8, 0.07 * H), sec(ys[1], W, 0.075 * H), sec(ys[2], W * 0.95, 0.05 * H), sec(ys[3], W * 0.75, 0.035 * H), sec(ys[4], W * 0.25, 0.012 * H)]
+    loft("sabaton", rows, m["armour"], root)
+    for k, y in enumerate(ys[1:4]):
+        r_ = rows[k + 1]
+        shapes.sweep(f"sabaton_lame{k}", [p + Vector((0, -0.2, 0.15)) for p in r_[1:]] + [r_[0] + Vector((0, -0.2, 0.15))], 0.012 * H, m["trim"], parent=root, profile="square")
+    shapes.sweep("sabaton_keel", [r[3] + Vector((0, 0, 0.2)) for r in rows[1:]], 0.012 * H, m["trim"], parent=root, profile="square")
+    spur = an + Vector((0, Lf * 0.3, g + 0.02 * H))
+    loft("heel_spur", [[spur + Vector((-0.012 * H, 0, -0.01 * H)), spur + Vector((0.012 * H, 0, -0.01 * H)), spur + Vector((0, 0, 0.015 * H))],
+                       [spur + Vector((0, 0.05 * H, -0.005 * H))] * 3], m["trim"], root)
+    shapes.sphere("ankle_ball", sk.radius("shin") * 0.7, m["metal"], loc=an, parent=root, segments=12)
+
+
+BUILDERS = {"cloth": cloth, "back": back, "pauldron": pauldron, "torso": torso, "helm": helm, "collar": collar,
+            "arm": arm, "forearm": forearm, "thigh": thigh, "shin": shin, "foot": foot}
 
 
 def build(component):
@@ -510,7 +665,51 @@ def build(component):
     return root, sk
 
 
+SIDED = {"arm", "forearm", "thigh", "shin", "foot", "pauldron"}
+
+
+def preview_all(comps, out, samples=24):
+    """Every listed part on one frame (sided ones mirrored), from three angles."""
+    kit.reset_scene()
+    m = kit.materials.library(FACTION)
+    sk = kit.skeleton.Skeleton(FACTION, FRAME)
+    objs = []
+    for comp in comps:
+        root = kit.empty(kit.part_name(FACTION, comp, CLS), size=1)
+        BUILDERS[comp](sk, m, root)
+        bpy.context.view_layer.update()
+        objs += kit.meshes(root)
+        if comp in SIDED:
+            mirror = kit.empty(f"{comp}_mirror", size=1)
+            mirror.scale = (-1, 1, 1)
+            for o in kit.meshes(root):
+                c = o.copy()
+                bpy.context.scene.collection.objects.link(c)
+                c.parent = mirror
+                c.matrix_parent_inverse.identity()
+                c.matrix_world = mirror.matrix_world @ o.matrix_world
+                objs.append(c)
+    frame = kit.skeleton.build_frame(FACTION, FRAME)
+    for o in list(frame.children_recursive):
+        if o.get("standin") in comps or o.get("standin") == "base":
+            for c in [o, *o.children_recursive]:
+                c.hide_render = True
+    kit.render.studio(floor=True)
+    allobjs = objs + [o for o in kit.meshes(frame) if not o.hide_render]
+    shots = []
+    for az, el in ((30, 6), (0, 4), (80, 4)):
+        p = Path(out) / f"body-{az}.png"
+        kit.render.shot(allobjs, p, az=az, el=el, samples=samples, res=(560, 900), margin=0.95)
+        kit.render.post(p)
+        shots.append(p)
+    kit.render.compare(shots, None, Path(out) / "body-compare.png", title="covenant paladin parts")
+
+
 def main(argv):
+    if "--preview-all" in argv:
+        out = Path(argv[argv.index("--preview-all") + 1])
+        preview_all([a for a in argv if a in BUILDERS] or list(BUILDERS), out)
+        return
     comps = [a for a in argv if a in BUILDERS] or list(BUILDERS)
     render = Path(argv[argv.index("--render") + 1]) if "--render" in argv else None
     for comp in comps:
