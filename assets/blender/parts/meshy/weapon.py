@@ -113,7 +113,7 @@ def main(args):
                 L.new(em.outputs["Emission"], out.inputs["Surface"])
             mats[mode] = m
         return mats
-    hm = high_materials()
+    hm = high_materials(); print("T hm", flush=True)
 
     # High mesh, welded by position (Meshy splits vertices along UV seams).
     key = np.round(P[F.ravel()] * opt(args, "--weld", 400, float)).astype(np.int64)
@@ -133,18 +133,31 @@ def main(args):
     hi = bpy.data.objects.new("hi", me)
     bpy.context.scene.collection.objects.link(hi)
     # The handedness of the axis swap may mirror the mesh; flip faces if so.
+    print("T hi", len(hi.data.polygons), flush=True)
     lo = hi.copy()
     lo.data = hi.data.copy()
+    if "--lo-weld" in args:  # stalled decimation: cluster the low mesh's vertices on a coarse grid first
+        kk = np.round(P[F[ok].ravel()] * opt(args, "--lo-weld", 30, float)).astype(np.int64)
+        _, fi, iv = np.unique(kk, axis=0, return_index=True, return_inverse=True)
+        iv = iv.ravel()
+        ff = iv.reshape(-1, 3)
+        good = (ff[:, 0] != ff[:, 1]) & (ff[:, 1] != ff[:, 2]) & (ff[:, 0] != ff[:, 2])
+        lm = bpy.data.meshes.new("lo")
+        lm.from_pydata(P[F[ok].ravel()][fi].tolist(), [], ff[good].tolist())
+        lo.data = lm
     lo.name = f"lo_{item}"
     bpy.context.scene.collection.objects.link(lo)
     bpy.ops.object.select_all(action="DESELECT")
     lo.select_set(True)
     bpy.context.view_layer.objects.active = lo
-    for kind in ("TRIANGULATE", "DECIMATE"):
+    for kind in ("TRIANGULATE", "DECIMATE", "DECIMATE", "DECIMATE"):
+        if kind == "DECIMATE" and len(lo.data.polygons) <= tris * 1.15:
+            break
         m = lo.modifiers.new(kind.lower(), kind)
-        if kind == "DECIMATE":
+        if kind == "DECIMATE":  # Noisy Meshy meshes stall before the target; repeat the pass until close
             m.ratio = min(1.0, tris / max(1, len(lo.evaluated_get(bpy.context.evaluated_depsgraph_get()).data.polygons)))
         bpy.ops.object.modifier_apply(modifier=m.name)
+    print("T dec", len(lo.data.polygons), flush=True)
     import xatlas
     me = lo.data
     n = len(me.vertices)
@@ -176,6 +189,7 @@ def main(args):
         p.use_smooth = True
     me.normals_split_custom_set_from_vertices(vn[vmap].tolist())
 
+    print("T unwrap", flush=True)
     size = sizes[0]
 
     def bake_one(mode):

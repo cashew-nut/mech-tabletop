@@ -34,3 +34,5 @@ side-on prop, no stand or hands, flat grey background. Then `image-to-3d` (30 cr
 Bake: `python3 -I cut.py extract GLB WORK`, then `~/bvenv/bin/python -I weapon.py WORK ITEM --length L --rear Y --zc Z [--muzzle +x] [--upright] [--keep-x lo,hi] [--tris N]`.
 Check the muzzle points left (-Y) in a side render; use `--muzzle +x` when it does not. Boxy props need more triangles (rocket pod 14k).
 Ten signature weapons done this way (not Covenant lance or carapace gun, which stay procedural except the Paladin variants).
+
+Meshy meshes of 1.5M triangles (gyro stabilisers, targeting array) stall Blender's decimation (stuck at 85k tris) and bake badly. `--weld N` (high mesh) and `--lo-weld N` (clustered low mesh) get a result but it is shattered; regenerate those images with simpler, chunkier shapes instead.
