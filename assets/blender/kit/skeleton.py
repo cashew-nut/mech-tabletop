@@ -61,6 +61,7 @@ class Skeleton:
         self.base = f["base"]
         # A frame can be re-proportioned for one faction (the Paladin is tall and narrow).
         tune = KIT.get("frameTunes", {}).get(f"{faction}/{frame}", {})
+        self.tune = tune
         if tune:
             self.H = H = tune.get("height", self.H)
             self.W = W = tune.get("width", self.W)
@@ -120,8 +121,9 @@ class Skeleton:
         H, sp = self.H, KIT["spareMounts"]
         out = []
         for loc, side, sx in (("armLeft", "L", 1), ("armRight", "R", -1)):
+            g = self.tune.get("gripMount")   # put arm mount 0 inside a gripping fist
             spots = [
-                ("wrist", Vector((sx * 0.03 * H, -0.03 * H, -0.02 * H))),
+                ("wrist", Vector((sx * g[0] * H, g[1] * H, g[2] * H)) if g else Vector((sx * 0.03 * H, -0.03 * H, -0.02 * H))),
                 ("elbow", Vector((sx * 0.07 * H, -0.02 * H, -0.06 * H))),
                 ("shoulder", Vector((sx * 0.03 * H, 0.0, 0.07 * H))),
             ]

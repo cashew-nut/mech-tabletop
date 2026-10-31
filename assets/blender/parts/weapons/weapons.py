@@ -168,15 +168,20 @@ def lance_paladin(m, root):
     twice the reach), hung point-down and forward as in the north-star render
     (about 52 degrees below the horizontal), its tip meeting the ground ahead
     of the feet."""
+    # No clamp: the grip's middle (y = 0.4) sits on the origin, which the
+    # Paladin's frame puts inside its gripping fist (gripMount in model-kit.json).
     pivot = empty("siege_pivot", size=2)
     pivot.parent = root
-    melee_blade(m, pivot, reach=20.0, width=0.95)
+    hilt = empty("siege_hilt", (0, -0.4, 0), size=1)
+    hilt.parent = pivot
+    melee_blade(m, hilt, reach=16.5, width=0.95, clamp=False)
     pivot.rotation_euler = (math.radians(52), 0, 0)
 
 
-def melee_blade(m, root, reach=10.0, width=1.05):
+def melee_blade(m, root, reach=10.0, width=1.05, clamp=True):
     """A long straight sword-blade on a gold-housed hilt with a swept guard."""
-    clamp_block(m, root)
+    if clamp:
+        clamp_block(m, root)
     along("grip", 0.45, 1.6, -0.8, m["metal"], root)
     turned("pommel", [(0.0, 0.0), (0.5, 0.1), (0.62, 0.35), (0.45, 0.6)], m["trim"], root, y=2.2)
     # Crossguard: a gold bar swept back at the tips, with ball finials.

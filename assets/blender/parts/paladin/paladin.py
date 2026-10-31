@@ -5,7 +5,6 @@
 Parts (covenant frame titan, class paladin, so they only dress the Paladin):
     covenant_cloth_paladin   a tattered crimson cape with a gold snowflake sigil, and a front tabard
     covenant_back_paladin    two launcher pods on posts behind the shoulders
-    covenant_crown_paladin   the head's gothic tower: traceried shaft, corner pinnacles, tall spire
     covenant_pauldron_paladin angular shield-shaped pauldrons with crimson inlays
 
 All are modelled in place on the walker from the frame's joints, then moved
@@ -206,39 +205,44 @@ def pauldron(sk, m, root):
     mirrored on the right)."""
     H = sk.H
     S = sk.joint("shoulder")
-    C = S + Vector((0.018 * H, 0.0, 0.012 * H))
-    rx, ry, rz = 0.088 * H, 0.094 * H, 0.085 * H
+    C = S + Vector((0.008 * H, 0.0, -0.018 * H))
+    rx, ry, rz = 0.074 * H, 0.08 * H, 0.068 * H
 
     def shell(flare=0.0, drop=0.0):
         def surf(a, e):
             # a: azimuth in degrees from +X (out), positive toward the front; e: elevation.
             ar, er = math.radians(a), math.radians(e)
             k = 1 + flare * max(0.0, -e + 20) / 60
-            n = Vector((math.cos(er) * math.cos(ar) / rx, -math.cos(er) * math.sin(ar) / ry, math.sin(er) / rz)).normalized()
-            p = C + Vector((math.cos(er) * math.cos(ar) * rx * k, -math.cos(er) * math.sin(ar) * ry * k, math.sin(er) * rz - drop))
+            sq = lambda c, q=0.45: math.copysign(abs(c) ** q, c)  # noqa: E731  squarish: flat faces, hard corners
+            ce, se, ca, sa = sq(math.cos(er)), sq(math.sin(er)), sq(math.cos(ar)), sq(math.sin(ar))
+            n = Vector((ce * ca / rx, -ce * sa / ry, se / rz)).normalized()
+            p = C + Vector((ce * ca * rx * k, -ce * sa * ry * k, se * rz - drop))
             return p, n
         return surf
 
     # Cap: the big plate over the top and outside, crimson panel on its face.
-    patch("pauldron_cap", shell(), -78, 78, 2, 84, 0.0, 1.2, m["filigree"], root, m["trim"], 0.26, n=7)
+    patch("pauldron_cap", shell(), -80, 80, 2, 86, 0.0, 1.2, m["filigree"], root, m["trim"], 0.26, n=4)
     # The crimson shield panel on the outer face, gold framed.
-    patch("pauldron_panel", shell(), -34, 34, 10, 52, 0.45, 0.5, m["hull"], root, m["trim"], 0.2, n=6)
+    patch("pauldron_panel", shell(), -34, 34, 10, 52, 0.45, 0.5, m["hull"], root, m["trim"], 0.2, n=2)
     # Lames: three overlapping bands below, each flaring further out.
     for i in range(3):
         e1 = 6 - i * 17
         patch(f"pauldron_lame{i}", shell(flare=0.08 + 0.05 * i, drop=0.004 * H * i), -70 + i * 4, 70 - i * 4, e1 - 20, e1, 0.25, 1.0,
-              m["armour"], root, m["trim"], 0.2, n=7)
+              m["armour"], root, m["trim"], 0.2, n=3)
     # Crest: a gold ridge over the cap from front to back, and a flange behind it.
-    crest = [shell()(a, 62)[0] + shell()(a, 62)[1] * 1.0 for a in range(-70, 75, 10)]
-    shapes.sweep("pauldron_crest", crest, 0.32, m["trim"], parent=root, profile="square")
+    # Gothic flange: a pointed-arch plate standing up along the top, front to back.
+    base = C + Vector((0.035 * H, 0.0, rz * 0.7))
+    L = 0.055 * H
+    arch = [(-L, 0.0), (L, 0.0), (L, 0.035 * H), (L * 0.6, 0.07 * H), (0.0, 0.095 * H), (-L * 0.6, 0.07 * H), (-L, 0.035 * H)]
+    facet("pauldron_flange", base, (0, -1, 0), (-0.25, 0, 1), arch, 0.9, m["filigree"], root, m["trim"], m["hull"], inlay=0.55, frame_r=0.24)
     # Gothic arch on the outer face, over the crimson panel.
     p, n = shell()(0, 16)
     arch = shapes.lancet("pauldron_arch", 0.032 * H, 0.045 * H, 0.3, m["trim"], loc=p + n * 0.9, parent=root)
     arch.rotation_euler = (n.to_track_quat("-Y", "Z")).to_euler()
     # Peak spike at the top.
-    p, n = shell()(-10, 70)
-    shapes.sphere("pauldron_spike_ball", 0.013 * H, m["trim"], loc=p + n * 0.6, parent=root, segments=12)
-    spike = shapes.cylinder("pauldron_spike", 0.01 * H, 0.06 * H, m["trim"], loc=p + n * 0.6 + Vector((0, 0, 0.03 * H)), parent=root, verts=8, bevel=0.05, r2=0.0005)
+    p = base + Vector((-0.25, 0, 1)).normalized() * 0.095 * H
+    shapes.sphere("pauldron_spike_ball", 0.011 * H, m["trim"], loc=p, parent=root, segments=12)
+    shapes.cylinder("pauldron_spike", 0.008 * H, 0.04 * H, m["trim"], loc=p + Vector((0, 0, 0.02 * H)), parent=root, verts=8, bevel=0.05, r2=0.0005)
     # Studs round the cap's rim.
     for a in range(-70, 75, 20):
         q, nn = shell()(a, 8)
@@ -428,7 +432,7 @@ def helm(sk, m, root):
     c = sk.joint("head") + Vector((0, 0, 0.03 * H))
     # (height, half width, half depth, keel pull): chin up to the flat crown.
     rows = [(-1.15, 0.3, 0.42, 0.62), (-0.7, 0.66, 0.8, 0.5), (-0.18, 0.78, 0.9, 0.36),
-            (0.24, 0.8, 0.96, 0.55), (0.62, 0.66, 0.84, 0.26), (0.98, 0.44, 0.6, 0.1), (1.16, 0.32, 0.44, 0.0)]
+            (0.24, 0.8, 0.96, 0.55), (0.62, 0.66, 0.84, 0.26), (1.0, 0.46, 0.6, 0.12), (1.32, 0.24, 0.32, 0.05), (1.62, 0.04, 0.05, 0.0)]
 
     def ring(z, hx, hy, keel, sides=8):
         pts = []
@@ -472,11 +476,29 @@ def helm(sk, m, root):
     shapes.sweep("helm_keel", keel, 0.07 * R, m["trim"], parent=root, profile="square")
     rim = [p + Vector((0, 0, 0.02 * R)) for p in ring(*rows[0])]
     shapes.sweep("helm_rim", rim, 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
-    crown_ring = ring(*rows[-2])
-    shapes.sweep("helm_band", crown_ring, 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
+    shapes.sweep("helm_band", ring(*rows[4]), 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
+    # Gold ribs from the band up the four corners to the point, and a finial.
+    tip = c + Vector((0, 0, 1.64)) * R
+    for i in (1, 3, 5, 7):
+        pts = [ring(*r)[i] for r in rows[4:7]] + [tip]
+        shapes.sweep(f"helm_rib{i}", pts, 0.045 * R, m["trim"], parent=root, profile="square")
+    shapes.sphere("helm_finial", 0.09 * R, m["trim"], loc=tip + Vector((0, 0, 0.05 * R)), parent=root, segments=12)
 
 
-BUILDERS = {"cloth": cloth, "back": back, "crown": crown, "pauldron": pauldron, "torso": torso, "helm": helm}
+def collar(sk, m, root):
+    """A low, faceted gorget between the breastplate and the helm."""
+    H = sk.H
+    z0 = sk.joint("neck").z - 0.016 * H
+    rows = [(0.0, 0.075, 0.062), (0.022, 0.068, 0.058), (0.04, 0.05, 0.045)]
+    rings = []
+    for dz, rx, ry in rows:
+        rings.append([Vector((math.sin(2 * math.pi * i / 8 + math.pi / 8) * rx * H, -math.cos(2 * math.pi * i / 8 + math.pi / 8) * ry * H, z0 + dz * H)) for i in range(8)])
+    loft("gorget", rings, m["armour"], root)
+    for k, ring in enumerate(rings[:2]):
+        shapes.sweep(f"gorget_rim{k}", [p + Vector((0, 0, 0.1)) for p in ring], 0.22, m["trim"], cyclic=True, parent=root, profile="square")
+
+
+BUILDERS = {"cloth": cloth, "back": back, "pauldron": pauldron, "torso": torso, "helm": helm, "collar": collar}
 
 
 def build(component):
