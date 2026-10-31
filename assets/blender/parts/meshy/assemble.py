@@ -19,7 +19,13 @@ from mathutils import Vector  # noqa: E402
 
 SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot"}
 JOINT_OF = {c["id"]: c["joint"] for c in kit.skeleton.KIT["components"]}
-ITEM_SCALE = 1.7
+import os  # noqa: E402
+BRUTE = os.environ.get("MODEL") == "brute"
+FACTION, CLS, FRAME = ("foundries", "brute", "bulwark") if BRUTE else ("covenant", "paladin", "titan")
+ITEM_SCALE = 1.4 if BRUTE else 1.7
+ITEM_LIST = ((("mount_armLeft_0", "item_rocket-pod@brute", 1), ("mount_armRight_0", "item_autocannon@brute", 1)) if BRUTE else
+             (("mount_armLeft_0", "item_lance@paladin", 1), ("mount_armRight_0", "item_lance@paladin", -1),
+              ("mount_core_0", "item_carapace-gun@paladin", 1), ("mount_core_1", "item_carapace-gun@paladin", -1)))
 
 
 def load(path):
@@ -36,15 +42,15 @@ def load(path):
 def main(args):
     out = args[0]
     kit.reset_scene()
-    sk = Skeleton("covenant", "titan")
+    sk = Skeleton(FACTION, FRAME)
     everything = []
     d = PARTS_DIR / "kit"
     for comp in JOINT_OF:
         for side in (("L", "R") if comp in SIDED else (None,)):
-            name = f"covenant_{comp}{'-right' if side == 'R' else ''}_paladin"
+            name = f"{FACTION}_{comp}{'-right' if side == 'R' else ''}_{CLS}"
             f = d / f"{name}.glb"
             if not f.exists() and side == "R":
-                f = d / f"covenant_{comp}_paladin.glb"   # a left part, mirrored
+                f = d / f"{FACTION}_{comp}_{CLS}.glb"   # a left part, mirrored
             if not f.exists():
                 continue
             root, objs = load(f)
@@ -53,8 +59,7 @@ def main(args):
             if side == "R" and "-right" not in f.name:
                 root.scale.x = -0.001
             everything += objs
-    for mount, item, sx in (("mount_armLeft_0", "item_lance@paladin", 1), ("mount_armRight_0", "item_lance@paladin", -1),
-                            ("mount_core_0", "item_carapace-gun@paladin", 1), ("mount_core_1", "item_carapace-gun@paladin", -1)):
+    for mount, item, sx in ITEM_LIST:
         f = PARTS_DIR / f"{item}.glb"
         if not f.exists():
             continue

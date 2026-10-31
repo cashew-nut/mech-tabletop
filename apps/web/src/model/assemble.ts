@@ -15,6 +15,9 @@ import { bake } from './kit';
 import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
+/** Class items modelled on the right-hand side. */
+const NATIVE_RIGHT = new Set(['autocannon@brute']);
+
 export interface PartLibrary {
   chassis: Map<string, THREE.Object3D>;
   items: Map<string, THREE.Object3D>;
@@ -212,7 +215,11 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       part.name = `part_${id}`;
       part.scale.setScalar(scale);
       // A class's own item (lance@paladin) is modelled for the left; flip it for the right arm and the second core mount.
-      if (libName?.endsWith(`@${c.id}`) && (loc === 'armRight' || (loc === 'core' && (slot - def.slots) % 2 === 1))) part.scale.x *= -1;
+      // Items cut from a right-hand weapon (autocannon@brute) are the other way round.
+      if (libName?.endsWith(`@${c.id}`)) {
+        const right = loc === 'armRight' || (loc === 'core' && (slot - def.slots) % 2 === 1);
+        if (right !== NATIVE_RIGHT.has(libName)) part.scale.x *= -1;
+      }
       anchor.add(part);
     }
   }
