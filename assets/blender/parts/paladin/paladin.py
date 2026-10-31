@@ -215,12 +215,12 @@ def pauldron(sk, m, root):
     C = S + Vector((0.016 * H, 0.0, -0.01 * H))
     rx, ry, rz = 0.094 * H, 0.1 * H, 0.084 * H
 
-    def shell(flare=0.0, drop=0.0):
+    def shell(flare=0.0, drop=0.0, q=0.45):
         def surf(a, e):
             # a: azimuth in degrees from +X (out), positive toward the front; e: elevation.
             ar, er = math.radians(a), math.radians(e)
             k = 1 + flare * max(0.0, -e + 20) / 60
-            sq = lambda c, q=0.45: math.copysign(abs(c) ** q, c)  # noqa: E731  squarish: flat faces, hard corners
+            sq = lambda c: math.copysign(abs(c) ** q, c)  # noqa: E731  squarish: flat faces, hard corners
             ce, se, ca, sa = sq(math.cos(er)), sq(math.sin(er)), sq(math.cos(ar)), sq(math.sin(ar))
             n = Vector((ce * ca / rx, -ce * sa / ry, se / rz)).normalized()
             p = C + Vector((ce * ca * rx * k, -ce * sa * ry * k, se * rz - drop))
@@ -232,10 +232,12 @@ def pauldron(sk, m, root):
     # The crimson shield panel on the outer face, gold framed.
     patch("pauldron_panel", shell(), -34, 34, 10, 52, 0.45, 0.5, m["hull"], root, m["trim"], 0.2, n=2)
     # Lames: three overlapping bands below, each flaring further out.
+    # Lames: overlapping plates that step out and down like the render's,
+    # each narrower and flared further, so the side reads as layers, not a box.
     for i in range(3):
-        e1 = 6 - i * 17
-        patch(f"pauldron_lame{i}", shell(flare=0.08 + 0.05 * i, drop=0.004 * H * i), -70 + i * 4, 70 - i * 4, e1 - 20, e1, 0.25, 1.0,
-              m["armour"], root, m["trim"], 0.2, n=3)
+        e1 = 8 - i * 11
+        patch(f"pauldron_lame{i}", shell(flare=0.16 + 0.1 * i, drop=0.004 * H * i, q=0.75), -66 + i * 12, 66 - i * 12, e1 - 19, e1, 0.3 + 0.35 * i, 0.9,
+              m["filigree"] if i == 1 else m["armour"], root, m["trim"], 0.2, n=4)
     # Crest: a gold ridge over the cap from front to back, and a flange behind it.
     # Gothic flange: a pointed-arch plate standing up along the top, front to back.
     base = C + Vector((0.045 * H, 0.0, rz * 0.7))
@@ -504,6 +506,20 @@ def helm(sk, m, root):
     rim = [p + Vector((0, 0, 0.02 * R)) for p in ring(*rows[0])]
     shapes.sweep("helm_rim", rim, 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
     shapes.sweep("helm_band", ring(*rows[4]), 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
+    # The hood: an angular cowl of plate round the back and sides of the helm,
+    # open at the face, drawn up to a point behind the crown and edged in gold.
+    def cowl(a, e):
+        ar, er = math.radians(a), math.radians(e)
+        sq = lambda v, q=0.6: math.copysign(abs(v) ** q, v)  # noqa: E731
+        up = max(0.0, math.sin(er))
+        rx, ry, rz = 1.22 * R, 1.3 * R, 1.25 * R
+        p = c + Vector((sq(math.sin(ar)) * sq(math.cos(er)) * rx * (1 - 0.45 * up ** 2),
+                        -sq(math.cos(ar)) * sq(math.cos(er)) * ry * (1 - 0.4 * up ** 2) + 0.45 * R * up ** 2,
+                        math.sin(er) * rz * (1 + 0.55 * up ** 3) - 0.15 * R))
+        n = Vector((math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er))).normalized()
+        return p, n
+    patch("hood", cowl, 58, 302, -48, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=8)
+    patch("hood_band", cowl, 120, 240, -10, 60, 0.18, 0.3, m["filigree"], root, m["trim"], 0.04 * R, n=4)
     # Gold ribs from the band up the four corners to the point, and a finial.
     tip = c + Vector((0, 0, 1.64)) * R
     for i in (1, 3, 5, 7):
