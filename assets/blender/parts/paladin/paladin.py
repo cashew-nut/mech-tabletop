@@ -200,49 +200,52 @@ def facet(name, origin, u, v, pts, thick, mat, parent, frame_mat=None, inlay_mat
 
 
 def pauldron(sk, m, root):
-    """Angular gothic pauldron: a tall shield-shaped outer plate with a crimson
-    inlay and gold arch, a raked top plate, two lames below and a peak spike,
-    as on the north-star render (modelled for the left, mirrored on the right)."""
+    """A gothic pauldron of curved, overlapping plates round the shoulder: a
+    filigree cap with a crimson inlay and gold arch, three flared lames below,
+    a raised crest and a peak spike (north-star render; modelled for the left,
+    mirrored on the right)."""
     H = sk.H
     S = sk.joint("shoulder")
-    k = H / 62.0
-    tilt = math.radians(14)
-    # Outer plate: faces +X, leaning in at the top.
-    u = Vector((0, -1, 0))                         # across: toward the front
-    v = Vector((-math.sin(tilt), 0, math.cos(tilt)))  # up, leaning inward
-    o = S + Vector((0.083 * H, 0.0, -0.012 * H))
-    w, hi, lo = 0.085 * H, 0.06 * H, -0.085 * H
-    outer = [(-w, hi * 0.75), (-w * 0.35, hi), (w * 0.55, hi * 1.12), (w, hi * 0.7), (w * 0.92, lo * 0.55), (0.0, lo), (-w * 0.92, lo * 0.55)]
-    _, at = facet("pauldron_outer", o, u, v, outer, 1.4 * k, m["filigree"], root, m["trim"], m["hull"], inlay=0.66, frame_r=0.28 * k)
-    arch = shapes.lancet("pauldron_arch", 0.06 * H, 0.075 * H, 0.35 * k, m["trim"], loc=at(0.0, -0.045 * H, 1.1 * k), parent=root)
-    arch.rotation_euler = (0, -tilt, math.pi / 2)   # its face (-Y) turned to face +X
-    # Top plate: from over the shoulder joint out to the outer plate's top edge.
-    tu = Vector((0, -1, 0))
-    tv = Vector((math.cos(math.radians(24)), 0, -math.sin(math.radians(24))))   # outward and down
-    to = S + Vector((0.005 * H, 0.0, 0.088 * H))
-    top = [(-0.075 * H, -0.035 * H), (0.075 * H, -0.035 * H), (0.085 * H, 0.06 * H), (0.03 * H, 0.085 * H), (-0.07 * H, 0.07 * H)]
-    facet("pauldron_top", to, tv.cross(tu).cross(tv) * 0 + tu, tv, top, 1.3 * k, m["armour"], root, m["trim"], None, frame_r=0.24 * k)
-    # Front cheek: closes the gap ahead of the shoulder.
-    fu = Vector((1, 0, 0))
-    fv = Vector((0, 0, 1))
-    front = [(-0.035 * H, 0.07 * H), (0.045 * H, 0.075 * H), (0.045 * H, -0.06 * H), (-0.01 * H, -0.075 * H), (-0.035 * H, -0.03 * H)]
-    bo = S + Vector((0.035 * H, 0.085 * H, 0.0))
-    facet("pauldron_back", bo, fu, fv, front, 1.0 * k, m["armour"], root, m["trim"], None, frame_r=0.2 * k)
-    # Lames under the outer plate.
-    for i in range(2):
-        lo_ = S + Vector((0.074 * H - i * 0.006 * H, 0.0, -0.11 * H - i * 0.03 * H))
-        lame = [(-0.075 * H, 0.016 * H), (0.075 * H, 0.016 * H), (0.065 * H, -0.016 * H), (-0.065 * H, -0.016 * H)]
-        facet(f"pauldron_lame{i}", lo_, u, v, lame, 1.0 * k, m["armour"], root, m["trim"], None, frame_r=0.17 * k)
-    # Peak spike and finial studs.
-    peak = at(w * 0.55, hi * 1.12, 0.0) + Vector((-0.01 * H, 0, 0.005 * H))
-    spike = shapes.cylinder("pauldron_spike", 0.012 * H, 0.06 * H, m["trim"], loc=peak + Vector((0, 0, 0.03 * H)), parent=root, verts=8, bevel=0.05, r2=0.0005)
-    shapes.sphere("pauldron_spike_ball", 0.014 * H, m["trim"], loc=peak, parent=root, segments=12)
-    for a, b in ((-w * 0.7, hi * 0.5), (w * 0.7, hi * 0.45), (-w * 0.6, lo * 0.4), (w * 0.6, lo * 0.4)):
-        shapes.sphere("pauldron_stud", 0.006 * H, m["trim"], loc=at(a, b, 1.0 * k), parent=root, segments=8)
-    # Turn the whole pauldron about the shoulder so its crimson face looks
-    # forward-out, as the render shows it from the front.
+    C = S + Vector((0.018 * H, 0.0, 0.012 * H))
+    rx, ry, rz = 0.088 * H, 0.094 * H, 0.085 * H
+
+    def shell(flare=0.0, drop=0.0):
+        def surf(a, e):
+            # a: azimuth in degrees from +X (out), positive toward the front; e: elevation.
+            ar, er = math.radians(a), math.radians(e)
+            k = 1 + flare * max(0.0, -e + 20) / 60
+            n = Vector((math.cos(er) * math.cos(ar) / rx, -math.cos(er) * math.sin(ar) / ry, math.sin(er) / rz)).normalized()
+            p = C + Vector((math.cos(er) * math.cos(ar) * rx * k, -math.cos(er) * math.sin(ar) * ry * k, math.sin(er) * rz - drop))
+            return p, n
+        return surf
+
+    # Cap: the big plate over the top and outside, crimson panel on its face.
+    patch("pauldron_cap", shell(), -78, 78, 2, 84, 0.0, 1.2, m["filigree"], root, m["trim"], 0.26, n=7)
+    # The crimson shield panel on the outer face, gold framed.
+    patch("pauldron_panel", shell(), -34, 34, 10, 52, 0.45, 0.5, m["hull"], root, m["trim"], 0.2, n=6)
+    # Lames: three overlapping bands below, each flaring further out.
+    for i in range(3):
+        e1 = 6 - i * 17
+        patch(f"pauldron_lame{i}", shell(flare=0.08 + 0.05 * i, drop=0.004 * H * i), -70 + i * 4, 70 - i * 4, e1 - 20, e1, 0.25, 1.0,
+              m["armour"], root, m["trim"], 0.2, n=7)
+    # Crest: a gold ridge over the cap from front to back, and a flange behind it.
+    crest = [shell()(a, 62)[0] + shell()(a, 62)[1] * 1.0 for a in range(-70, 75, 10)]
+    shapes.sweep("pauldron_crest", crest, 0.32, m["trim"], parent=root, profile="square")
+    # Gothic arch on the outer face, over the crimson panel.
+    p, n = shell()(0, 16)
+    arch = shapes.lancet("pauldron_arch", 0.032 * H, 0.045 * H, 0.3, m["trim"], loc=p + n * 0.9, parent=root)
+    arch.rotation_euler = (n.to_track_quat("-Y", "Z")).to_euler()
+    # Peak spike at the top.
+    p, n = shell()(-10, 70)
+    shapes.sphere("pauldron_spike_ball", 0.013 * H, m["trim"], loc=p + n * 0.6, parent=root, segments=12)
+    spike = shapes.cylinder("pauldron_spike", 0.01 * H, 0.06 * H, m["trim"], loc=p + n * 0.6 + Vector((0, 0, 0.03 * H)), parent=root, verts=8, bevel=0.05, r2=0.0005)
+    # Studs round the cap's rim.
+    for a in range(-70, 75, 20):
+        q, nn = shell()(a, 8)
+        shapes.sphere("pauldron_stud", 0.0055 * H, m["trim"], loc=q + nn * 1.4, parent=root, segments=8)
+    # Turn the pauldron about the shoulder so its crimson face looks forward-out.
     bpy.context.view_layer.update()
-    turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-32), 4, "Z") @ Matrix.Translation(-S)
+    turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-28), 4, "Z") @ Matrix.Translation(-S)
     for c in root.children:
         c.matrix_world = turn @ c.matrix_world
 
@@ -388,8 +391,8 @@ def torso(sk, m, root):
         # Two rows of abdominal plates, narrowing to the waist.
         for k, (ta, tb, w) in enumerate(((0.3, 0.52, 0.62), (0.06, 0.28, 0.52))):
             hx = half((ta + tb) / 2)[0]
-            patch(f"abdomen{side}{k}", lambda x, t: front(s * x, t), 0.004 * H, hx * w * 1.15, ta, tb, 0.3, 0.9,
-                  m["armour"], root, m["trim"], 0.18, inlay_mat=m["hull"] if k == 0 else None, inlay=0.32)
+            patch(f"abdomen{side}{k}", lambda x, t: front(s * x, t), 0.004 * H, hx * w * 1.15, ta, tb, 0.6, 0.9,
+                  m["filigree"], root, m["trim"], 0.22, inlay_mat=m["hull"] if k == 0 else None, inlay=0.32)
         # Flank plates wrapping round the sides.
         def flank(a, t, s=s):
             hx, hy = half(t)

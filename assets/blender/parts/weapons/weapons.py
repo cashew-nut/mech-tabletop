@@ -164,16 +164,17 @@ def lance(m, root, reach=13.0):
 
 
 def lance_paladin(m, root):
-    """The Paladin's siege-blade: the Covenant lance, three times the reach, hung
-    point-down and forward as in the north-star render (about 52 degrees below
-    the horizontal), long enough that the tip meets the ground ahead of the feet."""
+    """The Paladin's siege-blade: a long gold-hilted sword (the Covenant blade at
+    twice the reach), hung point-down and forward as in the north-star render
+    (about 52 degrees below the horizontal), its tip meeting the ground ahead
+    of the feet."""
     pivot = empty("siege_pivot", size=2)
     pivot.parent = root
-    lance(m, pivot, reach=20.0)
+    melee_blade(m, pivot, reach=20.0, width=0.95)
     pivot.rotation_euler = (math.radians(52), 0, 0)
 
 
-def melee_blade(m, root):
+def melee_blade(m, root, reach=10.0, width=1.05):
     """A long straight sword-blade on a gold-housed hilt with a swept guard."""
     clamp_block(m, root)
     along("grip", 0.45, 1.6, -0.8, m["metal"], root)
@@ -192,12 +193,14 @@ def melee_blade(m, root):
     shapes.lancet("ricasso_arch", 0.55, 0.85, 0.2, m["trim"], loc=(0, -2.2, 0.81), rot=(-math.pi / 2, 0, 0), parent=root)
     # The blade: flat-faced with a fuller, tapering to a needle point.
     n = 20
-    path = [(0, -3.3 - 10.0 * i / (n - 1), 0) for i in range(n)]
-    w = lambda u: 1.05 * (1 - u ** 1.6) * (1 - 0.2 * u) + 0.01  # noqa: E731
+    n = max(n, int(reach * 2))
+    path = [(0, -3.3 - reach * i / (n - 1), 0) for i in range(n)]
+    w = lambda u: width * (1 - u ** 1.6) * (1 - 0.2 * u) + 0.01  # noqa: E731
     t = lambda u: 0.55 * (1 - u ** 1.6) + 0.01  # noqa: E731
     loft("blade", path, w, t, m["metal"], root, shape="blade", up=(0, 0, 1))
     # Gold edging up the spine of the blade's first third.
-    shapes.sweep("blade_spine", [(0, -3.4 - 3.5 * i / 7, 0.52 * (1 - (i / 7 * 0.35) ** 1.6)) for i in range(8)], 0.08, m["trim"], parent=root)
+    spine = 3.5 * reach / 10.0
+    shapes.sweep("blade_spine", [(0, -3.4 - spine * i / 7, 0.52 * (1 - (i / 7 * 0.35) ** 1.6)) for i in range(8)], 0.08, m["trim"], parent=root)
 
 
 def carapace_gun(m, root):
