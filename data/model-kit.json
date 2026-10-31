@@ -140,5 +140,101 @@
     "armRight": 3,
     "core": 4,
     "legs": 2
+  },
+  "frameTunes": {
+    "covenant/titan": {
+      "$comment": "Joints (mm, left side) measured from the Meshy Paladin; see assets/blender/parts/meshy.",
+      "joints": {
+        "pelvis": [
+          0.0,
+          0.0,
+          33.667
+        ],
+        "spine": [
+          0.0,
+          0.0,
+          37.0
+        ],
+        "chest": [
+          0.0,
+          0.0,
+          42.333
+        ],
+        "neck": [
+          0.0,
+          -1.667,
+          47.667
+        ],
+        "head": [
+          0.0,
+          -3.333,
+          49.667
+        ],
+        "shoulder": [
+          11.333,
+          0.0,
+          44.333
+        ],
+        "elbow": [
+          15.0,
+          0.0,
+          35.667
+        ],
+        "wrist": [
+          18.333,
+          -1.667,
+          26.667
+        ],
+        "hip": [
+          6.333,
+          -0.667,
+          32.0
+        ],
+        "knee": [
+          7.0,
+          -1.667,
+          19.0
+        ],
+        "ankle": [
+          7.667,
+          -1.667,
+          5.667
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            0.667,
+            -8.333,
+            -3.0
+          ]
+        ],
+        "mount_core_0": [
+          "chest",
+          [
+            7.333,
+            3.333,
+            11.334
+          ]
+        ],
+        "mount_core_1": [
+          "chest",
+          [
+            -7.333,
+            3.333,
+            11.334
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            -0.667,
+            -8.333,
+            -3.0
+          ]
+        ]
+      }
+    }
   }
 }

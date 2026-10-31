@@ -81,6 +81,10 @@ class Skeleton:
             "knee": Vector((0.085 * H * W, -0.02 * H, knee_z)),
             "ankle": Vector((0.10 * H * W, 0.0, ankle_z)),
         }
+        # A class's own model can pin the joints and mounts to its proportions (frameTunes in model-kit.json).
+        self.tune = KIT.get("frameTunes", {}).get(f"{faction}/{frame}", {})
+        for name, pos in self.tune.get("joints", {}).items():
+            self._j[name] = Vector(pos)
 
     def joint(self, name, side="L"):
         """World position of a joint; side "R" mirrors X."""
@@ -113,6 +117,9 @@ class Skeleton:
             ]
             for i in range(sp[loc]):
                 j, off = spots[min(i, len(spots) - 1)]
+                tuned = self.tune.get("mounts", {}).get(f"mount_{loc}_{i}")
+                if tuned:
+                    off = Vector(tuned[1])
                 out.append((f"mount_{loc}_{i}", j, side, off, 0.0))
         core = [
             (Vector((0.10 * H * self.W, 0.02 * H, 0.15 * H)), 0.0),
@@ -122,6 +129,9 @@ class Skeleton:
         ]
         for i in range(sp["core"]):
             off, rz = core[min(i, len(core) - 1)]
+            tuned = self.tune.get("mounts", {}).get(f"mount_core_{i}")
+            if tuned:
+                off = Vector(tuned[1])
             out.append((f"mount_core_{i}", "chest", None, off, rz))
         for i in range(sp["legs"]):
             side, sx = ("L", 1) if i % 2 == 0 else ("R", -1)
