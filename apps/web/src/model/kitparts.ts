@@ -91,6 +91,6 @@ export function kitCandidates(faction: string, cls: string, frame: string): stri
   return out;
 }
 
-/** An item's Blender part: the faction's variant first, then the shared one. */
-export const itemPartName = (names: Names, id: string, faction?: string) =>
-  faction && names.has(`${id}@${faction}`) ? `${id}@${faction}` : names.has(id) ? id : null;
+/** An item's Blender part: the class's own version (lance@paladin), then the faction's, then the shared one. */
+export const itemPartName = (names: Names, id: string, faction?: string, cls?: string) =>
+  cls && names.has(`${id}@${cls}`) ? `${id}@${cls}` : faction && names.has(`${id}@${faction}`) ? `${id}@${faction}` : names.has(id) ? id : null;

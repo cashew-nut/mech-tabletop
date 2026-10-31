@@ -2,6 +2,7 @@
 //   npm run render -- [outDir] [chassis...]
 // ANGLES=35,145 picks the camera angles in degrees; PAINT=#1f5c63 sets the hull colour;
 // SET=b swaps in the second showcase loadout; BACKDROP=foundries picks the world; ELEV=0.12 lowers the camera.
+// LOADOUT=armLeft:lance,armRight:lance and DIST=0.8 set the equipment and zoom.
 // KIT=force shows the Blender kit body with stand-ins in any gaps.
 // Starts the web dev server, opens apps/web/render.html in headless Chromium
 // (Playwright) and screenshots each walker from a few angles.
@@ -17,7 +18,7 @@ const [outDir = 'renders', ...picked] = process.argv.slice(2);
 const chassis = picked.length ? picked : ['lancer', 'sentinel', 'paladin', 'scavenger', 'brute', 'artillery', 'wraith', 'seer', 'goliath'];
 const angles = (process.env.ANGLES ?? '35,145').split(',').map(Number);
 const paint = (process.env.PAINT ? `&paint=${encodeURIComponent(process.env.PAINT)}` : '') + (process.env.SET ? `&set=${process.env.SET}` : '') +
-  (process.env.BACKDROP ? `&backdrop=${process.env.BACKDROP}` : '') + (process.env.ELEV ? `&elev=${process.env.ELEV}` : '') + (process.env.KIT ? `&kit=${process.env.KIT}` : '');
+  (process.env.BACKDROP ? `&backdrop=${process.env.BACKDROP}` : '') + (process.env.ELEV ? `&elev=${process.env.ELEV}` : '') + (process.env.KIT ? `&kit=${process.env.KIT}` : '') + (process.env.LOADOUT ? `&loadout=${process.env.LOADOUT}` : '') + (process.env.DIST ? `&dist=${process.env.DIST}` : '');
 mkdirSync(outDir, { recursive: true });
 
 const server = spawn('npx', ['vite', '--port', '5199', '--strictPort'], { cwd: resolve('apps/web'), stdio: 'ignore', detached: true });

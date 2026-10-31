@@ -59,6 +59,13 @@ class Skeleton:
         self.L = L = p["limbLength"]
         self.G = p["limbGirth"] * math.sqrt(W)
         self.base = f["base"]
+        # A frame can be re-proportioned for one faction (the Paladin is tall and narrow).
+        tune = KIT.get("frameTunes", {}).get(f"{faction}/{frame}", {})
+        if tune:
+            self.H = H = tune.get("height", self.H)
+            self.W = W = tune.get("width", self.W)
+            self.L = L = tune.get("limbLength", self.L)
+            self.G = p["limbGirth"] * math.sqrt(W) * tune.get("girth", 1.0)
         ankle_z = BASE_THICKNESS + 0.05 * H
         knee_z = ankle_z + 0.22 * H * L
         hip_z = knee_z + 0.22 * H * L

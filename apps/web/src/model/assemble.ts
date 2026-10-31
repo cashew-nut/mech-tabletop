@@ -176,7 +176,7 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       const anchor = mounts[loc][slot];
       slot += def.slots;
       if (!anchor) continue; // over-full location: nothing left to attach to
-      const libName = lib ? itemPartName(lib.items, id, c.faction) : null;
+      const libName = lib ? itemPartName(lib.items, id, c.faction, c.id) : null;
       const fromLib = libName ? lib!.items.get(libName) : undefined;
       const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());
       if (fromLib) repaint(part, palette);

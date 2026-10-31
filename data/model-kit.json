@@ -29,6 +29,10 @@
       }
     }
   },
+  "frameTunes": {
+    "$comment": "Per faction/frame overrides of the proportions: the Paladin is tall and narrow in the north-star render.",
+    "covenant/titan": { "height": 62, "width": 0.82, "limbLength": 1.12, "girth": 1.0 }
+  },
   "frames": {
     "scout": {
       "height": 28,
