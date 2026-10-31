@@ -1368,6 +1368,12 @@ button.end {
   color: #a99a74;
 }
 
+.hud-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+}
+
 .hud-unit dd {
   margin: 0;
   text-align: right;

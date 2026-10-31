@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
 import { hexCentre, type Highlight } from './HexMap';
-import { card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
+import { PUFF, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
 
 const PIXEL = 3;
 const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
@@ -177,6 +177,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const markerTextures = { attack: markerTexture('attack'), move: markerTexture('move'), jump: markerTexture('jump'), smoke: markerTexture('smoke') };
     const mapCentre = new THREE.Vector3();
     const focus = new THREE.Vector3();
+    const puffs: THREE.Mesh[] = [];
     let builtMap = '';
     const buildTerrain = () => {
       const { state } = live.current;
@@ -207,6 +208,8 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         hi.z = Math.max(hi.z, base.z);
       }
       dressTable(terrain, lo, hi);
+      puffs.length = 0;
+      terrain.traverse((o) => o.userData[PUFF] && puffs.push(o as THREE.Mesh));
       if (builtMap !== state.map.id) {
         builtMap = state.map.id;
         // Close in on the action like the concept art, rather than showing the whole 16x12 map; the focus follows the selected walker.
@@ -240,6 +243,11 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         m.position.copy(p);
         dynamic.add(m);
         pulsing.push(m);
+        const bloom = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ map: bloomTexture(), color: MARKER_HEX[kind], transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
+        bloom.rotation.x = -Math.PI / 2;
+        bloom.position.set(p.x, p.y + 0.01, p.z);
+        bloom.scale.setScalar(1.45);
+        dynamic.add(bloom);
       };
       for (const [key, kind] of highlights) {
         const [q, r] = key.split(',').map(Number);
@@ -341,6 +349,16 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     let raf = 0;
     const loop = (t: number) => {
       raf = requestAnimationFrame(loop);
+      for (const m of puffs) {
+        const d = m.userData[PUFF] as { baseY: number; phase: number; drift: number };
+        const f = (t / 4200 + d.phase) % 1;
+        m.position.y = d.baseY + f * 1.5;
+        m.position.x += (Math.sin(t / 900 + d.phase * 6) * 0.0015 + d.drift * 0.002);
+        if (f < 0.02) m.position.x = 0.25; // restart above the chimney
+        m.scale.setScalar(0.16 + f * 0.5);
+        m.rotation.y = f * 3;
+        (m.material as THREE.MeshLambertMaterial).opacity = Math.min(1, f * 6) * (1 - f) * 0.9;
+      }
       const k = 0.7 + 0.3 * Math.sin(t / 220);
       for (const m of pulsing) (m.material as THREE.MeshBasicMaterial).opacity = Math.min(1, k * 1.05);
       const step = focus.clone().sub(controls.target).multiplyScalar(0.08); // glide to the new focus, carrying the camera with it

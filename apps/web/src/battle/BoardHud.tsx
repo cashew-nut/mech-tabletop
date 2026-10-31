@@ -7,6 +7,17 @@ const TERRAIN_FILL: Record<string, string> = { open: '#7b7a73', rough: '#6b6457'
 const SIDE_FILL = ['#3aa7ff', '#ff5a1f'];
 const SIZE = 26;
 
+// Pixel-style icons drawn on a 8x8 grid.
+const Icon = ({ rows, colour }: { rows: string[]; colour: string }) => (
+  <svg className="hud-icon" viewBox="0 0 8 8" aria-hidden="true" shapeRendering="crispEdges">
+    {rows.flatMap((row, y) => [...row].map((c, x) => (c === '#' ? <rect key={`${x}${y}`} x={x} y={y} width={1} height={1} fill={colour} /> : null)))}
+  </svg>
+);
+const HEART = ['.##..##.', '########', '########', '########', '.######.', '..####..', '...##...', '........'];
+const FLAME = ['...#....', '..##....', '..###.#.', '.######.', '.######.', '.######.', '..####..', '........'];
+const CRATE = ['########', '#.#..#.#', '##.##.##', '#..##..#', '#..##..#', '##.##.##', '#.#..#.#', '########'];
+const BLADE = ['......##', '.....###', '....###.', '#..###..', '.####...', '..##....', '.#.##...', '#...#...'];
+
 function Minimap({ state, focus }: { state: GameState; focus: WalkerState | null }) {
   const cells = Object.keys(state.map.hexes).map((k) => {
     const [q, r] = k.split(',').map(Number);
@@ -51,15 +62,23 @@ export function BoardHud({ state, focus, order }: { state: GameState; focus: Wal
         {focus ? (
           <>
             <strong>{getChassis(focus.chassis).name.toUpperCase()}-CLASS</strong>
-            <span className="hud-name">{focus.name}</span>
+            <span className="hud-name">
+              <Icon rows={BLADE} colour="#d9cfb4" /> {focus.name}
+            </span>
             <dl>
-              <dt>ARMOUR</dt>
+              <dt>
+                <Icon rows={HEART} colour="#e04848" /> ARMOUR
+              </dt>
               <dd>
                 {armour}/{maxArmour}
               </dd>
-              <dt>OVERPRESSURE</dt>
+              <dt>
+                <Icon rows={FLAME} colour="#ff8a3d" /> OVERPRESSURE
+              </dt>
               <dd className={focus.overpressure ? 'hot' : ''}>{focus.overpressure}</dd>
-              <dt>RESERVE</dt>
+              <dt>
+                <Icon rows={CRATE} colour="#c8a064" /> RESERVE
+              </dt>
               <dd>{focus.reserve}</dd>
             </dl>
           </>
