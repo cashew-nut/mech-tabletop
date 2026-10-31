@@ -176,12 +176,14 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       const anchor = mounts[loc][slot];
       slot += def.slots;
       if (!anchor) continue; // over-full location: nothing left to attach to
-      const libName = lib ? itemPartName(lib.items, id, c.faction) : null;
+      const libName = lib ? itemPartName(lib.items, id, c.faction, c.id) : null;
       const fromLib = libName ? lib!.items.get(libName) : undefined;
       const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());
       if (fromLib) repaint(part, palette);
       part.name = `part_${id}`;
       part.scale.setScalar(scale);
+      // A class's own item (lance@paladin) is modelled for the left; flip it for the right arm and the second core mount.
+      if (libName?.endsWith(`@${c.id}`) && (loc === 'armRight' || (loc === 'core' && (slot - def.slots) % 2 === 1))) part.scale.x *= -1;
       anchor.add(part);
     }
   }
