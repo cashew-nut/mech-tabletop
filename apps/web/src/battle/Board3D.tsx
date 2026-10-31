@@ -163,7 +163,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     el.appendChild(canvas);
 
     const scene = new THREE.Scene();
-    scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x3a3128, 0.8));
+    scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 1.05));
     const sun = new THREE.DirectionalLight(0xffd9a0, 1.4);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);

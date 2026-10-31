@@ -25,12 +25,12 @@ def lin(h):
     return tuple(((h >> s & 255) / 255) ** 2.2 for s in (16, 8, 0)) + (1.0,)
 
 
-STONE = [lin(c) for c in (0x8d8b84, 0x7f7d76, 0x96948b, 0x85827a)]
+STONE = [lin(c) for c in (0xa5a299, 0x97948b, 0xb0ada3, 0x9d9a90)]
 MORTAR = lin(0x4a4843)
-DARK = lin(0x3c3a36)
-WALL = [lin(c) for c in (0x8a877d, 0x7a786f, 0x939084)]
-TRIM = lin(0xa19e92)
-ROOF = lin(0x3d3b37)
+DARK = lin(0x5a5750)
+WALL = [lin(c) for c in (0xa8a59a, 0x96938a, 0xb3b0a3)]
+TRIM = lin(0xbab7aa)
+ROOF = lin(0x55524c)
 WOOD = lin(0x7a5632)
 MOSS = lin(0x5f7448)
 SOOT = lin(0x24221f)
@@ -110,7 +110,7 @@ def join(objs, name):
     return obj
 
 
-def colourise(obj, classify, seed, ao_len=0.45, ao_strength=0.45, rays=18):
+def colourise(obj, classify, seed, ao_len=0.45, ao_strength=0.35, rays=18):
     """Bake colour and per-corner ambient occlusion into the `Col` vertex colours."""
     rng = random.Random(seed)
     me = obj.data
