@@ -31,7 +31,16 @@ import {
 } from '@brass-charter/rules';
 import examples from '../../../../data/lances/examples.json';
 import { loadDraft, loadSaved } from '../storage';
+import { Board3D } from './Board3D';
 import { HexMap, type Highlight } from './HexMap';
+
+function webglAvailable() {
+  try {
+    return !!document.createElement('canvas').getContext('webgl2');
+  } catch {
+    return false;
+  }
+}
 
 const EXAMPLES = examples.lances as LanceInput[];
 const HUMAN = 0;
@@ -159,6 +168,11 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   const [targetId, setTargetId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('move');
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<'3d' | '2d'>(() => (localStorage.getItem('boardView') === '2d' || !webglAvailable() ? '2d' : '3d'));
+  const chooseView = (v: '3d' | '2d') => {
+    localStorage.setItem('boardView', v);
+    setView(v);
+  };
 
   const act = (action: Action) => {
     try {
@@ -305,7 +319,15 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
             <strong>{state.vp[1]}</strong> {state.lances[1].name}
           </span>
         </div>
-        <HexMap state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
+        <div className="view-toggle" role="group" aria-label="Board view">
+          <button className={view === '3d' ? 'on' : ''} onClick={() => chooseView('3d')}>3D</button>
+          <button className={view === '2d' ? 'on' : ''} onClick={() => chooseView('2d')}>Flat map</button>
+        </div>
+        {view === '3d' ? (
+          <Board3D state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
+        ) : (
+          <HexMap state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
+        )}
         <p className="legend">
           Rough ∴ costs 2 to enter · Light cover ♣ +1 TN · Heavy cover ▲ +2 TN, blocks sight through it · Dark hexes are impassable · Rings
           mark high ground · Gold circles are objectives{sv ? ' · The brass diamond is the surveyor' : ''}
