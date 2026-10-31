@@ -510,10 +510,11 @@ def helm(sk, m, root):
     H = sk.H
     S = sk.joint("shoulder")
     neck = sk.joint("neck")
-    O = Vector((0.0, neck.y, S.z - 0.006 * H))
+    K = 1.28  # the head's scale against the body
+    O = Vector((0.0, neck.y + 0.004 * H, S.z - 0.016 * H))
 
     def V(x, y, z):
-        return O + Vector((x, y, z)) * H
+        return O + Vector((x, y, z)) * H * K
 
     # The cowl's section: straight cheeks to the spring line, then a
     # faceted pointed arch.
@@ -538,8 +539,8 @@ def helm(sk, m, root):
             a0, a1 = j * n + i, j * n + i + 1
             faces.append((a0, a1, a1 + n, a0 + n))
     faces.append(tuple(range((len(rings) - 1) * n, len(rings) * n)))  # the nape, closed
-    solid("hood", verts, faces, [m["armour"]], root, 0.0045 * H)
-    shapes.sweep("hood_edge", verts[:n], 0.0026 * H, m["trim"], parent=root, profile="square")
+    solid("hood", verts, faces, [m["armour"]], root, 0.0045 * H * K)
+    shapes.sweep("hood_edge", verts[:n], 0.0026 * H * K, m["trim"], parent=root, profile="square")
 
     # The faceplate, recessed behind the cowl's edge: two planes meeting in a
     # keel, the chin pushed a little forward.
@@ -559,16 +560,35 @@ def helm(sk, m, root):
 
 
 def collar(sk, m, root):
-    """A low, faceted gorget between the breastplate and the helm."""
+    """The mantle that seats the head in the body: a faceted collar of plate
+    rising from the whole top of the breastplate, sloping up from the
+    pauldrons to stand round the hood's sides and back, cut low at the front
+    so the face stays clear."""
     H = sk.H
-    z0 = sk.joint("neck").z - 0.016 * H
-    rows = [(0.0, 0.075, 0.062), (0.022, 0.068, 0.058), (0.04, 0.05, 0.045)]
+    S = sk.joint("shoulder")
+    z1 = S.z + 0.015 * H  # the breastplate's top, as in torso()
+    yc = 0.012 * H
+    # (rise above z1, half width, half depth, front cut) per ring, base to lip.
+    rows = [(-0.004, 0.128, 0.07, 0.0), (0.03, 0.098, 0.068, 0.032), (0.058, 0.076, 0.066, 0.062)]
+    sides = 12
     rings = []
-    for dz, rx, ry in rows:
-        rings.append([Vector((math.sin(2 * math.pi * i / 8 + math.pi / 8) * rx * H, -math.cos(2 * math.pi * i / 8 + math.pi / 8) * ry * H, z0 + dz * H)) for i in range(8)])
-    loft("gorget", rings, m["armour"], root)
-    for k, ring in enumerate(rings[:2]):
-        shapes.sweep(f"gorget_rim{k}", [p + Vector((0, 0, 0.1)) for p in ring], 0.22, m["trim"], cyclic=True, parent=root, profile="square")
+    for dz, hx, hy, cut in rows:
+        ring = []
+        for i in range(sides):
+            a = 2 * math.pi * (i + 0.5) / sides
+            ca = math.cos(a)  # 1 at the front
+            x, y = math.sin(a) * hx, -math.cos(a) * hy
+            z = dz - cut * max(0.0, ca) ** 1.5
+            ring.append(Vector((x * H, yc + y * H, z1 + z * H)))
+        rings.append(ring)
+    verts = [p for r in rings for p in r]
+    faces = []
+    for j in range(len(rings) - 1):
+        for i in range(sides):
+            a0, a1 = j * sides + i, j * sides + (i + 1) % sides
+            faces.append((a0, a1, a1 + sides, a0 + sides))
+    solid("mantle", verts, faces, [m["armour"]], root, 0.006 * H)
+    shapes.sweep("mantle_lip", rings[-1], 0.0034 * H, m["trim"], cyclic=True, parent=root, profile="square")
 
 
 # ------------------------------------------------------------------ angular limbs
