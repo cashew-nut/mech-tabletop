@@ -148,9 +148,9 @@ def lance(m, root, reach=13.0):
         shapes.rivet_row(f"vamplate_stud{k}", (1.1 * math.cos(a), -2.75, 1.1 * math.sin(a)), (1.1 * math.cos(a), -2.75, 1.1 * math.sin(a)),
                          1, 0.12, m["trim"], parent=root, normal=(math.cos(a), -0.6, math.sin(a)))
     # The spike, round-sectioned, with gold flutes on its first third.
-    n = 24 if reach < 20 else 48
+    n = 24 if reach < 18 else 48
     path = [(0, -4.4 - reach * i / (n - 1), 0) for i in range(n)]
-    thin = 1.0 if reach < 20 else 0.8
+    thin = 1.0 if reach < 18 else 0.85
     loft("spike", path, lambda u: thin * (1 - u) ** 1.1, lambda u: thin * (1 - u) ** 1.1, m["armour"], root, shape="round", sides=16)
     for k in range(6):
         a = 2 * math.pi * k / 6
@@ -158,19 +158,19 @@ def lance(m, root, reach=13.0):
         shapes.sweep(f"spike_flute{k}", pts, 0.07, m["trim"], parent=root)
     ring("spike_collar", 1.02, 0.16, -4.5, m["trim"], root)
     ring("spike_band", 0.7, 0.1, -8.7, m["trim"], root)
-    if reach >= 20:
-        for y in (-14.0, -20.0):
+    if reach >= 18:
+        for y in (-14.0, -19.0):
             ring(f"spike_band{int(-y)}", 0.5 * thin * (1 - (-y - 4.4) / reach) ** 1.1 + 0.25, 0.09, y, m["trim"], root)
 
 
 def lance_paladin(m, root):
     """The Paladin's siege-blade: the Covenant lance, three times the reach, hung
-    point-down along the forearm as in the north-star render (about 75 degrees
-    below the horizontal, a little forward)."""
+    point-down and forward as in the north-star render (about 52 degrees below
+    the horizontal), long enough that the tip meets the ground ahead of the feet."""
     pivot = empty("siege_pivot", size=2)
     pivot.parent = root
-    lance(m, pivot, reach=34.0)
-    pivot.rotation_euler = (math.radians(75), 0, 0)
+    lance(m, pivot, reach=20.0)
+    pivot.rotation_euler = (math.radians(52), 0, 0)
 
 
 def melee_blade(m, root):

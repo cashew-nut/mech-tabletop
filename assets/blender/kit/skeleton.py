@@ -88,6 +88,12 @@ class Skeleton:
             "knee": Vector((0.085 * H * W, -0.02 * H, knee_z)),
             "ankle": Vector((0.10 * H * W, 0.0, ankle_z)),
         }
+        # A wider stance splays the legs: knees and ankles move out from the hips.
+        stance = tune.get("stance", 1.0) if tune else 1.0
+        if stance != 1.0:
+            hip_x = self._j["hip"].x
+            for j, k in (("knee", 1.0), ("ankle", 1.0)):
+                self._j[j].x = hip_x + (self._j[j].x - hip_x) * stance + (stance - 1.0) * 0.06 * H * k * (1.0 if j == "knee" else 1.9)
 
     def joint(self, name, side="L"):
         """World position of a joint; side "R" mirrors X."""
