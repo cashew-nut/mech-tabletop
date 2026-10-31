@@ -274,7 +274,7 @@ def crown(sk, m, root):
     pinnacles, rising from the helm (north-star render)."""
     H = sk.H
     head = sk.joint("head")
-    top = head + Vector((0, 0.01 * H, 0.08 * H))
+    top = head + Vector((0, 0.01 * H, 0.092 * H))
     shapes.cylinder("crown_base", 0.04 * H, 0.012 * H, m["trim"], loc=top, parent=root, verts=8, bevel=0.15)
     shaft_w, shaft_h = 0.062 * H, 0.09 * H
     shapes.box_plate("crown_shaft", (shaft_w, shaft_w, shaft_h), m["filigree"], bevel=0.2, loc=top + Vector((0, 0, shaft_h / 2 + 0.004 * H)), parent=root, taper=0.12)
@@ -288,7 +288,192 @@ def crown(sk, m, root):
     shapes.spire("crown_spire", 0.064 * H, 0.15 * H, m["armour"], trim=m["trim"], loc=top + Vector((0, 0, shaft_h + 0.004 * H)), parent=root, crockets=4, sides=8)
 
 
-BUILDERS = {"cloth": cloth, "back": back, "crown": crown, "pauldron": pauldron}
+def loft(name, rings, mat, parent, smooth=False, cap=True):
+    """Join closed rings of points (same count each, bottom to top) into a
+    shell, capped at both ends. Few sides and flat shading keep it faceted."""
+    bm = bmesh.new()
+    vs = [[bm.verts.new(p) for p in ring] for ring in rings]
+    n = len(rings[0])
+    for j in range(len(vs) - 1):
+        for i in range(n):
+            k = (i + 1) % n
+            bm.faces.new((vs[j][i], vs[j][k], vs[j + 1][k], vs[j + 1][i]))
+    if cap:
+        bm.faces.new(list(reversed(vs[0])))
+        bm.faces.new(vs[-1])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    ob = mesh_obj(name, bm, mat, smooth=smooth, parent=parent)
+    shapes.decal_uv(ob, 4.0)
+    return ob
+
+
+def patch(name, surf, x0, x1, z0, z1, lift, thick, mat, parent, frame_mat=None, frame_r=0.2, n=8, inlay_mat=None, inlay=0.22):
+    """A plate laid on a surface: surf(x, z) -> (point, outward normal). The
+    plate covers x0..x1, z0..z1, sits `lift` off the surface, with a gold
+    frame round it and an optional enamel panel inset by `inlay` of its size."""
+    def grid(xa, xb, za, zb, h):
+        return [[(lambda pn: pn[0] + pn[1] * h)(surf(xa + (xb - xa) * i / n, za + (zb - za) * j / n)) for i in range(n + 1)] for j in range(n + 1)]
+
+    def plate(nm, g, m, t):
+        bm = bmesh.new()
+        vs = [[bm.verts.new(p) for p in row] for row in g]
+        for j in range(n):
+            for i in range(n):
+                bm.faces.new((vs[j][i], vs[j][i + 1], vs[j + 1][i + 1], vs[j + 1][i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        ob = mesh_obj(nm, bm, m, smooth=True, parent=parent)
+        mod(ob, "SOLIDIFY", thickness=t, offset=-1 if t > 0 else 0)
+        mod(ob, "BEVEL", width=min(abs(t) * 0.35, 0.2), segments=2, limit_method="ANGLE")
+        shapes.decal_uv(ob, 4.0)
+        return ob
+
+    g = grid(x0, x1, z0, z1, lift)
+    plate(name, g, mat, thick)
+    if frame_mat is not None:
+        ring = [g[0][i] for i in range(n + 1)] + [g[j][n] for j in range(1, n + 1)] + [g[n][i] for i in range(n - 1, -1, -1)] + [g[j][0] for j in range(n - 1, 0, -1)]
+        shapes.sweep(f"{name}_frame", ring, frame_r, frame_mat, cyclic=True, parent=parent, profile="square")
+    if inlay_mat is not None:
+        dx, dz = (x1 - x0) * inlay / 2, (z1 - z0) * inlay / 2
+        gi = grid(x0 + dx, x1 - dx, z0 + dz, z1 - dz, lift + 0.12)
+        plate(f"{name}_inlay", gi, inlay_mat, 0.15)
+        if frame_mat is not None:
+            ring = [gi[0][i] for i in range(n + 1)] + [gi[j][n] for j in range(1, n + 1)] + [gi[n][i] for i in range(n - 1, -1, -1)] + [gi[j][0] for j in range(n - 1, 0, -1)]
+            shapes.sweep(f"{name}_inlay_frame", ring, frame_r * 0.55, frame_mat, cyclic=True, parent=parent, profile="square")
+
+
+def torso(sk, m, root):
+    """A faceted breastplate of gold-framed panels with crimson inlays over a
+    narrow-waisted, keeled core, after the north-star render."""
+    H = sk.H
+    z0 = sk.joint("spine").z - 0.01 * H
+    z1 = sk.joint("neck").z - 0.012 * H
+    Z = z1 - z0
+
+    def half(t):
+        # Half width and half depth of the core at height fraction t (0 waist, 1 top).
+        hx = 0.07 + 0.075 * min(t / 0.72, 1.0) ** 1.2 - 0.05 * max(0.0, (t - 0.82) / 0.18) ** 1.5
+        hy = 0.052 + 0.03 * min(t / 0.7, 1.0) - 0.012 * max(0.0, (t - 0.85) / 0.15)
+        return hx * H, hy * H
+
+    def section(t, sides=10):
+        hx, hy = half(t)
+        z = z0 + Z * t
+        pts = []
+        for i in range(sides):
+            a = 2 * math.pi * i / sides + math.pi / sides
+            x, y = math.sin(a) * hx, -math.cos(a) * hy
+            ca = abs(math.cos(a))
+            # Keel: the front pulled forward at the middle, most at the chest.
+            if math.cos(a) > 0.0:
+                y -= 0.018 * H * ca ** 3 * (0.4 + 0.6 * min(t / 0.65, 1.0))
+            pts.append(Vector((x, y, z)))
+        return pts
+
+    loft("torso_core", [section(t) for t in (0.0, 0.18, 0.38, 0.6, 0.78, 0.92, 1.0)], m["armour"], root)
+
+    def front(x, t):
+        """Point on the front of the core and its outward normal (x in mm from the keel)."""
+        hx, hy = half(t)
+        u = max(-0.98, min(0.98, x / hx))
+        y = -hy * math.sqrt(1 - u * u) - 0.018 * H * (1 - abs(u)) ** 3 * (0.4 + 0.6 * min(t / 0.65, 1.0))
+        p = Vector((x, y, z0 + Z * t))
+        nrm = Vector((u / hx * hy * 0.9, -1.0, 0.15 * (0.5 - t))).normalized()
+        return p, nrm
+
+    for s, side in ((1, "L"), (-1, "R")):
+        hx_top = half(0.75)[0]
+        # Pectoral: a big slanted plate from the keel out to the arm, crimson inlay.
+        patch(f"pectoral{side}", lambda x, t: front(s * x, t), 0.004 * H, hx_top * 0.86, 0.56, 0.9, 0.35, 1.0,
+              m["filigree"], root, m["trim"], 0.22, inlay_mat=m["hull"], inlay=0.3)
+        # Two rows of abdominal plates, narrowing to the waist.
+        for k, (ta, tb, w) in enumerate(((0.3, 0.52, 0.62), (0.06, 0.28, 0.52))):
+            hx = half((ta + tb) / 2)[0]
+            patch(f"abdomen{side}{k}", lambda x, t: front(s * x, t), 0.004 * H, hx * w * 1.15, ta, tb, 0.3, 0.9,
+                  m["armour"], root, m["trim"], 0.18, inlay_mat=m["hull"] if k == 0 else None, inlay=0.32)
+        # Flank plates wrapping round the sides.
+        def flank(a, t, s=s):
+            hx, hy = half(t)
+            ang = math.radians(a)
+            p = Vector((s * math.sin(ang) * hx, -math.cos(ang) * hy, z0 + Z * t))
+            return p, Vector((s * math.sin(ang) / hx, -math.cos(ang) / hy, 0)).normalized()
+        patch(f"flank{side}", flank, 70, 125, 0.18, 0.7, 0.3, 0.9, m["armour"], root, m["trim"], 0.17)
+        # Back: two tall plates either side of the spine ridge.
+        patch(f"back{side}", flank, 140, 176, 0.12, 0.88, 0.3, 0.9, m["armour"], root, m["trim"], 0.17)
+    # The keel ridge and sternum rondel: a crimson boss in a gold ring, with a glowing core.
+    keel = [front(0.0, t / 10)[0] + Vector((0, -0.45, 0)) for t in range(1, 10)]
+    shapes.sweep("keel", keel, 0.35, m["trim"], parent=root, profile="square")
+    c, nrm = front(0.0, 0.47)
+    boss = shapes.cylinder("rondel", 0.034 * H, 0.9, m["hull"], loc=c + nrm * 0.7, parent=root, verts=24, bevel=0.2)
+    boss.rotation_euler = nrm.to_track_quat("Z", "Y").to_euler()
+    ring = shapes.cylinder("rondel_ring", 0.04 * H, 0.6, m["trim"], loc=c + nrm * 0.55, parent=root, verts=24, bevel=0.15)
+    ring.rotation_euler = boss.rotation_euler
+    eye = shapes.cylinder("rondel_core", 0.012 * H, 0.4, m["glow"], loc=c + nrm * 1.3, parent=root, verts=16, bevel=0.05)
+    eye.rotation_euler = boss.rotation_euler
+    # Gorget rim and waist belt.
+    shapes.sweep("gorget", [p + Vector((0, 0, 0.1)) for p in section(1.0, 20)], 0.3, m["trim"], cyclic=True, parent=root, profile="square")
+    shapes.sweep("waist", [p * 1.0 + Vector((0, 0, 0.3)) for p in section(0.0, 20)], 0.35, m["trim"], cyclic=True, parent=root, profile="square")
+    # Spine ridge on the back.
+    spine = [Vector((0, half(t / 10)[1] + 0.4, z0 + Z * t / 10)) for t in range(1, 10)]
+    shapes.sweep("spine_ridge", spine, 0.4, m["trim"], parent=root, profile="square")
+
+
+def helm(sk, m, root):
+    """A sharp, faceted armet: an octagonal shell with a hard keel down the
+    face, a pointed brow, a glowing eye slit and breaths, gold edged."""
+    H = sk.H
+    R = 0.058 * H
+    c = sk.joint("head") + Vector((0, 0, 0.03 * H))
+    # (height, half width, half depth, keel pull): chin up to the flat crown.
+    rows = [(-1.15, 0.3, 0.42, 0.62), (-0.7, 0.66, 0.8, 0.5), (-0.18, 0.78, 0.9, 0.36),
+            (0.24, 0.8, 0.96, 0.55), (0.62, 0.66, 0.84, 0.26), (0.98, 0.44, 0.6, 0.1), (1.16, 0.32, 0.44, 0.0)]
+
+    def ring(z, hx, hy, keel, sides=8):
+        pts = []
+        for i in range(sides):
+            a = 2 * math.pi * i / sides
+            x, y = math.sin(a) * hx, -math.cos(a) * hy
+            if i == 0:
+                y -= keel
+            pts.append(c + Vector((x, y, z)) * R)
+        return pts
+
+    shell = loft("helm_shell", [ring(*r) for r in rows], m["armour"], root)
+    mod(shell, "BEVEL", width=0.12, segments=1, limit_method="ANGLE", angle_limit=math.radians(20))
+
+    def face(z, x=0.0):
+        """A point on the front face at height z (helm units), x across."""
+        for (za, *ra), (zb, *rb) in zip(rows, rows[1:]):
+            if za <= z <= zb:
+                f = (z - za) / (zb - za)
+                hx, hy, keel = [p + (q - p) * f for p, q in zip(ra, rb)]
+                break
+        y = -(hy + keel) + abs(x) * (keel + hy * (1 - math.cos(math.pi / 4))) / (hx * math.sin(math.pi / 4))
+        return c + Vector((x, y - 0.03, z)) * R
+
+    # Eye slit: a narrow glowing chevron across the brow, in a gold frame.
+    for s in (-1, 1):
+        a, b = face(0.06, 0.0), face(0.15, s * 0.62)
+        mid = (a + b) / 2
+        d = b - a
+        slit = shapes.box_plate(f"eye{'LR'[s > 0]}", (d.length, 0.06 * R, 0.09 * R), m["glow"], bevel=0, loc=mid + Vector((0, -0.02 * R, 0)), parent=root)
+        slit.rotation_euler = (0, -math.atan2(d.z, math.hypot(d.x, d.y)) * s, math.atan2(d.y, d.x) if s > 0 else math.atan2(-d.y, -d.x))
+        brow = [face(0.26, 0.0) + Vector((0, -0.05 * R, 0)), face(0.33, s * 0.7) + Vector((0, -0.03 * R, 0))]
+        shapes.sweep(f"brow{'LR'[s > 0]}", brow, 0.07 * R, m["trim"], parent=root, profile="square")
+        # Breaths: vertical slits down the cheek either side of the keel.
+        for k in range(3):
+            x = s * (0.16 + 0.13 * k)
+            top, bot = face(-0.12, x), face(-0.62 + 0.08 * k, x)
+            pts = [top + Vector((0, -0.02 * R, 0)), bot + Vector((0, -0.02 * R, 0))]
+            shapes.sweep(f"breath{'LR'[s > 0]}{k}", pts, 0.035 * R, m["glow"], parent=root, profile="square")
+    keel = [face(z) + Vector((0, -0.06 * R, 0)) for z in (-0.98, -0.6, -0.15, 0.22, 0.55, 0.86)]
+    shapes.sweep("helm_keel", keel, 0.07 * R, m["trim"], parent=root, profile="square")
+    rim = [p + Vector((0, 0, 0.02 * R)) for p in ring(*rows[0])]
+    shapes.sweep("helm_rim", rim, 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
+    crown_ring = ring(*rows[-2])
+    shapes.sweep("helm_band", crown_ring, 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
+
+
+BUILDERS = {"cloth": cloth, "back": back, "crown": crown, "pauldron": pauldron, "torso": torso, "helm": helm}
 
 
 def build(component):
@@ -320,6 +505,12 @@ def main(argv):
                 kit.render.shot(objs, p, az=az, el=el, samples=32, res=(560, 900), margin=0.72)
                 kit.render.post(p)
                 shots.append(p)
+            if comp in ("helm", "torso", "pauldron"):
+                for az in (25, 70):
+                    p = render / f"{comp}-close-{az}.png"
+                    kit.render.shot(kit.meshes(root), p, az=az, el=10, samples=32, res=(600, 600), margin=0.8)
+                    kit.render.post(p)
+                    shots.append(p)
             kit.render.compare(shots, None, render / f"{comp}-compare.png", title=f"covenant {comp} paladin")
         if "--no-publish" not in argv:
             kit.skeleton.to_joint(root, FACTION, FRAME, comp)

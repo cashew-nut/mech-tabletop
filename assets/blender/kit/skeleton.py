@@ -66,6 +66,7 @@ class Skeleton:
             self.W = W = tune.get("width", self.W)
             self.L = L = tune.get("limbLength", self.L)
             self.G = p["limbGirth"] * math.sqrt(W) * tune.get("girth", 1.0)
+        self.arm_girth = tune.get("armGirth", 1.0) if tune else 1.0
         ankle_z = BASE_THICKNESS + 0.05 * H
         knee_z = ankle_z + 0.22 * H * L
         hip_z = knee_z + 0.22 * H * L
@@ -108,7 +109,7 @@ class Skeleton:
     def radius(self, part):
         """Nominal stand-in radius of a limb segment, a guide for real parts."""
         k = {"arm": 0.05, "forearm": 0.045, "thigh": 0.065, "shin": 0.055}[part]
-        return k * self.H * self.G
+        return k * self.H * self.G * (getattr(self, "arm_girth", 1.0) if part in ("arm", "forearm") else 1.0)
 
     def socket(self, component, side="L"):
         """World position of the joint a component hangs on."""
