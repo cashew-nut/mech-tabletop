@@ -36,6 +36,17 @@ def main(args):
     sizes = [int(s) for s in opt(args, "--size", "1024,512,128").split(",")]
     d = np.load(work / "mesh.npz")
     V, F, UV = d["V"].copy(), d["F"], d["UV"]
+    if "--keep-x" in args:  # drop faces outside this fraction of the x extent (Meshy sometimes adds a holder, e.g. a gauntlet)
+        lo_f, hi_f = [float(v) for v in opt(args, "--keep-x", "0,1").split(",")]
+        x0, x1 = V[:, 0].min(), V[:, 0].max()
+        keep = (V[F, 0] >= x0 + lo_f * (x1 - x0)).all(1) & (V[F, 0] <= x0 + hi_f * (x1 - x0)).all(1)
+        F = F[keep]
+        used = np.unique(F)
+        V = V[used]
+        remap = np.zeros(len(used) + 1, np.int64)
+        remap = np.full(used.max() + 1, -1, np.int64)
+        remap[used] = np.arange(len(used))
+        F, UV = remap[F], UV[used]
     ext = V.max(0) - V.min(0)
     ax = int(np.argmax(ext))
     # Long axis -> -Y (muzzle at y = rear - length), the side axis -> X, Z stays up. The side axis flips with the muzzle
@@ -46,7 +57,11 @@ def main(args):
     u = ((V[:, ax].max() - V[:, ax]) if plus else (V[:, ax] - V[:, ax].min())) * s   # distance back from the muzzle
     side, up = [i for i in range(3) if i != ax and i != 2][0], 2
     sg = 1.0 if plus else -1.0
-    P = np.stack([sg * (V[:, side] - c[side]) * s, (rear - length) + u, (V[:, up] - c[up]) * s + zc], 1).astype(np.float32)
+    if "--upright" in args:  # stands up from a mount (core items): z from 0 to --length, centred on x/y
+        ss = length / ext[2]
+        P = np.stack([(V[:, 0] - c[0]) * ss, (V[:, 1] - c[1]) * ss, (V[:, 2] - V[:, 2].min()) * ss], 1).astype(np.float32)
+    else:
+        P = np.stack([sg * (V[:, side] - c[side]) * s, (rear - length) + u, (V[:, up] - c[up]) * s + zc], 1).astype(np.float32)
     scene = kit.reset_scene()
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
