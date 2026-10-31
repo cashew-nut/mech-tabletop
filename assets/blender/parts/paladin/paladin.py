@@ -214,64 +214,95 @@ def face_rot(n):
     return Matrix((x, y, z)).transposed().to_euler()
 
 
+def solid(name, verts, faces, mats, parent, thick, face_mat=None, bevel=0.12):
+    """A hard-surface plate from explicit faces: solidified inward by `thick`,
+    flat shaded with crisp bevelled edges. face_mat[i] picks mats[k] per face."""
+    bm = bmesh.new()
+    vs = [bm.verts.new(v) for v in verts]
+    for k, f in enumerate(faces):
+        face = bm.faces.new([vs[i] for i in f])
+        face.material_index = face_mat[k] if face_mat else 0
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-4)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    ob = mesh_obj(name, bm, mats[0], smooth=True, parent=parent)
+    ob.data.set_sharp_from_angle(angle=math.radians(28))
+    for mt in mats[1:]:
+        ob.data.materials.append(mt)
+    mod(ob, "SOLIDIFY", thickness=thick, offset=-1, use_rim=True)
+    mod(ob, "BEVEL", width=bevel, segments=2, limit_method="ANGLE", angle_limit=math.radians(25))
+    shapes.decal_uv(ob, 4.0)
+    return ob
+
+
 def pauldron(sk, m, root):
-    """A gothic pauldron of curved, overlapping plates round the shoulder: a
-    filigree cap with a crimson inlay and gold arch, three flared lames below,
-    a raised crest and a peak spike (north-star render; modelled for the left,
-    mirrored on the right)."""
+    """The render's pauldron: one big angular plate. A roof that slopes up
+    toward the neck and ends in an upturned crest, folding hard into a skirt
+    that wraps the front and outside of the shoulder and flares to a hem
+    drawn down to a point at the outer front corner. Crimson on the outer
+    face. Modelled for the left, mirrored on the right."""
     H = sk.H
     S = sk.joint("shoulder")
-    C = S + Vector((0.016 * H, 0.0, -0.01 * H))
-    rx, ry, rz = 0.094 * H, 0.1 * H, 0.084 * H
 
-    def shell(flare=0.0, drop=0.0, q=0.45):
-        def surf(a, e):
-            # a: azimuth in degrees from +X (out), positive toward the front; e: elevation.
-            ar, er = math.radians(a), math.radians(e)
-            k = 1 + flare * max(0.0, -e + 20) / 60
-            sq = lambda c: math.copysign(abs(c) ** q, c)  # noqa: E731  squarish: flat faces, hard corners
-            ce, se, ca, sa = sq(math.cos(er)), sq(math.sin(er)), sq(math.cos(ar)), sq(math.sin(ar))
-            n = Vector((ce * ca / rx, -ce * sa / ry, se / rz)).normalized()
-            p = C + Vector((ce * ca * rx * k, -ce * sa * ry * k, se * rz - drop))
-            return p, n
-        return surf
+    def P(o, f, u):
+        """Shoulder space in fractions of H: o out, f forward, u up."""
+        return S + Vector((o, -f, u)) * H
 
-    # One big plate, as in the render: a gold-rimmed shell from the top of
-    # the shoulder down over the arm, its hem drawn to a gothic point.
-    cap = shell(flare=0.3, q=0.55)
+    # The fold between roof and skirt, in plan: a squarish U round the
+    # shoulder, open on the neck side.
+    angles = (150, 110, 70, 35, 0, -35, -70, -110, -150)
 
-    def hem(a):
-        return -44 - 28 * max(0.0, 1 - abs(a) / 80) ** 1.5
+    def sq(v, q=0.62):
+        return math.copysign(abs(v) ** q, v)
+    plan = [(0.03 + 0.07 * sq(math.cos(math.radians(t))), 0.076 * sq(math.sin(math.radians(t)))) for t in angles]
+    # The hem: drawn down to a point at the outer front corner (index 3).
+    hem = [-0.02, -0.07, -0.12, -0.17, -0.118, -0.082, -0.058, -0.04, -0.025]
+    flare = [0.0, -0.004, -0.008, -0.01, -0.008, -0.006, -0.004, -0.002, 0.0]
 
-    def band(lo, hi):
-        """Surface between lo(a) and hi(a), parametrised 0..100 bottom to top."""
-        def surf(a, t):
-            e0, e1 = lo(a), hi(a)
-            return cap(a, e0 + (e1 - e0) * t / 100)
-        return surf
+    def roof_z(o):
+        # Rising gently from the outer edge, then more steeply to the crest.
+        return 0.045 + 0.012 * max(0.0, (0.03 - o) / 0.075)
 
-    def at(a, e, lift=0.0):
-        p, n = cap(a, e)
-        return p + n * lift
+    def out_dir(o, f):
+        d = Vector((o - 0.03, f, 0.0))
+        return d.normalized() if d.length > 1e-6 else Vector((1, 0, 0))
 
-    patch("pauldron_cap", band(hem, lambda a: 86), -115, 115, 0, 100, 0.0, 1.2, m["armour"], root, m["trim"], 0.26, n=10)
-    # Crimson field on the lower face, following the pointed hem.
-    patch("pauldron_panel", band(lambda a: hem(a) + 6, lambda a: 6 + 36 * max(0.0, 1 - abs(a) / 52)), -52, 52, 0, 100, 0.35, 0.4,
-          m["hull"], root, m["trim"], 0.16, n=8)
-    # A gold chevron inside the field, echoing its pointed top.
-    pts = [at(a, -2 + 34 * (1 - abs(a) / 46), 0.5) for a in range(-40, 41, 4)]
-    shapes.sweep("pauldron_chevron", pts, 0.16, m["trim"], parent=root, profile="square")
-    # A pair of gothic lancets let into the crimson, gold framed.
-    for k, a in enumerate((-11, 11)):
-        p, n = cap(a, -32)
-        shapes.lancet(f"pauldron_lancet{k}", 0.016 * H, 0.038 * H, 0.35, m["trim"], glow=m["metal"], loc=p + n * 0.4,
-                      rot=face_rot(n), parent=root)
-    # Two small pinnacles on the upper rim, front and back.
-    for k, a in enumerate((-100, 100)):
-        shapes.spire(f"pauldron_spike{k}", 0.013 * H, 0.045 * H, m["armour"], trim=m["trim"], loc=at(a, 50, -0.4), parent=root, crockets=1, sides=6)
-    # Turn the pauldron about the shoulder so its crimson face looks forward-out.
+    n = len(plan)
+    crease = [(o, f, roof_z(o)) for o, f in plan]
+    mid, bottom = [], []
+    for (o, f, zc), zh, fl in zip(crease, hem, flare):
+        d = out_dir(o, f)
+        mid.append((o + d.x * 0.012, f + d.y * 0.012, zc + (zh - zc) * 0.4))
+        bottom.append((o + d.x * fl, f + d.y * fl, zh))
+    verts = [P(*v) for v in crease + mid + bottom]
+    faces, fmat = [], []
+    crimson = {2, 3, 4}  # the outer-front and outer facets of the skirt
+    for r in range(2):
+        for i in range(n - 1):
+            a0, a1 = r * n + i, r * n + i + 1
+            faces.append((a0, a1, a1 + n, a0 + n))
+            fmat.append(1 if i in crimson else 0)
+    # Roof: a low faceted dome fanned from a peak over the shoulder.
+    verts.append(P(0.02, 0.0, 0.074))
+    c = len(verts) - 1
+    for i in range(n):
+        faces.append((c, i, (i + 1) % n))
+        fmat.append(0)
+    solid("pauldron_plate", verts, faces, [m["armour"], m["hull"]], root, 0.0075 * H, fmat)
+
+    # Gold on the edges only: hem, fold, the skirt's ends and the crest.
+    r = 0.0036 * H
+    shapes.sweep("pauldron_hem", [P(*v) for v in bottom], r, m["trim"], parent=root, profile="square")
+    shapes.sweep("pauldron_fold", [P(*v) for v in crease], r * 0.8, m["trim"], parent=root, profile="square")
+    for i in (0, n - 1):
+        shapes.sweep(f"pauldron_end{i}", [P(*crease[i]), P(*mid[i]), P(*bottom[i])], r * 0.8, m["trim"], parent=root, profile="square")
+    # The crimson field's frame.
+    k0, k1 = min(crimson), max(crimson) + 1
+    ring = crease[k0:k1 + 1] + [mid[k1]] + bottom[k0:k1 + 1][::-1] + [mid[k0]]
+    shapes.sweep("pauldron_field", [P(*v) for v in ring], r * 0.7, m["trim"], cyclic=True, parent=root, profile="square")
+
+    # Turn a little about the shoulder so the outer face looks forward-out.
     bpy.context.view_layer.update()
-    turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-28), 4, "Z") @ Matrix.Translation(-S)
+    turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-12), 4, "Z") @ Matrix.Translation(-S)
     for c in root.children:
         c.matrix_world = turn @ c.matrix_world
 
@@ -460,9 +491,9 @@ def torso(sk, m, root):
             shapes.sphere(f"shoulder_bolt{side}{a}", 0.008 * H, m["trim"], loc=Vector((S.x + s_ * 0.016 * H, 0.04 * H * math.cos(ar), S.z + 0.04 * H * math.sin(ar))), parent=root, segments=8)
         # The yoke: a plate from the breastplate's top edge out over the drum.
         shapes.box_plate(f"yoke{side}", (abs(S.x - x0) + 0.02 * H, 0.11 * H, 0.025 * H), m["armour"], bevel=0.3,
-                         loc=Vector(((S.x + x0) / 2, 0.0, S.z + 0.055 * H)), parent=root)
+                         loc=Vector(((S.x + x0) / 2, 0.0, S.z + 0.024 * H)), parent=root)
         shapes.box_plate(f"yoke_trim{side}", (abs(S.x - x0) + 0.022 * H, 0.112 * H, 0.006 * H), m["trim"], bevel=0.1,
-                         loc=Vector(((S.x + x0) / 2, 0.0, S.z + 0.043 * H)), parent=root)
+                         loc=Vector(((S.x + x0) / 2, 0.0, S.z + 0.012 * H)), parent=root)
     # Gorget rim and waist belt.
     shapes.sweep("gorget", [p + Vector((0, 0, 0.1)) for p in section(1.0, 20)], 0.3, m["trim"], cyclic=True, parent=root, profile="square")
     shapes.sweep("waist", [p * 1.0 + Vector((0, 0, 0.3)) for p in section(0.0, 20)], 0.35, m["trim"], cyclic=True, parent=root, profile="square")
@@ -472,76 +503,59 @@ def torso(sk, m, root):
 
 
 def helm(sk, m, root):
-    """A sharp, faceted armet: an octagonal shell with a hard keel down the
-    face, a pointed brow, a glowing eye slit and breaths, gold edged."""
+    """The render's head: a small, steep cowl of plate shaped like a pointed
+    arch, set low between the pauldrons, projecting past a recessed, keeled
+    faceplate so that from the front mostly the glow of the eye slit and the
+    breaths shows. Hard, flat facets throughout."""
     H = sk.H
-    R = 0.058 * H
-    c = sk.joint("head") + Vector((0, 0, 0.03 * H))
-    # (height, half width, half depth, keel pull): chin up to the flat crown.
-    rows = [(-1.15, 0.3, 0.42, 0.62), (-0.7, 0.66, 0.8, 0.5), (-0.18, 0.78, 0.9, 0.36),
-            (0.24, 0.8, 0.96, 0.55), (0.62, 0.66, 0.84, 0.26), (0.9, 0.5, 0.62, 0.12), (1.06, 0.28, 0.36, 0.04), (1.12, 0.04, 0.05, 0.0)]
+    S = sk.joint("shoulder")
+    neck = sk.joint("neck")
+    O = Vector((0.0, neck.y, S.z - 0.006 * H))
 
-    def ring(z, hx, hy, keel, sides=8):
-        pts = []
-        for i in range(sides):
-            a = 2 * math.pi * i / sides
-            x, y = math.sin(a) * hx, -math.cos(a) * hy
-            if i == 0:
-                y -= keel
-            pts.append(c + Vector((x, y, z)) * R)
-        return pts
+    def V(x, y, z):
+        return O + Vector((x, y, z)) * H
 
-    shell = loft("helm_shell", [ring(*r) for r in rows], m["armour"], root)
-    mod(shell, "BEVEL", width=0.12, segments=1, limit_method="ANGLE", angle_limit=math.radians(20))
+    # The cowl's section: straight cheeks to the spring line, then a
+    # faceted pointed arch.
+    w0, ws, zs, rise = 0.041, 0.037, 0.06, 0.046
+    r = (ws * ws + rise * rise) / (2 * ws)
+    cx = ws - r
+    top = math.atan2(rise, -cx)
+    right = [(cx + r * math.cos(top * k / 3), zs + r * math.sin(top * k / 3)) for k in range(4)]
+    arch = [(w0 + 0.008, -0.012), (w0, 0.012)] + right
+    outline = [(-x, z) for x, z in arch] + [(x, z) for x, z in reversed(arch[:-1])]
+    ztop = zs + rise
 
-    def face(z, x=0.0):
-        """A point on the front face at height z (helm units), x across."""
-        for (za, *ra), (zb, *rb) in zip(rows, rows[1:]):
-            if za <= z <= zb:
-                f = (z - za) / (zb - za)
-                hx, hy, keel = [p + (q - p) * f for p, q in zip(ra, rb)]
-                break
-        y = -(hy + keel) + abs(x) * (keel + hy * (1 - math.cos(math.pi / 4))) / (hx * math.sin(math.pi / 4))
-        return c + Vector((x, y - 0.03, z)) * R
+    # Rings from the face edge back to the nape: (y, x scale, z scale, z shift, lean).
+    rings = [(-0.052, 1.0, 1.0, 0.0, -0.016), (-0.008, 1.06, 1.02, 0.0, -0.004), (0.036, 0.94, 0.86, -0.012, 0.0), (0.054, 0.62, 0.62, -0.006, 0.0)]
+    verts, faces = [], []
+    n = len(outline)
+    for y, sx, sz, dz, lean in rings:
+        for x, z in outline:
+            verts.append(V(x * sx, y + lean * z / ztop, z * sz + dz))
+    for j in range(len(rings) - 1):
+        for i in range(n - 1):
+            a0, a1 = j * n + i, j * n + i + 1
+            faces.append((a0, a1, a1 + n, a0 + n))
+    faces.append(tuple(range((len(rings) - 1) * n, len(rings) * n)))  # the nape, closed
+    solid("hood", verts, faces, [m["armour"]], root, 0.0045 * H)
+    shapes.sweep("hood_edge", verts[:n], 0.0026 * H, m["trim"], parent=root, profile="square")
 
-    # Eye slit: a narrow glowing chevron across the brow, in a gold frame.
-    for s in (-1, 1):
-        a, b = face(0.06, 0.0), face(0.15, s * 0.62)
-        mid = (a + b) / 2
-        d = b - a
-        slit = shapes.box_plate(f"eye{'LR'[s > 0]}", (d.length, 0.06 * R, 0.09 * R), m["glow"], bevel=0, loc=mid + Vector((0, -0.02 * R, 0)), parent=root)
-        slit.rotation_euler = (0, -math.atan2(d.z, math.hypot(d.x, d.y)) * s, math.atan2(d.y, d.x) if s > 0 else math.atan2(-d.y, -d.x))
-        brow = [face(0.26, 0.0) + Vector((0, -0.05 * R, 0)), face(0.33, s * 0.7) + Vector((0, -0.03 * R, 0))]
-        shapes.sweep(f"brow{'LR'[s > 0]}", brow, 0.07 * R, m["trim"], parent=root, profile="square")
-        # Breaths: vertical slits down the cheek either side of the keel.
-        for k in range(3):
-            x = s * (0.16 + 0.13 * k)
-            top, bot = face(-0.12, x), face(-0.62 + 0.08 * k, x)
-            pts = [top + Vector((0, -0.02 * R, 0)), bot + Vector((0, -0.02 * R, 0))]
-            shapes.sweep(f"breath{'LR'[s > 0]}{k}", pts, 0.035 * R, m["glow"], parent=root, profile="square")
-    keel = [face(z) + Vector((0, -0.06 * R, 0)) for z in (-0.98, -0.6, -0.15, 0.22, 0.55, 0.86)]
-    shapes.sweep("helm_keel", keel, 0.07 * R, m["trim"], parent=root, profile="square")
-    rim = [p + Vector((0, 0, 0.02 * R)) for p in ring(*rows[0])]
-    shapes.sweep("helm_rim", rim, 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
-    shapes.sweep("helm_band", ring(*rows[4]), 0.06 * R, m["trim"], cyclic=True, parent=root, profile="square")
-    # The hood: an angular cowl of plate round the back and sides of the helm,
-    # open at the face, drawn up to a point behind the crown and edged in gold.
-    def cowl(a, e):
-        ar, er = math.radians(a), math.radians(e)
-        sq = lambda v, q=0.6: math.copysign(abs(v) ** q, v)  # noqa: E731
-        up = max(0.0, math.sin(er))
-        front = max(0.0, math.cos(ar))
-        rx, ry, rz = 1.22 * R, 1.3 * R * (1 + 0.22 * front), 1.42 * R
-        p = c + Vector((sq(math.sin(ar)) * sq(math.cos(er)) * rx * (1 - 0.45 * up ** 2),
-                        -sq(math.cos(ar)) * sq(math.cos(er)) * ry * (1 - 0.4 * up ** 2) + 0.12 * R * up ** 2,
-                        math.sin(er) * rz - 0.15 * R))
-        n = Vector((math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er))).normalized()
-        return p, n
-    patch("hood", cowl, 26, 334, -52, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=10)
-    patch("hood_band", cowl, 120, 240, -10, 60, 0.18, 0.3, m["filigree"], root, m["trim"], 0.04 * R, n=4)
-    # The hood's brow comes down over the top of the helm, so from the front
-    # only the glowing slit and breaths show under it.
-    patch("hood_brow", cowl, -30, 30, 20, 86, 0.0, 0.7, m["armour"], root, m["trim"], 0.06 * R, n=6)
+    # The faceplate, recessed behind the cowl's edge: two planes meeting in a
+    # keel, the chin pushed a little forward.
+    yf = -0.03
+    fx = 0.034
+    fp = [V(0, yf - 0.011, 0.004), V(0, yf - 0.009, 0.09), V(-fx, yf + 0.006, 0.084), V(-fx * 0.92, yf + 0.004, 0.006),
+          V(fx, yf + 0.006, 0.084), V(fx * 0.92, yf + 0.004, 0.006)]
+    solid("faceplate", fp, [(0, 1, 2, 3), (0, 5, 4, 1)], [m["metal"]], root, 0.004 * H)
+
+    def face(x, z):
+        return V(x, yf - 0.0115 + 0.017 * abs(x) / fx, z)
+
+    eye = [face(x, 0.062 + 0.006 * abs(x) / fx) for x in (-0.026, -0.013, 0.0, 0.013, 0.026)]
+    shapes.sweep("eye_slit", eye, 0.0028 * H, m["glow"], parent=root, profile="square")
+    for k, x in enumerate((-0.017, -0.006, 0.006, 0.017)):
+        shapes.sweep(f"breath{k}", [face(x, 0.02), face(x, 0.044)], 0.0016 * H, m["glow"], parent=root, profile="square")
 
 
 def collar(sk, m, root):
@@ -753,10 +767,23 @@ def preview_all(comps, out, samples=24):
         if o.get("standin") in comps or o.get("standin") == "base":
             for c in [o, *o.children_recursive]:
                 c.hide_render = True
-    kit.render.studio(floor=True)
+    import os
+    kit.render.studio(floor=not os.environ.get("UPPER"))
     allobjs = objs + [o for o in kit.meshes(frame) if not o.hide_render]
+    views = ((30, 6), (0, 4), (80, 4))
+    import os
+    if os.environ.get("UPPER"):
+        # Frame the shoulders and head only, from the reference angles.
+        def zc(o):
+            bb = [o.matrix_world @ Vector(c) for c in o.bound_box]
+            return sum(v.z for v in bb) / 8
+        hide = [o for o in allobjs if zc(o) < 0.66 * sk.H]
+        for o in hide:
+            o.hide_render = True
+        allobjs = [o for o in allobjs if o not in hide]
+        views = ((35, 22), (-20, -12), (0, 2), (75, 4))
     shots = []
-    for az, el in ((30, 6), (0, 4), (80, 4)):
+    for az, el in views:
         p = Path(out) / f"body-{az}.png"
         kit.render.shot(allobjs, p, az=az, el=el, samples=samples, res=(560, 900), margin=0.95)
         kit.render.post(p)
