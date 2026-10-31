@@ -3,10 +3,11 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
+import { CHASSIS, SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
 import { hexCentre, type Highlight } from './HexMap';
+import { buildPixelWalker, type WalkerParts } from './PixelWalker';
 
-const PIXEL = 3;
+const PIXEL = 2;
 const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
 const ELEVATION_STEP = 0.35;
 
@@ -17,7 +18,7 @@ const TERRAIN_COLOUR: Record<string, number> = {
   heavy: 0x6f7a5a,
   blocking: 0x3b342d,
 };
-const SIDE_COLOUR = [0x2d6e9c, 0x9c3a26];
+const FACTION_OF = new Map(CHASSIS.map((c) => [c.id, c.faction]));
 const HIGHLIGHT_COLOUR: Record<Highlight, number> = { move: 0x2f9e8f, jump: 0xb8893b, smoke: 0xeeeeee };
 
 interface Props {
@@ -70,20 +71,6 @@ function terrainProps(parent: THREE.Object3D, terrain: string, top: number, seed
     add(parent, box, mat(0x2a241f), [0, top + 0.6, 0], [1.3, 1.2, 1.3]);
     add(parent, box, mat(0x1e1b18), [0.2, top + 1.3, -0.1], [0.7, 0.5, 0.7]);
   }
-}
-
-// Placeholder pixel walker, sized by chassis Size. Stage 2 replaces this with per-class faction models.
-function walkerMesh(side: number, size: number) {
-  const g = new THREE.Group();
-  const body = mat(SIDE_COLOUR[side]);
-  const trim = mat(0xd4a956);
-  const h = 0.5 + size * 0.12;
-  add(g, box, body, [-0.18, h * 0.25, 0], [0.18, h * 0.5, 0.2]); // legs
-  add(g, box, body, [0.18, h * 0.25, 0], [0.18, h * 0.5, 0.2]);
-  add(g, box, body, [0, h * 0.75, 0], [0.55, h * 0.5, 0.35]); // torso
-  add(g, box, trim, [0, h * 1.08, 0.02], [0.22, 0.16, 0.22]); // head
-  add(g, box, trim, [0, h * 0.75, 0.3], [0.2, 0.12, 0.3]); // nose: faces +Z, rotated by facing below
-  return g;
 }
 
 export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalker }: Props) {
@@ -148,7 +135,7 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
         builtMap = state.map.id;
         const span = Math.max(state.map.width, state.map.height) * 1.6;
         controls.target.set(sx / n, 0, sz / n);
-        camera.position.set(sx / n, span * 1.0, sz / n - span * 0.95); // row 0 (your deployment edge) faces the camera
+        camera.position.set(sx / n, span * 0.75, sz / n - span * 0.85); // row 0 (your deployment edge) faces the camera
         controls.update();
       }
     };
@@ -199,7 +186,7 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
       for (const w of state.walkers) {
         if (w.destroyed) continue;
         const p = world(w.pos, heightOf(state, w.pos));
-        const g = walkerMesh(w.side, w.size);
+        const g = buildPixelWalker(w, FACTION_OF.get(w.chassis) ?? 'covenant');
         g.position.copy(p);
         g.rotation.y = Math.PI / 2 + (60 * w.facing * Math.PI) / 180; // +Z nose -> SVG angle -60 * facing
         if (w.prone) {
@@ -207,7 +194,7 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
           g.position.y += 0.2;
         }
         g.userData.walkerId = w.id;
-        if (w.activated) g.traverse((o) => ((o as THREE.Mesh).material && ((o as THREE.Mesh).material as THREE.MeshLambertMaterial).color.multiplyScalar(0.55)));
+        if (w.activated) for (const m of g.userData.materials as THREE.Material[]) (m as THREE.MeshLambertMaterial).color.multiplyScalar(0.6);
         dynamic.add(g);
         pickables.push(g);
         const ring = (colour: number, radius: number) => {
@@ -259,6 +246,12 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
     const loop = (t: number) => {
       raf = requestAnimationFrame(loop);
       const k = 0.7 + 0.3 * Math.sin(t / 220);
+      for (const g of dynamic.children) {
+        const parts = g.userData.parts as WalkerParts | undefined;
+        if (!parts) continue;
+        const b = Math.sin(t / 420 + g.position.x * 3);
+        parts.torso.scale.y = 1 + b * 0.012;
+      }
       for (const m of pulsing) (m.material as THREE.MeshBasicMaterial).opacity = k * 0.8;
       controls.update();
       renderer.render(scene, camera);
