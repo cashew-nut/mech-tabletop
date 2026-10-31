@@ -5,11 +5,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CHASSIS, SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
 import { hexCentre, type Highlight } from './HexMap';
-import { buildPixelWalker, type WalkerParts } from './PixelWalker';
+import { SIDE_COLOUR, buildPixelWalker, type WalkerParts, type WalkerSpinner } from './PixelWalker';
 
 const PIXEL = 2;
 const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
 const ELEVATION_STEP = 0.35;
+/** Walkers stand a little larger than their hex, like miniatures on a tabletop, so their silhouettes read. */
+const WALKER_SCALE = 1.5;
 
 const TERRAIN_COLOUR: Record<string, number> = {
   open: 0xcdbf98,
@@ -33,6 +35,9 @@ interface Props {
 const hexShape = new THREE.CylinderGeometry(1, 1, 1, 6, 1);
 hexShape.rotateY(Math.PI / 6); // pointy-top, like the SVG map
 const box = new THREE.BoxGeometry(1, 1, 1);
+const disc = new THREE.CylinderGeometry(1, 1, 1, 14);
+const BASE_MAT = new THREE.MeshLambertMaterial({ color: 0x2a2420, flatShading: true });
+const SIDE_MATS = SIDE_COLOUR.map((c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
 
 const mat = (color: number, extra: THREE.MeshLambertMaterialParameters = {}) => new THREE.MeshLambertMaterial({ color, flatShading: true, ...extra });
 const world = (hex: Hex, y = 0) => {
@@ -91,7 +96,7 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
     scene.fog = new THREE.Fog(0x1e1b18, 25, 60);
     scene.add(new THREE.HemisphereLight(0xfff1d6, 0x3a3128, 1.5));
     const sun = new THREE.DirectionalLight(0xffe2b0, 1.6);
-    sun.position.set(-8, 14, 6);
+    sun.position.set(-7, 14, -9); // from the camera's side, so the faces we look at are lit
     scene.add(sun);
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
@@ -135,7 +140,7 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
         builtMap = state.map.id;
         const span = Math.max(state.map.width, state.map.height) * 1.6;
         controls.target.set(sx / n, 0, sz / n);
-        camera.position.set(sx / n, span * 0.75, sz / n - span * 0.85); // row 0 (your deployment edge) faces the camera
+        camera.position.set(sx / n, span * 0.66, sz / n - span * 0.84); // row 0 (your deployment edge) faces the camera
         controls.update();
       }
     };
@@ -186,8 +191,13 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
       for (const w of state.walkers) {
         if (w.destroyed) continue;
         const p = world(w.pos, heightOf(state, w.pos));
+        // A round base with a side-coloured rim, so ownership reads at a glance.
+        add(dynamic, disc, SIDE_MATS[w.side], [p.x, p.y + 0.035, p.z], [0.66, 0.07, 0.66]);
+        add(dynamic, disc, BASE_MAT, [p.x, p.y + 0.04, p.z], [0.56, 0.075, 0.56]);
         const g = buildPixelWalker(w, FACTION_OF.get(w.chassis) ?? 'covenant');
+        g.scale.setScalar(WALKER_SCALE);
         g.position.copy(p);
+        g.position.y += 0.075;
         g.rotation.y = Math.PI / 2 + (60 * w.facing * Math.PI) / 180; // +Z nose -> SVG angle -60 * facing
         if (w.prone) {
           g.rotation.x = Math.PI / 2;
@@ -204,7 +214,8 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
         if (w.id === activeId) ring(0xf5f0d8, 0.8);
         if (w.id === selectedId) ring(0x2f9e8f, 0.7);
         if (w.id === targetId) pulsing.push(ring(0xffd34d, 0.75));
-        for (let i = 0; i < w.overpressure; i++) add(dynamic, box, new THREE.MeshBasicMaterial({ color: 0xff8a3d }), [p.x - 0.4 + i * 0.12, p.y + 1.3, p.z], [0.08, 0.08, 0.08]);
+        const top = p.y + ((g.userData.height as number | undefined) ?? 1.2) * WALKER_SCALE + 0.25;
+        for (let i = 0; i < w.overpressure; i++) add(dynamic, box, new THREE.MeshBasicMaterial({ color: 0xff8a3d }), [p.x - 0.4 + i * 0.12, top, p.z], [0.08, 0.08, 0.08]);
       }
     };
     api.current = { rebuild };
@@ -251,6 +262,10 @@ export function Board3D({ state, highlights, selectedId, targetId, onHex, onWalk
         if (!parts) continue;
         const b = Math.sin(t / 420 + g.position.x * 3);
         parts.torso.scale.y = 1 + b * 0.012;
+        for (const sp of (g.userData.spinners as WalkerSpinner[] | undefined) ?? []) {
+          if (sp.spin) sp.object.rotation[sp.axis] = (t / 1000) * sp.spin;
+          if (sp.bob) sp.object.position.y = Math.sin(t / 600 + g.position.z) * sp.bob;
+        }
       }
       for (const m of pulsing) (m.material as THREE.MeshBasicMaterial).opacity = k * 0.8;
       controls.update();
