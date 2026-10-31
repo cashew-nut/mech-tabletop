@@ -16,7 +16,7 @@ import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
 /** Class items modelled on the right-hand side. */
-const NATIVE_RIGHT = new Set(['autocannon@brute']);
+const NATIVE_RIGHT = new Set(['autocannon@brute', 'arc-cannon@seer']);
 
 export interface PartLibrary {
   chassis: Map<string, THREE.Object3D>;

@@ -24,8 +24,9 @@ sys.path.insert(0, str(HERE))
 import cut  # noqa: E402
 
 # The model to build: the Covenant Paladin (default) or the Foundries Brute (MODEL=brute, see brute_cut.py).
-if os.environ.get("MODEL") == "brute":
-    import brute_cut as M  # noqa: E402
+if os.environ.get("MODEL") in ("brute", "seraphim"):
+    import importlib
+    M = importlib.import_module(os.environ["MODEL"] + "_cut")
     CX, JOINTS = M.CX, M.JOINTS
 else:
     class M:  # the Paladin's settings, kept as they were

@@ -33,3 +33,12 @@ Same pipeline with `MODEL=brute` (settings in `brute_cut.py`: bones, joints, sca
 - The stance is not symmetric, so every sided part is built for both sides (no mirroring). Parts keep their true place because each part's origin is its joint.
 - The two forearm guns are equipment: `item_rocket-pod@brute` (left) and `item_autocannon@brute` (modelled on the right arm; `NATIVE_RIGHT` in assemble.ts flips it for the left).
 - Joints are written to `frameTunes["foundries/bulwark"]`, so the Artillery (also on the bulwark frame) hangs its parts on the same joints.
+
+## Gilded Seraphim (third model, Reliquary Seer on the Striker frame)
+
+Same pipeline with `MODEL=seraphim` (settings in `seraphim_cut.py`): `cut.py extract` the GLB (3.03M triangles), `~/bvenv/bin/python -I seraphim_cut.py label WORK --preview`,
+`MODEL=seraphim build.py tunes`, `build_frames.py reliquary --frames striker`, `MODEL=seraphim build.py WORK` (about 3 min), `MODEL=seraphim assemble.py OUT [--viewer FILE.glb]`, then compress as above.
+- Halo and its crown spire are `reliquary_crown_seer` (the head joint). The tall spires behind the shoulders are `back`. Sided parts are built for both sides (the stance is not symmetric).
+- The red banner is torso down to the waist, then pelvis (red texels plus the dark cloth between the legs), so livery repaints it.
+- The spear is equipment: `item_arc-cannon@seer`, cut from the right hand (`NATIVE_RIGHT` in assemble.ts flips it for the left arm). The Seer's arc cannon slot shows it.
+- Joints are written to `frameTunes["reliquary/striker"]`; only the Seer uses the Striker frame.

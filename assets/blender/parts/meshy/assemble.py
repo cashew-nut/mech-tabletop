@@ -21,9 +21,11 @@ SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot"}
 JOINT_OF = {c["id"]: c["joint"] for c in kit.skeleton.KIT["components"]}
 import os  # noqa: E402
 BRUTE = os.environ.get("MODEL") == "brute"
-FACTION, CLS, FRAME = ("foundries", "brute", "bulwark") if BRUTE else ("covenant", "paladin", "titan")
-ITEM_SCALE = 1.4 if BRUTE else 1.7
+SERAPHIM = os.environ.get("MODEL") == "seraphim"
+FACTION, CLS, FRAME = ("foundries", "brute", "bulwark") if BRUTE else ("reliquary", "seer", "striker") if SERAPHIM else ("covenant", "paladin", "titan")
+ITEM_SCALE = 1.4 if BRUTE else 1.2 if SERAPHIM else 1.7
 ITEM_LIST = ((("mount_armLeft_0", "item_rocket-pod@brute", 1), ("mount_armRight_0", "item_autocannon@brute", 1)) if BRUTE else
+             (("mount_armRight_0", "item_arc-cannon@seer", 1),) if SERAPHIM else
              (("mount_armLeft_0", "item_lance@paladin", 1), ("mount_armRight_0", "item_lance@paladin", -1),
               ("mount_core_0", "item_carapace-gun@paladin", 1), ("mount_core_1", "item_carapace-gun@paladin", -1)))
 
