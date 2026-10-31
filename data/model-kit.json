@@ -235,6 +235,84 @@
           ]
         ]
       }
+    },
+    "foundries/bulwark": {
+      "$comment": "Joints (mm, left side) measured from the Meshy brute; see assets/blender/parts/meshy.",
+      "joints": {
+        "pelvis": [
+          0.0,
+          1.983,
+          21.445
+        ],
+        "spine": [
+          0.0,
+          1.983,
+          24.618
+        ],
+        "chest": [
+          0.0,
+          1.983,
+          27.792
+        ],
+        "neck": [
+          0.0,
+          2.38,
+          32.75
+        ],
+        "head": [
+          0.0,
+          2.975,
+          34.932
+        ],
+        "shoulder": [
+          8.925,
+          1.983,
+          28.982
+        ],
+        "elbow": [
+          7.933,
+          1.587,
+          24.618
+        ],
+        "wrist": [
+          9.917,
+          -0.793,
+          20.85
+        ],
+        "hip": [
+          4.363,
+          1.587,
+          20.255
+        ],
+        "knee": [
+          6.347,
+          0.992,
+          13.908
+        ],
+        "ankle": [
+          8.33,
+          0.0,
+          5.975
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            -0.0,
+            -0.199,
+            -0.992
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            0.0,
+            -0.199,
+            -0.992
+          ]
+        ]
+      }
     }
   }
 }

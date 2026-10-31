@@ -12,6 +12,7 @@ item_lance@paladin (the siege blade) and item_carapace-gun@paladin (the shoulder
 Meshy units are scaled by S so the figure's helm top sits at the titan frame's nominal height.
 """
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -20,11 +21,22 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from cut import CX, JOINTS  # noqa: E402
+import cut  # noqa: E402
+
+# The model to build: the Covenant Paladin (default) or the Foundries Brute (MODEL=brute, see brute_cut.py).
+if os.environ.get("MODEL") == "brute":
+    import brute_cut as M  # noqa: E402
+    CX, JOINTS = M.CX, M.JOINTS
+else:
+    class M:  # the Paladin's settings, kept as they were
+        FACTION, CLS, FRAME, ITEM_SCALE, MIRRORED = "covenant", "paladin", "titan", 1.7, {"thigh", "shin", "foot"}
+        NATIVE_RIGHT = set()
+        FOOT_Z, S = -0.90, 50 / 1.5
+    CX, JOINTS = cut.CX, cut.JOINTS
 
 REPO = HERE.parents[3]
-S = 50 / 1.5          # mm per Meshy unit (standing height to the helm top = 50 mm, the titan frame's H)
-FOOT_Z, BASE = -0.90, 3.0
+S = M.S               # mm per Meshy unit (standing height to the helm top = the frame's H)
+FOOT_Z, BASE = getattr(M, "BUILD_FOOT_Z", None) or M.FOOT_Z, 3.0
 
 
 def to_mm(p):
@@ -35,7 +47,7 @@ def to_mm(p):
 # component: (joint, triangles, texture size)
 # component: (joint, triangles, (base, normal, orm) texture sizes). Textures are baked at the base size and the normal
 # and ORM maps are scaled down after: the normal map dominates the compressed file size, ORM is smooth.
-PARTS = {
+PARTS = getattr(M, "PARTS", None) or {
     "helm": ("head", 3500, (1024, 384, 128)), "collar": ("neck", 2000, (512, 256, 128)), "torso": ("spine", 8000, (1024, 384, 128)),
     "pelvis": ("pelvis", 4000, (768, 384, 128)), "back": ("chest", 5500, (768, 384, 128)), "cloth": ("chest", 3500, (768, 384, 128)),
     "pauldron": ("shoulder", 4500, (1024, 384, 128)), "arm": ("shoulder", 1800, (512, 256, 128)), "forearm": ("elbow", 2800, (768, 384, 128)),
@@ -43,17 +55,17 @@ PARTS = {
     "foot": ("ankle", 2500, (512, 256, 128)),
 }
 # Legs are mirror images in the Meshy figure, so the right side reuses the left part mirrored (saves ~1 MB).
-MIRRORED = {"thigh", "shin", "foot"}
+MIRRORED = M.MIRRORED
 SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot"}
 # Equipment: label, item file name, attach mount (world position in Meshy units, centred), triangles, size
-ITEMS = {
+ITEMS = getattr(M, "ITEMS", None) or {
     "lance": ("sword_L", "item_lance@paladin", (0.57, -0.30, -0.28), 3000, (1024, 384, 128)),
     "carapace-gun": ("pod_L", "item_carapace-gun@paladin", (0.22, 0.10, 0.62), 4000, (1024, 512, 256)),
 }
 DEBUG = False
 import os
 VOXELS = int(os.environ.get('VOXELS', 0)); SMOOTH = int(os.environ.get('SMOOTH', 0));         # voxel remesh resolution along a part's longest side
-ITEM_SCALE = 1.7      # items are modelled at Scout scale and grown by the titan frame's factor in the web
+ITEM_SCALE = M.ITEM_SCALE      # items are modelled at Scout scale and grown by the titan frame's factor in the web
 
 
 def tunes():
@@ -63,13 +75,15 @@ def tunes():
     joints = {k: [round(float(v), 3) for v in to_mm(p)] for k, p in JOINTS.items()}
     mounts = {}
     # Mount offsets are local to their joint (see Skeleton.mounts): arm 0 at the sword grip, core 0/1 at the pods.
-    grip, pod = to_mm(ITEMS["lance"][2]), to_mm(ITEMS["carapace-gun"][2])
+    grip = to_mm(getattr(M, "MOUNT_ARM", None) or ITEMS["lance"][2])
+    pod = to_mm(ITEMS["carapace-gun"][2]) if "carapace-gun" in ITEMS else None
     mounts["mount_armLeft_0"] = ["wrist", [round(float(v), 3) for v in grip - np.array(joints["wrist"])]]
-    mounts["mount_core_0"] = ["chest", [round(float(v), 3) for v in pod - np.array(joints["chest"])]]
-    mounts["mount_core_1"] = ["chest", [round(float(-pod[0] - joints["chest"][0]), 3), round(float(pod[1] - joints["chest"][1]), 3), round(float(pod[2] - joints["chest"][2]), 3)]]
+    if pod is not None:
+        mounts["mount_core_0"] = ["chest", [round(float(v), 3) for v in pod - np.array(joints["chest"])]]
+        mounts["mount_core_1"] = ["chest", [round(float(-pod[0] - joints["chest"][0]), 3), round(float(pod[1] - joints["chest"][1]), 3), round(float(pod[2] - joints["chest"][2]), 3)]]
     mounts["mount_armRight_0"] = ["wrist", [round(float(-grip[0] + joints["wrist"][0]), 3), round(float(grip[1] - joints["wrist"][1]), 3), round(float(grip[2] - joints["wrist"][2]), 3)]]
-    kit.setdefault("frameTunes", {})["covenant/titan"] = {
-        "$comment": "Joints (mm, left side) measured from the Meshy Paladin; see assets/blender/parts/meshy.",
+    kit.setdefault("frameTunes", {})[f"{M.FACTION}/{M.FRAME}"] = {
+        "$comment": f"Joints (mm, left side) measured from the Meshy {M.CLS}; see assets/blender/parts/meshy.",
         "joints": joints, "mounts": mounts,
     }
     path.write_text(json.dumps(kit, indent=2) + "\n")
@@ -94,7 +108,7 @@ def main(args):
     names = json.loads((work / "names.json").read_text())
     V[:, 0] -= CX
     Vmm = ((V - np.array([0, 0, FOOT_Z], np.float32)) * S + np.array([0, 0, BASE], np.float32)).astype(np.float32)
-    sk = Skeleton("covenant", "titan")
+    sk = Skeleton(M.FACTION, M.FRAME)
 
     scene = kit.reset_scene()
     scene.render.engine = "CYCLES"
@@ -360,7 +374,7 @@ def main(args):
     for comp, (joint, target, size) in PARTS.items():
         sides = (("L",) if comp in MIRRORED else ("L", "R")) if comp in SIDED else (None,)
         for side in sides:
-            out = f"covenant_{comp}{'-right' if side == 'R' else ''}_paladin"
+            out = f"{M.FACTION}_{comp}{'-right' if side == 'R' else ''}_{M.CLS}"
             if only and out not in only and comp not in only:
                 continue
             key = f"{comp}_{side}" if side else comp
