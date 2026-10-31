@@ -133,7 +133,7 @@ def sash(sk, m, root):
     """A crimson banner hung over the left pauldron's front, as in the render."""
     H = sk.H
     sh, el = sk.joint("shoulder"), sk.joint("elbow")
-    top = sh + Vector((0.035 * H, -0.072 * H, 0.06 * H))
+    top = sh + Vector((0.03 * H, -0.104 * H, -0.035 * H))   # under the pauldron's front lame
     drop = top.z - (el.z + 0.02 * H)
     half = 0.028 * H
 
