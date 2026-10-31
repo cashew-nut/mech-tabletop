@@ -15,7 +15,7 @@ import {
   type WalkerInput,
 } from '@brass-charter/rules';
 import examples from '../../../data/lances/examples.json';
-import { WalkerEditor } from './WalkerEditor';
+import { WalkerControls, WalkerView } from './WalkerEditor';
 import { Battle } from './battle/Battle';
 import { Cards } from './Cards';
 import { downloadLance, loadDraft, loadSaved, parseLance, saveDraft, storeSaved } from './storage';
@@ -128,6 +128,14 @@ function Builder() {
   const over = report.total > budget;
   const lanceErrors = report.errors.filter((e) => !lance.walkers.some((w) => e.startsWith(`${w.name}: `)));
 
+  const walkerProps = current && {
+    walker: current,
+    faction,
+    commandCosts: COMMAND_COST,
+    traits: TRAITS,
+    onChange: (w: WalkerInput) => update((l) => void (l.walkers[selected] = w)),
+  };
+
   return (
     <div className="app">
       <header className="masthead">
@@ -170,7 +178,10 @@ function Builder() {
       {notice && <div className="notice">{notice}</div>}
 
       <div className="layout">
-        <aside className="panel lance">
+        <aside className="sidebar">
+          <details className="fold" open>
+            <summary>Lance</summary>
+            <div className="fold-body">
           <label className="field">
             <span>Lance name</span>
             <input value={lance.name} onChange={(e) => update((l) => void (l.name = e.target.value))} />
@@ -206,6 +217,11 @@ function Builder() {
             </div>
           </div>
 
+            </div>
+          </details>
+          <details className="fold" open>
+            <summary>Roster</summary>
+            <div className="fold-body">
           <ol className="roster">
             {lance.walkers.map((w, i) => {
               const ok = validateWalker(w, lance.faction).length === 0;
@@ -236,6 +252,9 @@ function Builder() {
             + Add war-walker
           </button>
 
+            </div>
+          </details>
+          {walkerProps && <WalkerControls {...walkerProps} />}
           {lanceErrors.length > 0 && (
             <ul className="errors">
               {lanceErrors.map((e) => (
@@ -246,8 +265,9 @@ function Builder() {
           {report.errors.length === 0 && <p className="ready">Ready for a Charter Trial.</p>}
 
           {Object.keys(saved).length > 0 && (
-            <div className="saved">
-              <h3>Saved lances</h3>
+            <details className="fold">
+              <summary>Saved lances</summary>
+              <div className="fold-body">
               <ul>
                 {Object.entries(saved).map(([name, l]) => (
                   <li key={name}>
@@ -260,19 +280,14 @@ function Builder() {
                   </li>
                 ))}
               </ul>
-            </div>
+              </div>
+            </details>
           )}
         </aside>
 
         <main className="editor">
-          {current ? (
-            <WalkerEditor
-              walker={current}
-              faction={faction}
-              commandCosts={COMMAND_COST}
-              traits={TRAITS}
-              onChange={(w) => update((l) => void (l.walkers[selected] = w))}
-            />
+          {walkerProps ? (
+            <WalkerView {...walkerProps} />
           ) : (
             <div className="panel empty">
               <p>No war-walkers yet. Add one to start building your lance.</p>

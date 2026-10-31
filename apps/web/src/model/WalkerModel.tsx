@@ -48,7 +48,7 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
 
     const resize = () => {
       const w = el.clientWidth;
-      const h = Math.max(260, Math.min(420, w * 0.75));
+      const h = Math.max(260, Math.min(window.innerHeight - 200, w * 0.75));
       renderer.setSize(w, h);
       stage.setSize(w, h);
       camera.aspect = w / h;
