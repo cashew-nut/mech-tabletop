@@ -205,6 +205,15 @@ def facet(name, origin, u, v, pts, thick, mat, parent, frame_mat=None, inlay_mat
     return ob, at
 
 
+def face_rot(n):
+    """Euler turning a part that faces -Y to face along n, kept upright."""
+    y = -n.normalized()
+    z = Vector((0, 0, 1))
+    z = (z - y * z.dot(y)).normalized()
+    x = y.cross(z)
+    return Matrix((x, y, z)).transposed().to_euler()
+
+
 def pauldron(sk, m, root):
     """A gothic pauldron of curved, overlapping plates round the shoulder: a
     filigree cap with a crimson inlay and gold arch, three flared lames below,
@@ -227,10 +236,39 @@ def pauldron(sk, m, root):
             return p, n
         return surf
 
-    # One big plate, as in the render: a single gold-rimmed shell from the
-    # top of the shoulder down over the upper arm, crimson on its lower face.
-    patch("pauldron_cap", shell(flare=0.3, q=0.55), -115, 115, -48, 86, 0.0, 1.2, m["armour"], root, m["trim"], 0.24, n=6)
-    patch("pauldron_panel", shell(flare=0.3, q=0.55), -48, 48, -42, 12, 0.35, 0.4, m["hull"], root, m["trim"], 0.16, n=4)
+    # One big plate, as in the render: a gold-rimmed shell from the top of
+    # the shoulder down over the arm, its hem drawn to a gothic point.
+    cap = shell(flare=0.3, q=0.55)
+
+    def hem(a):
+        return -44 - 28 * max(0.0, 1 - abs(a) / 80) ** 1.5
+
+    def band(lo, hi):
+        """Surface between lo(a) and hi(a), parametrised 0..100 bottom to top."""
+        def surf(a, t):
+            e0, e1 = lo(a), hi(a)
+            return cap(a, e0 + (e1 - e0) * t / 100)
+        return surf
+
+    def at(a, e, lift=0.0):
+        p, n = cap(a, e)
+        return p + n * lift
+
+    patch("pauldron_cap", band(hem, lambda a: 86), -115, 115, 0, 100, 0.0, 1.2, m["armour"], root, m["trim"], 0.26, n=10)
+    # Crimson field on the lower face, following the pointed hem.
+    patch("pauldron_panel", band(lambda a: hem(a) + 6, lambda a: 6 + 36 * max(0.0, 1 - abs(a) / 52)), -52, 52, 0, 100, 0.35, 0.4,
+          m["hull"], root, m["trim"], 0.16, n=8)
+    # A gold chevron inside the field, echoing its pointed top.
+    pts = [at(a, -2 + 34 * (1 - abs(a) / 46), 0.5) for a in range(-40, 41, 4)]
+    shapes.sweep("pauldron_chevron", pts, 0.16, m["trim"], parent=root, profile="square")
+    # A pair of gothic lancets let into the crimson, gold framed.
+    for k, a in enumerate((-11, 11)):
+        p, n = cap(a, -32)
+        shapes.lancet(f"pauldron_lancet{k}", 0.016 * H, 0.038 * H, 0.35, m["trim"], glow=m["metal"], loc=p + n * 0.4,
+                      rot=face_rot(n), parent=root)
+    # Two small pinnacles on the upper rim, front and back.
+    for k, a in enumerate((-100, 100)):
+        shapes.spire(f"pauldron_spike{k}", 0.013 * H, 0.045 * H, m["armour"], trim=m["trim"], loc=at(a, 50, -0.4), parent=root, crockets=1, sides=6)
     # Turn the pauldron about the shoulder so its crimson face looks forward-out.
     bpy.context.view_layer.update()
     turn = Matrix.Translation(S) @ Matrix.Rotation(math.radians(-28), 4, "Z") @ Matrix.Translation(-S)
@@ -382,6 +420,11 @@ def torso(sk, m, root):
             hx = half((ta + tb) / 2)[0]
             patch(f"abdomen{side}{k}", lambda x, t: front(s * x, t), 0.004 * H, hx * w * 1.15, ta, tb, 0.6, 0.9,
                   m["filigree"], root, m["trim"], 0.22, inlay_mat=m["hull"] if k == 0 else None, inlay=0.32)
+        # Gothic lancets in the lower pectoral, as on the render's breastplate.
+        for k, x in enumerate((0.3, 0.55)):
+            p, nrm = front(s * x * hx_top, 0.6)
+            shapes.lancet(f"chest_lancet{side}{k}", 0.022 * H, 0.05 * H, 0.35, m["trim"], glow=m["metal"], loc=p + nrm * 1.45,
+                          rot=face_rot(nrm), parent=root)
         # Flank plates wrapping round the sides.
         def flank(a, t, s=s):
             hx, hy = half(t)
