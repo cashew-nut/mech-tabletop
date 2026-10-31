@@ -57,7 +57,12 @@ def main(args):
     u = ((V[:, ax].max() - V[:, ax]) if plus else (V[:, ax] - V[:, ax].min())) * s   # distance back from the muzzle
     side, up = [i for i in range(3) if i != ax and i != 2][0], 2
     sg = 1.0 if plus else -1.0
-    if "--upright" in args:  # stands up from a mount (core items): z from 0 to --length, centred on x/y
+    if "--fit" in args:  # equipment: keep the Meshy pose (front -Y, Z up), scale to fit a W,D,H box centred on --centre x,y,z
+        W_, D_, H_ = [float(v) for v in opt(args, "--fit", "1,1,1").split(",")]
+        cx, cy, cz = [float(v) for v in opt(args, "--centre", "0,0,0").split(",")]
+        ss = min(W_ / ext[0], D_ / ext[1], H_ / ext[2])
+        P = ((V - c) * ss + np.array([cx, cy, cz])).astype(np.float32)
+    elif "--upright" in args:  # stands up from a mount (core items): z from 0 to --length, centred on x/y
         ss = length / ext[2]
         P = np.stack([(V[:, 0] - c[0]) * ss, (V[:, 1] - c[1]) * ss, (V[:, 2] - V[:, 2].min()) * ss], 1).astype(np.float32)
     else:
@@ -111,7 +116,7 @@ def main(args):
     hm = high_materials()
 
     # High mesh, welded by position (Meshy splits vertices along UV seams).
-    key = np.round(P[F.ravel()] * 400).astype(np.int64)
+    key = np.round(P[F.ravel()] * opt(args, "--weld", 400, float)).astype(np.int64)
     _, first, inv = np.unique(key, axis=0, return_index=True, return_inverse=True)
     inv = inv.ravel()
     wv = P[F.ravel()][first]
