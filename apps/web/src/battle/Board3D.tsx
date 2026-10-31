@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
 import { hexCentre, type Highlight } from './HexMap';
-import { PUFF, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
+import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
+import { PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
 
 const PIXEL = 3;
 const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
@@ -33,6 +34,7 @@ interface Props {
   onWalker: (id: string) => void;
 }
 
+const rnd01 = (n: number) => ((Math.sin(n * 12.9898) * 43758.5453) % 1 + 1) % 1;
 const hexShape = new THREE.CylinderGeometry(1, 1, 1, 6, 1);
 const box = new THREE.BoxGeometry(1, 1, 1);
 const planeGeo = new THREE.PlaneGeometry(1.92, 1.92); // sized so the marker's hex outline (radius 30 of 64px) sits just inside a tile
@@ -42,7 +44,8 @@ const world = (hex: Hex, y = 0) => {
   const { x, y: z } = hexCentre(hex);
   return new THREE.Vector3(x * UNIT, y, z * UNIT);
 };
-const heightOf = (state: GameState, hex: Hex) => (state.map.hexes[hexKey(hex)]?.elevation ?? 0) * ELEVATION_STEP;
+let tileLift = 0; // the kit's flagstones stand a little proud of y = 0
+const heightOf = (state: GameState, hex: Hex) => (state.map.hexes[hexKey(hex)]?.elevation ?? 0) * ELEVATION_STEP + tileLift;
 
 function add(parent: THREE.Object3D, geo: THREE.BufferGeometry, material: THREE.Material, pos: [number, number, number], scale: [number, number, number]) {
   const m = new THREE.Mesh(geo, material);
@@ -83,7 +86,7 @@ function walkerMesh(side: number, size: number) {
 }
 
 // The wargaming table around the board: a slate top in a wooden frame, with ruins on the far side and clutter nearer the camera.
-function dressTable(parent: THREE.Object3D, lo: { x: number; z: number }, hi: { x: number; z: number }) {
+function dressTable(parent: THREE.Object3D, lo: { x: number; z: number }, hi: { x: number; z: number }, kit: Kit | null) {
   const margin = 3.4;
   const x0 = lo.x - margin;
   const x1 = hi.x + margin;
@@ -103,7 +106,12 @@ function dressTable(parent: THREE.Object3D, lo: { x: number; z: number }, hi: { 
     const x = x0 + 0.8 + ((x1 - x0 - 1.6) * (k + rnd(k + 1) * 0.5)) / 9;
     const g = new THREE.Group();
     g.position.set(x, -0.42, z1 - 1.0 - rnd(k + 20) * 0.9);
-    if (k % 3 === 1) ruinWall(g, 0, 100 + k, 2.4, 0);
+    if (kit) {
+      const piece = kit.make(k % 3 === 1 ? 'wall_long' : (['tower_spire', 'tower_ruined', 'tower_chimney'] as KitPiece[])[k % 3]);
+      g.add(piece);
+      const anchor = piece.getObjectByName('smoke');
+      if (anchor) chimneySmoke(piece, anchor.position, 200 + k);
+    } else if (k % 3 === 1) ruinWall(g, 0, 100 + k, 2.4, 0);
     else tower(g, 0, 200 + k, k % 3 === 2);
     parent.add(g);
   }
@@ -111,7 +119,13 @@ function dressTable(parent: THREE.Object3D, lo: { x: number; z: number }, hi: { 
     for (let k = 0; k < 4; k++) {
       const g = new THREE.Group();
       g.position.set(side + (rnd(k + 40) - 0.5) * 0.6, -0.42, z0 + 2.5 + ((z1 - z0 - 5) * (k + 0.5)) / 4);
-      if (k % 2) ruinWall(g, 0, 300 + k, 2.2, Math.PI / 2);
+      if (kit) {
+        const piece = kit.make(k % 2 ? 'wall_long' : (['tower_spire', 'tower_ruined', 'tower_chimney'] as KitPiece[])[(k + (side > cx ? 1 : 0)) % 3]);
+        if (k % 2) piece.rotation.y = Math.PI / 2;
+        g.add(piece);
+        const anchor = piece.getObjectByName('smoke');
+        if (anchor) chimneySmoke(piece, anchor.position, 400 + k);
+      } else if (k % 2) ruinWall(g, 0, 300 + k, 2.2, Math.PI / 2);
       else tower(g, 0, 400 + k + (side > cx ? 7 : 0), k === 2);
       parent.add(g);
     }
@@ -140,15 +154,27 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const el = host.current!;
     const renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setClearColor(0x232a36);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = renderer.domElement;
     canvas.className = 'board3d-canvas';
     el.appendChild(canvas);
 
     const scene = new THREE.Scene();
-    scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x3a3128, 1.35));
-    const sun = new THREE.DirectionalLight(0xffd9a0, 1.9);
-    sun.position.set(-8, 14, 6);
-    scene.add(sun);
+    scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x3a3128, 0.8));
+    const sun = new THREE.DirectionalLight(0xffd9a0, 1.4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 60 });
+    sun.shadow.bias = -0.0008;
+    sun.shadow.normalBias = 0.02;
+    const sunOffset = new THREE.Vector3(-10, 18, -7);
+    scene.add(sun, sun.target);
+    const rim = new THREE.DirectionalLight(0x6f8cff, 0.5); // cool fill from the other side
+    rim.position.set(12, 8, 10);
+    scene.add(rim);
 
     // One flagstone texture per terrain; the side and underside are plain dark stone.
     const tileMats: Record<string, THREE.Material[]> = {};
@@ -175,6 +201,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const pulsing: THREE.Mesh[] = [];
 
     const markerTextures = { attack: markerTexture('attack'), move: markerTexture('move'), jump: markerTexture('jump'), smoke: markerTexture('smoke') };
+    let kit: Kit | null = null;
     const mapCentre = new THREE.Vector3();
     const focus = new THREE.Vector3();
     const puffs: THREE.Mesh[] = [];
@@ -193,12 +220,54 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         const info = state.map.hexes[key];
         const base = world({ q, r });
         const top = info.elevation * ELEVATION_STEP;
+        if (kit) {
+          const objective = state.objectives.some((o) => o.hex.q === q && o.hex.r === r);
+          const pick = (list: KitPiece[]) => list[Math.floor(rnd01(i * 7.3 + 1) * list.length)];
+          const terrainTile: Record<string, KitPiece[]> = {
+            open: ['tile_plain_1', 'tile_plain_2', 'tile_plain_1', 'tile_cracked_3', 'tile_slab_4'],
+            rough: ['tile_rough_6', 'tile_rubble_7'],
+            light: ['tile_moss_5', 'tile_moss_5', 'tile_plain_2'],
+            heavy: ['tile_plain_2', 'tile_cracked_3'],
+            blocking: ['tile_scorched_9'],
+          };
+          const tile = kit.make(objective ? 'tile_plate_8' : pick(terrainTile[info.terrain]));
+          tile.position.set(base.x, top, base.z);
+          tile.rotation.y = Math.floor(rnd01(i * 3.1 + 5) * 6) * (Math.PI / 3);
+          tile.userData.hex = { q, r };
+          terrain.add(tile);
+          if (top > 0) add(terrain, hexShape, tileMats.blocking[0], [base.x, (top - 0.4) / 2 - 0.02, base.z], [0.95, top + 0.4, 0.95]); // plinth under raised ground
+          const prop = new THREE.Group();
+          prop.position.set(base.x, top, base.z);
+          if (info.terrain === 'blocking') {
+            const t = kit.make((['tower_spire', 'tower_chimney', 'tower_ruined'] as KitPiece[])[Math.floor(rnd01(i * 1.7 + 2) * 3)]);
+            t.rotation.y = Math.floor(rnd01(i * 5.3) * 4) * (Math.PI / 2);
+            prop.add(t);
+            const anchor = t.getObjectByName('smoke');
+            if (anchor) chimneySmoke(t, anchor.position, i);
+          } else if (info.terrain === 'heavy') {
+            const w = kit.make('wall_arched');
+            w.rotation.y = Math.floor(rnd01(i * 2.9) * 3) * (Math.PI / 3);
+            prop.add(w);
+          } else if (info.terrain === 'light') {
+            const c = kit.make('crate');
+            c.position.set((rnd01(i) - 0.5) * 0.7, 0, (rnd01(i + 4) - 0.5) * 0.7);
+            c.rotation.y = rnd01(i + 8) * 3;
+            prop.add(c);
+          } else if (info.terrain === 'rough') {
+            const r2 = kit.make('rubble_pile');
+            r2.rotation.y = rnd01(i + 2) * 6;
+            prop.add(r2);
+          }
+          terrain.add(prop);
+          i++;
+        } else {
         const tile = add(terrain, hexShape, tileMats[info.terrain] as unknown as THREE.Material, [base.x, (top - 0.4) / 2, base.z], [0.97, top + 0.4, 0.97]);
         tile.userData.hex = { q, r };
         const props = new THREE.Group();
         props.position.set(base.x, 0, base.z);
         terrainProps(props, info.terrain, top, ++i);
         terrain.add(props);
+        }
         sx += base.x;
         sz += base.z;
         n++;
@@ -207,7 +276,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         hi.x = Math.max(hi.x, base.x);
         hi.z = Math.max(hi.z, base.z);
       }
-      dressTable(terrain, lo, hi);
+      dressTable(terrain, lo, hi, kit);
       puffs.length = 0;
       terrain.traverse((o) => o.userData[PUFF] && puffs.push(o as THREE.Mesh));
       if (builtMap !== state.map.id) {
@@ -291,6 +360,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         if (w.destroyed) continue;
         const p = world(w.pos, heightOf(state, w.pos));
         const g = walkerMesh(w.side, w.size);
+        g.traverse((o) => (o.castShadow = true));
         g.position.copy(p);
         g.rotation.y = Math.PI / 2 + (60 * w.facing * Math.PI) / 180; // +Z nose -> SVG angle -60 * facing
         if (w.prone) {
@@ -314,6 +384,13 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     api.current = { rebuild };
     buildTerrain();
     rebuild();
+    loadBoardKit().then((k) => {
+      if (!k || disposed) return;
+      kit = k;
+      tileLift = 0.08;
+      builtMap = '';
+      rebuild();
+    });
 
     const resize = () => {
       const w = el.clientWidth;
@@ -346,6 +423,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointerup', onUp);
 
+    let disposed = false;
     let raf = 0;
     const loop = (t: number) => {
       raf = requestAnimationFrame(loop);
@@ -364,12 +442,15 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       const step = focus.clone().sub(controls.target).multiplyScalar(0.08); // glide to the new focus, carrying the camera with it
       controls.target.add(step);
       camera.position.add(step);
+      sun.target.position.copy(controls.target);
+      sun.position.copy(controls.target).add(sunOffset);
       controls.update();
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(loop);
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener('pointerdown', onDown);

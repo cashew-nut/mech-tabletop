@@ -218,7 +218,7 @@ export interface Puff {
 }
 export const PUFF = 'puff';
 
-function smokeStack(parent: THREE.Object3D, x: number, y: number, z: number, seed: number) {
+export function smokeStack(parent: THREE.Object3D, x: number, y: number, z: number, seed: number) {
   const rnd = rndFrom(seed);
   for (let i = 0; i < 6; i++) {
     const material = new THREE.MeshLambertMaterial({ color: i % 2 ? 0x8a8d92 : 0xb4b7bb, transparent: true, depthWrite: false });
@@ -227,6 +227,15 @@ function smokeStack(parent: THREE.Object3D, x: number, y: number, z: number, see
     m.userData[PUFF] = { baseY: y, phase: i / 6, drift: 0.25 + rnd(i) * 0.3 } as Omit<Puff, 'mesh'>;
     parent.add(m);
   }
+}
+
+/** Smoke puffs plus an ember glow above a chimney, at a position in the parent's space. */
+export function chimneySmoke(parent: THREE.Object3D, pos: THREE.Vector3, seed: number) {
+  smokeStack(parent, pos.x, pos.y + 0.05, pos.z, seed);
+  const ember = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: bloomTexture(), color: 0xff7a2a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  ember.rotation.x = -Math.PI / 2;
+  ember.position.set(pos.x, pos.y - 0.02, pos.z);
+  parent.add(ember);
 }
 
 /** A gothic tower with a spire, pinnacles and buttresses; optionally a smoking chimney instead of the spire. */
