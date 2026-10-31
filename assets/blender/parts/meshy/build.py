@@ -33,18 +33,22 @@ def to_mm(p):
 
 
 # component: (joint, triangles, texture size)
+# component: (joint, triangles, (base, normal, orm) texture sizes). Textures are baked at the base size and the normal
+# and ORM maps are scaled down after: the normal map dominates the compressed file size, ORM is smooth.
 PARTS = {
-    "helm": ("head", 5000, 1024), "collar": ("neck", 3000, 512), "torso": ("spine", 12000, 1024),
-    "pelvis": ("pelvis", 6000, 1024), "back": ("chest", 8000, 1024), "cloth": ("chest", 5000, 1024),
-    "pauldron": ("shoulder", 6000, 1024), "arm": ("shoulder", 2500, 512), "forearm": ("elbow", 4000, 1024),
-    "hand": ("wrist", 3500, 512), "thigh": ("hip", 5000, 1024), "shin": ("knee", 6000, 1024),
-    "foot": ("ankle", 3500, 512),
+    "helm": ("head", 3500, (1024, 384, 128)), "collar": ("neck", 2000, (512, 256, 128)), "torso": ("spine", 8000, (1024, 384, 128)),
+    "pelvis": ("pelvis", 4000, (768, 384, 128)), "back": ("chest", 5500, (768, 384, 128)), "cloth": ("chest", 3500, (768, 384, 128)),
+    "pauldron": ("shoulder", 4500, (1024, 384, 128)), "arm": ("shoulder", 1800, (512, 256, 128)), "forearm": ("elbow", 2800, (768, 384, 128)),
+    "hand": ("wrist", 2500, (512, 256, 128)), "thigh": ("hip", 3500, (768, 384, 128)), "shin": ("knee", 4200, (768, 384, 128)),
+    "foot": ("ankle", 2500, (512, 256, 128)),
 }
+# Legs are mirror images in the Meshy figure, so the right side reuses the left part mirrored (saves ~1 MB).
+MIRRORED = {"thigh", "shin", "foot"}
 SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot"}
 # Equipment: label, item file name, attach mount (world position in Meshy units, centred), triangles, size
 ITEMS = {
-    "lance": ("sword_L", "item_lance@paladin", (0.57, -0.30, -0.28), 4000, 1024),
-    "carapace-gun": ("pod_L", "item_carapace-gun@paladin", (0.22, 0.10, 0.62), 6000, 1024),
+    "lance": ("sword_L", "item_lance@paladin", (0.57, -0.30, -0.28), 3000, (1024, 384, 128)),
+    "carapace-gun": ("pod_L", "item_carapace-gun@paladin", (0.22, 0.10, 0.62), 4000, (1024, 512, 256)),
 }
 DEBUG = False
 import os
@@ -301,7 +305,8 @@ def main(args):
         if not ntri:
             print("skip (empty)", out_name)
             return
-        size = size_override or size
+        sizes = (size_override,) * 3 if size_override else size
+        size = sizes[0]
         hi = subset(out_name + "_hi", mask)
         lo = hi.copy()
         lo.data = hi.data.copy()
@@ -326,13 +331,20 @@ def main(args):
             p = cache / f"{out_name}_{key}.png"
             kb._save(img, p)
             paths[key] = p
+        # Scale the normal and ORM maps down to their own sizes (same UVs, so any size works).
+        from PIL import Image
+        for key, sz in (("normal", sizes[1]), ("orm", sizes[2])):
+            if sz < size:
+                im = Image.open(paths[key]).convert("RGB").resize((sz, sz), Image.LANCZOS)
+                im.save(paths[key])
         tex = {}
         for key, p in paths.items():
             im = bpy.data.images.load(str(p), check_existing=False)
             im.name = p.stem + "_f"
             im.colorspace_settings.name = "sRGB" if key == "basecolor" else "Non-Color"
             tex[key] = im
-        mat = kb.baked_material(f"{out_name}_kit", tex["basecolor"], tex["orm"], tex["normal"])
+        # "hull" + "livery": the web swaps the texture's red texels for the livery colour (see liveryMaterial in assemble.ts).
+        mat = kb.baked_material(f"hull_{out_name}_livery", tex["basecolor"], tex["orm"], tex["normal"])
         lo.data.materials.clear()
         lo.data.materials.append(mat)
         root = kit.empty(out_name)
@@ -346,7 +358,7 @@ def main(args):
         print(f"== {out_name}: {ntri} -> {tris} tris, {size}px, {time.time() - t0:.0f}s", flush=True)
 
     for comp, (joint, target, size) in PARTS.items():
-        sides = ("L", "R") if comp in SIDED else (None,)
+        sides = (("L",) if comp in MIRRORED else ("L", "R")) if comp in SIDED else (None,)
         for side in sides:
             out = f"covenant_{comp}{'-right' if side == 'R' else ''}_paladin"
             if only and out not in only and comp not in only:
