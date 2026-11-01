@@ -332,6 +332,84 @@
         ]
       }
     },
+    "foundries/brute": {
+      "$comment": "The composite Brute's own skeleton (mm, left side): the joints assets/blender/parts/composite/brute.py cut its parts on (shoulder, elbow, wrist and ankle were re-measured; the rest match foundries/bulwark). scripts/publish-composite.mjs writes it as foundries_frame_brute so the Brute's parts meet at their pegs; Artillery keeps foundries_frame_bulwark. The arm mounts sit where the gun forearms' origins are (their elbow lands on the pauldron's socket).",
+      "joints": {
+        "pelvis": [
+          0.0,
+          1.983,
+          21.445
+        ],
+        "spine": [
+          0.0,
+          1.983,
+          24.618
+        ],
+        "chest": [
+          0.0,
+          1.983,
+          27.792
+        ],
+        "neck": [
+          0.0,
+          2.38,
+          32.75
+        ],
+        "head": [
+          0.0,
+          2.975,
+          34.932
+        ],
+        "shoulder": [
+          5.95,
+          -1.388,
+          27.99
+        ],
+        "elbow": [
+          7.041,
+          -0.992,
+          25.213
+        ],
+        "wrist": [
+          8.727,
+          -3.967,
+          20.85
+        ],
+        "hip": [
+          4.363,
+          1.587,
+          20.255
+        ],
+        "knee": [
+          6.347,
+          0.992,
+          13.908
+        ],
+        "ankle": [
+          8.33,
+          -1.983,
+          5.975
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            0.298,
+            0.396,
+            -0.397
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            -0.298,
+            0.396,
+            -0.397
+          ]
+        ]
+      }
+    },
     "reliquary/striker": {
       "$comment": "Joints (mm, left side) measured from the composite Seer (assets/blender/parts/composite/seer.py, MODEL=seer). The Seer's right arm is its own part, so jointsRight gives the right shoulder, elbow and wrist (x as is, not mirrored). mount_armRight_0 is the spear's grip; the left one is its mirror. scripts/publish-composite.mjs seer writes these onto the frame.",
       "joints": {
