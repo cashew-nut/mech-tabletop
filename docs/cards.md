@@ -44,6 +44,6 @@ node scripts/render-card-art.mjs            # cards/art/*.jpg from the kit and i
 node scripts/build-card-sheet.mjs [facesDir] # cards/sheet.html, cards/paladin-cards.pdf, optional PNG faces at 300 dpi
 ```
 
-`render-card-art.mjs` uses the headless renderer (`apps/web/render.html`) with two new options in `preview.ts`: `show=` lights the named kit components and dims the rest of the body, and `plain=1` drops the floor and skyline. Body parts are cut from one Meshy sculpt, so each is shown in place on the dimmed body rather than alone.
+`render-card-art.mjs` uses the headless renderer (`apps/web/render.html`) with options in `preview.ts`: `show=` picks the named kit components, `side=L` keeps one side, `solo=1` drops everything else, and `plain=1` drops the floor and skyline. Since the Paladin became closed composite parts (`assets/blender/parts/composite`, published into the game), each body card shows its own parts alone, with the pegs where they plug in. Without `solo=1` the rest of the body is dimmed instead (`dim=`). The art is framed by the shown parts' bounding box, so tall parts (torso with its banner, arm) sit a little left of centre.
 
 The PDF is A4, nine cards per page with crop marks. Cards have no bleed yet; print at 100%.

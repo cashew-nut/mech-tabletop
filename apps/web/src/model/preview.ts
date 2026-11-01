@@ -8,7 +8,7 @@
 // zoom=2 moves in, fy=0.7 aims at 70% of the height (for close-ups of a hardpoint).
 // show=helm,collar keeps only those kit components (the body part of a card); plain=1 drops the floor and skyline
 // so only the sky is left behind it; side=R keeps only that side's sided parts; see scripts/render-card-art.mjs.
-// dim=0.07 sets how dark the rest of the body goes; roll=-55 tilts the model about the view axis.
+// solo=1 drops the rest of the body instead of dimming it (the closed composite parts stand on their own); dim=0.07 sets how dark it goes; roll=-55 tilts the model about the view axis.
 // lineup=8 stands that many walkers in a row; bench=120 then times that many frames into data-bench.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
@@ -77,12 +77,14 @@ if (show) {
   };
   const keep = (o: THREE.Object3D) => {
     for (let n: THREE.Object3D | null = o; n; n = n.parent) {
-      const m = /^kit_([a-z]+)(?:_[LR])?$/.exec(n.name);
-      if (m) return show.includes(m[1]);
+      const m = /^kit_([a-z]+)(?:_([LR]))?$/.exec(n.name);
+      if (m) return show.includes(m[1]) && (!side || !m[2] || m[2] === side);
     }
     return false;
   };
   const dim = Number(q.get('dim') ?? 0.07);
+  const solo = !!q.get('solo');
+  const side = q.get('side');
   model.updateMatrixWorld(true);
   const gone: THREE.Object3D[] = [];
   model.traverse((o) => {
@@ -95,6 +97,10 @@ if (show) {
     }
     if (keep(mesh)) {
       lit.union(new THREE.Box3().setFromObject(mesh));
+      return;
+    }
+    if (solo) {
+      gone.push(mesh);
       return;
     }
     const fade = (m: THREE.Material) => {
