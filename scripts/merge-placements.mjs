@@ -12,7 +12,8 @@ if (!file) {
 }
 const incoming = JSON.parse(readFileSync(file === '-' ? 0 : file, 'utf8'));
 const path = new URL('../data/model-kit.json', import.meta.url);
-const kit = JSON.parse(readFileSync(path, 'utf8'));
+const raw = readFileSync(path, 'utf8');
+const kit = JSON.parse(raw);
 kit.fit.placements ??= {};
 
 const isZero = (v) => !v || v.every((n) => n === 0);
@@ -31,4 +32,24 @@ for (const [cls, rows] of Object.entries(incoming)) {
   kit.fit.placements[cls] = table;
   console.log(`${cls}: ${Object.values(table).reduce((n, items) => n + Object.keys(items).length, 0)} row(s)`);
 }
-writeFileSync(path, JSON.stringify(kit, null, 2) + '\n');
+
+// Replace only the "placements" block of the file, so the rest keeps its formatting (1.0 stays 1.0) and the diff stays small.
+const key = raw.indexOf('"placements":');
+if (key < 0) throw new Error('data/model-kit.json has no "placements" block to replace');
+const open = raw.indexOf('{', key);
+let depth = 0;
+let end = open;
+for (let i = open, inString = false; i < raw.length; i++) {
+  const ch = raw[i];
+  if (inString) {
+    if (ch === '\\') i++;
+    else if (ch === '"') inString = false;
+  } else if (ch === '"') inString = true;
+  else if (ch === '{') depth++;
+  else if (ch === '}' && --depth === 0) {
+    end = i + 1;
+    break;
+  }
+}
+const block = JSON.stringify(kit.fit.placements, null, 2).replace(/\n/g, '\n    ');
+writeFileSync(path, raw.slice(0, open) + block + raw.slice(end));
