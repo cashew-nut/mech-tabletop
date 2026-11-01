@@ -33,12 +33,24 @@ export interface ItemFit {
   pose?: Record<string, { contact?: Contact[]; rot?: [number, number, number]; scale?: number }>;
 }
 
+/** A hand adjustment of one item at one hardpoint of one body, made with the sliders in place.html. */
+export interface Nudge {
+  /** Fractions of body height, in the hardpoint's axes (x outward, y up, z forward), like hardpoint offsets. */
+  offset?: [number, number, number];
+  /** Degrees, turning the item about its contact point in the hardpoint's axes. */
+  rot?: [number, number, number];
+  /** Multiplies the item's size about its contact point. */
+  scale?: number;
+}
+
 export interface FitData {
   classes: Record<string, { scale: number }>;
   nativeRight: string[];
   hardpoints: Record<string, HardpointDef>;
   overrides: Record<string, Record<string, Partial<HardpointDef>>>;
   items: Record<string, ItemFit>;
+  /** Placement table: class, then hardpoint, then an item id (or `*` for every item there). Absent rows change nothing. */
+  placements?: Record<string, Record<string, Record<string, Nudge>>>;
 }
 
 export const FIT = (kitData as unknown as { fit: FitData }).fit;
@@ -113,3 +125,28 @@ export function pivotOf(partName: string, contact: Contact[] = []): [number, num
 }
 
 export const poseOf = (id: string, hp: string) => ({ contact: [] as Contact[], scale: 1, ...(FIT.items[id]?.pose?.default ?? {}), ...(FIT.items[id]?.pose?.[hp] ?? {}) });
+
+export const IDENTITY_NUDGE: Required<Nudge> = { offset: [0, 0, 0], rot: [0, 0, 0], scale: 1 };
+
+/** The placement-table adjustment for an item at a hardpoint of a class, or null when there is none.
+ * The row for the item wins field by field over the `*` row of the hardpoint. */
+export function nudgeOf(chassisId: string, hp: string, itemId: string): Required<Nudge> | null {
+  const rows = FIT.placements?.[chassisId]?.[hp];
+  if (!rows || (!rows['*'] && !rows[itemId])) return null;
+  const merged = { ...IDENTITY_NUDGE, ...(rows['*'] ?? {}), ...(rows[itemId] ?? {}) };
+  const isIdentity = merged.scale === 1 && merged.offset.every((v) => v === 0) && merged.rot.every((v) => v === 0);
+  return isIdentity ? null : merged;
+}
+
+const isQuiet = (n: Nudge | undefined) => !n || ((n.scale ?? 1) === 1 && (n.offset ?? [0, 0, 0]).every((v) => v === 0) && (n.rot ?? [0, 0, 0]).every((v) => v === 0));
+
+/** One class's placement rows without the ones that change nothing. An item row that undoes its hardpoint's `*` row stays. */
+export function compactPlacements(rows: Record<string, Record<string, Nudge>>): Record<string, Record<string, Nudge>> {
+  const out: Record<string, Record<string, Nudge>> = {};
+  for (const [hp, items] of Object.entries(rows)) {
+    const wildcard = !isQuiet(items['*']);
+    const kept = Object.entries(items).filter(([item, n]) => !isQuiet(n) || (item !== '*' && wildcard));
+    if (kept.length) out[hp] = Object.fromEntries(kept);
+  }
+  return out;
+}

@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { LOCATIONS, getChassis, getEquipment, type Location, type WalkerInput } from '@brass-charter/rules';
 import { bake } from './kit';
-import { FIT, fitClass, hardpoint, planLocation, pivotOf, poseOf, type Placement } from './fit';
+import { FIT, fitClass, hardpoint, nudgeOf, planLocation, pivotOf, poseOf, type Placement } from './fit';
 import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
@@ -222,17 +222,41 @@ function placeAtHardpoint(
     anchor = new THREE.Object3D();
     const sign = place.side === 'R' ? -1 : 1;
     anchor.position.set(def.offset[0] * sign * height, def.offset[1] * height, def.offset[2] * height);
-    // The right-hand anchor mirrors across the walker, so a pose written for the left works on both sides.
-    if (place.side === 'R') anchor.scale.x = -1;
     joint.add(anchor);
   }
   anchor.name = `hp_${place.hp}`;
-  anchor.rotation.copy(rot);
+  // anchor (the hardpoint) > nudge (the placement table's hand adjustment, in the hardpoint's axes) > turn (the hardpoint's
+  // own rotation, and the mirror across the walker on the right, so a pose written for the left works on both sides)
+  // > the item.
+  const mirror = !def.mount && place.side === 'R';
+  const nudge = new THREE.Object3D();
+  nudge.name = `nudge_${place.hp}`;
+  const adjust = nudgeOf(chassisId, place.hp, id);
+  if (adjust) {
+    // Offsets are fractions of body height; a numbered mount may sit in a scaled parent, so convert to its units.
+    const unit = new THREE.Vector3();
+    anchor.parent!.getWorldScale(unit);
+    nudge.position.set(...(adjust.offset.map((v, i) => (v * height) / (Math.abs(unit.getComponent(i)) || 1)) as [number, number, number]));
+    nudge.rotation.set(...(adjust.rot.map((d) => (d * Math.PI) / 180) as [number, number, number]));
+    // The right side is the mirror image of the left: out stays out, and turns about y and z reverse.
+    if (mirror) {
+      nudge.position.x *= -1;
+      nudge.rotation.y *= -1;
+      nudge.rotation.z *= -1;
+    }
+    nudge.scale.setScalar(adjust.scale);
+  }
+  const turn = new THREE.Object3D();
+  turn.name = `turn_${place.hp}`;
+  turn.rotation.copy(rot);
+  if (mirror) turn.scale.x = -1;
+  anchor.add(nudge);
+  nudge.add(turn);
   const pose = poseOf(id, place.hp);
   scale *= pose.scale;
   // Class items are modelled for one hand; on the other side they are flipped (as the numbered mounts always did).
   const nativeRight = libName ? NATIVE_RIGHT.has(libName) : false;
-  // A right-hand anchor is already mirrored, so only a numbered mount (not mirrored) needs the side in the decision.
+  // A right-hand hardpoint on a joint is already mirrored, so only a numbered mount (not mirrored) needs the side in the decision.
   const flip = def.mount && place.side === 'R' ? !nativeRight : nativeRight;
   const pivot = new THREE.Vector3(...pivotOf(libName ?? id, pose.contact)).multiplyScalar(scale);
   if (flip) pivot.x *= -1;
@@ -240,7 +264,9 @@ function placeAtHardpoint(
   const itemRot = new THREE.Euler(...((pose.rot ?? [0, 0, 0]).map((d) => (d * Math.PI) / 180) as [number, number, number]));
   part.rotation.copy(itemRot);
   part.position.copy(pivot.applyEuler(itemRot).negate());
-  anchor.add(part);
+  // The sliders tool finds the item again by this.
+  part.userData.fit = { item: id, hp: place.hp, side: place.side ?? null };
+  turn.add(part);
   return true;
 }
 

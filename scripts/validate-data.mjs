@@ -232,6 +232,22 @@ console.log(summary.join('\n'));
       }
       for (const k of ['arm', 'core', 'legs']) for (const hp of item[k] ?? []) if (!fit.hardpoints[hp]) fail(`model-kit.json fit.items.${e.id}`, `unknown hardpoint "${hp}"`);
     }
+    // Placement table: classes with a fit, known hardpoints, known items, sane numbers.
+    const isTriple = (v) => Array.isArray(v) && v.length === 3 && v.every((n) => Number.isFinite(n));
+    for (const [cls, rows] of Object.entries(fit.placements ?? {})) {
+      if (cls.startsWith('$')) continue;
+      if (!fit.classes[cls]) fail('model-kit.json fit.placements', `"${cls}" is not a class with a fit`);
+      for (const [hp, items] of Object.entries(rows)) {
+        const w = `model-kit.json fit.placements.${cls}.${hp}`;
+        if (!fit.hardpoints[hp]) fail(w, 'unknown hardpoint');
+        for (const [item, n] of Object.entries(items)) {
+          if (item !== '*' && !equipmentById.has(item)) fail(w, `unknown item "${item}"`);
+          if (n.offset !== undefined && !isTriple(n.offset)) fail(`${w}.${item}`, 'offset must be three numbers');
+          if (n.rot !== undefined && !isTriple(n.rot)) fail(`${w}.${item}`, 'rot must be three numbers');
+          if (n.scale !== undefined && !(Number.isFinite(n.scale) && n.scale > 0.1 && n.scale < 10)) fail(`${w}.${item}`, 'scale must be a number between 0.1 and 10');
+        }
+      }
+    }
     for (const id of fit.nativeRight) if (!bounds[id]) fail('model-kit.json fit.nativeRight', `no part "${id}" in item-bounds.json (run node scripts/item-bounds.mjs)`);
   }
 }

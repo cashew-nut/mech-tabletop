@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import equipmentData from '../../../data/equipment.json';
 import chassisData from '../../../data/chassis.json';
-import { FIT, fitClass, hardpoint, planLocation, pivotOf, poseOf } from '../src/model/fit';
+import { FIT, compactPlacements, fitClass, hardpoint, nudgeOf, planLocation, pivotOf, poseOf } from '../src/model/fit';
 
 const names = (plan: ReturnType<typeof planLocation>) => plan.map((p) => p?.map((x) => (x.side ? `${x.hp}:${x.side}` : x.hp)).join('+') ?? null);
 
@@ -63,5 +63,36 @@ describe('equipment fit', () => {
     expect(back[2]).toBeCloseTo(-0.41, 1);
     expect(pivotOf('soul-lantern', ['top'])[1]).toBeGreaterThan(5);
     expect(poseOf('soul-lantern', 'waist-L').contact).toEqual(['top']);
+  });
+
+  describe('placement table', () => {
+    const table = FIT.placements!;
+    const restore = JSON.stringify(table);
+    const reset = () => {
+      for (const k of Object.keys(table)) delete table[k];
+      Object.assign(table, JSON.parse(restore));
+    };
+
+    it('has a section for every class with a fit, and changes nothing until a row is added', () => {
+      for (const id of Object.keys(FIT.classes)) expect(table[id], id).toBeDefined();
+      expect(nudgeOf('paladin', 'grip', 'lance')).toBeNull();
+    });
+
+    it('lets an item row win over the hardpoint row, field by field', () => {
+      table.paladin = { grip: { '*': { offset: [0, 0.01, 0], scale: 1.2 }, lance: { scale: 0.8 } } };
+      expect(nudgeOf('paladin', 'grip', 'melee-blade')).toEqual({ offset: [0, 0.01, 0], rot: [0, 0, 0], scale: 1.2 });
+      expect(nudgeOf('paladin', 'grip', 'lance')).toEqual({ offset: [0, 0.01, 0], rot: [0, 0, 0], scale: 0.8 });
+      expect(nudgeOf('brute', 'grip', 'lance')).toBeNull();
+      reset();
+    });
+
+    it('drops rows that change nothing, unless they undo the hardpoint row', () => {
+      expect(
+        compactPlacements({
+          grip: { '*': { scale: 1 }, lance: { offset: [0, 0, 0], rot: [0, 0, 0], scale: 1 } },
+          bracer: { '*': { scale: 1.2 }, 'kinetic-shield': { offset: [0, 0, 0], rot: [0, 0, 0], scale: 1 }, 'ablative-plating': { rot: [0, 10, 0] } },
+        }),
+      ).toEqual({ bracer: { '*': { scale: 1.2 }, 'kinetic-shield': { offset: [0, 0, 0], rot: [0, 0, 0], scale: 1 }, 'ablative-plating': { rot: [0, 10, 0] } } });
+    });
   });
 });

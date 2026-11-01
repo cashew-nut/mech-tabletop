@@ -16,9 +16,35 @@ mounts (`mount_core_0`, ...) exactly as before.
   `node scripts/item-bounds.mjs` after changing a part.
 - **Per-class tuning** (`fit.overrides.<class>.<hardpoint>`): replaces fields of a hardpoint for that body. The Meshy
   bodies are not proportioned like the frames, so most tuning goes here. `fit.classes.<class>.scale` scales every item.
+- **Placements** (`fit.placements.<class>.<hardpoint>.<item or *>`): the hand-adjustment table, see below.
 - Pair hardpoints (`calf-back`, `knee-outer`, `heel`, `shin-front`) put one item on both legs from one slot.
 - Right-hand anchors are mirrored, so poses are written for the left.
 - An item with no entry, or a body without joints (the procedural chassis), falls back to the numbered mounts.
+
+## Placement table and sliders
+
+`fit.placements` stores, per class, per hardpoint, per item (or `*` for every item at that hardpoint), a nudge:
+`offset` (fractions of body height, along the hardpoint's axes: x out, y up, z forward), `rot` (degrees, pitch/turn/roll)
+and `scale` (a multiplier). Fields left out mean no change, an item row wins over the `*` row field by field, and a
+hardpoint with no row is placed exactly as before. The nudge sits between the hardpoint and the item, so turn and scale
+pivot on the item's contact point, and the right side mirrors the left (write values for the left).
+`overrides` still moves a hardpoint for a whole body; placements are for one item at one hardpoint.
+
+Tune it live in a browser (dev server, not part of the build):
+
+```sh
+npm run place                    # opens /place.html; ?chassis=seer&set=heavy picks a class and a loadout from scripts/fit-sets.json
+```
+
+Pick a class, a preset (or type equipment ids per location), click an item in the list, and drag the sliders. The
+yellow box and the red/green/blue arrows mark the item and its hardpoint. "This item here" writes a row for that item,
+"every item at this hardpoint" writes the `*` row. Unsaved work is kept in the browser, with a banner on reload.
+To save it, use Copy JSON (or Download), then:
+
+```sh
+node scripts/merge-placements.mjs placements.json    # replaces each class in the file, drops rows that change nothing
+npm run validate && npm run fit
+```
 
 ## Review
 

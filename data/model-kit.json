@@ -999,6 +999,12 @@
           }
         }
       }
+    },
+    "placements": {
+      "$comment": "Hand adjustments from the sliders (apps/web/place.html): class, then hardpoint, then an item id or * for every item there. offset is in fractions of body height in the hardpoint's axes, rot in degrees, scale multiplies the item. Missing rows change nothing. Merge a copy from the tool with: node scripts/merge-placements.mjs placements.json",
+      "paladin": {},
+      "brute": {},
+      "seer": {}
     }
   }
 }
