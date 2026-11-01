@@ -1,4 +1,4 @@
-"""Turn the closed Paladin parts into finished Blender parts, and assemble them (step 3 of 3; needs bpy).
+"""Turn a model's closed parts into finished Blender parts, and assemble them (step 3 of 3; needs bpy).
 
     ~/bvenv/bin/python -I build.py WORK OUT [part ...] [--size 1024] [--no-bake]
 
@@ -10,7 +10,7 @@ Reads WORK/kit/*.npz (joints.py) and the Meshy textures in WORK (tex_0..2.jpg). 
     from the source. Cut caps, pegs and holes bake as dark gunmetal, so a part on its own reads as finished;
   * its origin is moved to its joint (the kit convention), and it is written as OUT/glb/<part>.glb.
 
-Then OUT/paladin_composite.blend holds every part, the right side mirrored from the left, parented joint to joint
+Then OUT/<model>_composite.blend holds every part, the right side mirrored from the left, parented joint to joint
 (pelvis > torso > pauldron > arm > forearm > hand > blade, and so on), so rotating a part in Blender swings
 everything below it. `render.py` makes the review renders from that file.
 """
@@ -26,24 +26,14 @@ from mathutils import Matrix, Vector
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1]))           # assets/blender, for kit
-from layout import TREE, SIDED, NAME, M, joint  # noqa: E402
+from layout import M, NAME, PS, TREE, SIDED, LOADOUT, joint  # noqa: E402
 
-# part: (game triangles, texture size). Close to ../meshy/build.py's budget (cloth and collar now live in pelvis,
-# torso and pauldron).
-BUDGET = {
-    "torso": (11000, 1024), "pelvis": (7000, 1024), "helm": (3500, 1024), "back": (5500, 768),
-    "pauldron": (7500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (2500, 512),
-    "thigh": (3500, 768), "shin": (4200, 768), "foot": (2500, 512), "blade": (3000, 1024), "pod": (4000, 768),
-}
-GAME_SCALE = 1.0        # print size / kit size; the game GLBs are written at kit size
-LOADOUT = {}            # part: the side it is fitted on by default (the other side's copy is a hidden spare)
-RAY = 1.0               # bake ray reach, relative to the Paladin's (the decimated copy strays further on bigger parts)
-if M is not None:
-    BUDGET, GAME_SCALE = M.BUDGET, M.GAME_SCALE
-    RAY = 1.8
-    LOADOUT = M.LOADOUT
+BUDGET = M.BUDGET         # part: (game triangles, texture size)
+GAME_SCALE = PS           # print size / kit size: the .blend and STLs are print size, the game GLBs kit size
+RAY = getattr(M, "RAY", PS)   # bake ray reach, relative to the Paladin's (the decimated copy strays further on bigger parts)
 PRINT_TOL = 0.015       # mm, manifold simplify tolerance for the print copies
 GUNMETAL = ((0.035, 0.035, 0.04), 0.42, 1.0)        # colour, roughness, metallic of cut faces, pegs and holes
+GOLD = getattr(M, "KNUCKLE_FINISH", ((0.56, 0.40, 0.18), 0.30, 1.0))   # designed knuckles and struts
 
 
 def load_solid(path):
@@ -59,10 +49,11 @@ def make_mesh(name, P, T, used, faces):
     me = bpy.data.meshes.new(name)
     me.from_pydata(P[used, :3].tolist(), [], faces.tolist())
     uv = P[T.ravel(), 3:5].astype(np.float32).copy()
-    cap = (P[T, 3] < -0.5).all(1)
+    cap = (np.abs(P[T, 3] + 1) < 0.5).all(1)       # cut faces, pegs and holes: UV (-1, -1)
+    knuckle = (np.abs(P[T, 3] + 2) < 0.5).all(1)   # designed knuckles and struts (seer.py): UV (-2, -2)
     uv[:, 1] = 1 - uv[:, 1]
     me.uv_layers.new(name="UVHigh").data.foreach_set("uv", uv.ravel())
-    me.polygons.foreach_set("material_index", cap.astype(np.int32))
+    me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2).astype(np.int32))
     me.polygons.foreach_set("use_smooth", np.ones(len(faces), bool))
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
@@ -97,18 +88,18 @@ def high_materials(imgs):
     mats = {}
     for mode in ("color", "rough", "metal", "normal"):
         pair = []
-        for slot in ("meshy", "cut"):
+        for slot in ("meshy", "cut", "knuckle"):
             m = bpy.data.materials.new(f"high_{mode}_{slot}")
             m.use_nodes = True
             N, L = m.node_tree.nodes, m.node_tree.links
             N.clear()
             out = N.new("ShaderNodeOutputMaterial")
-            if slot == "cut":
+            if slot in ("cut", "knuckle"):
                 if mode == "normal":
                     L.new(N.new("ShaderNodeBsdfPrincipled").outputs["BSDF"], out.inputs["Surface"])
                 else:
                     em = N.new("ShaderNodeEmission")
-                    col, rough, metal = GUNMETAL
+                    col, rough, metal = GUNMETAL if slot == "cut" else GOLD
                     v = {"color": (*col, 1), "rough": (rough,) * 3 + (1,), "metal": (metal,) * 3 + (1,)}[mode]
                     em.inputs["Color"].default_value = v
                     L.new(em.outputs["Emission"], out.inputs["Surface"])
@@ -190,9 +181,9 @@ def unwrap(ob, size):
 def bake(hi, lo, mats, mode, size, name):
     from kit import bake as kb
     # swap the slots in place: materials.clear() would reset every face's slot to 0
-    while len(hi.data.materials) < 2:
+    while len(hi.data.materials) < 3:
         hi.data.materials.append(None)
-    hi.data.materials[0], hi.data.materials[1] = mats[mode]
+    hi.data.materials[0], hi.data.materials[1], hi.data.materials[2] = mats[mode]
     img = kb._image(f"{name}_{mode}", size, mode != "color")
     lo.data.materials.clear()
     m = bpy.data.materials.new(f"lo_{name}_{mode}")

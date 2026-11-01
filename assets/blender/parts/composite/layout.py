@@ -1,7 +1,14 @@
-"""Shared names and joint positions for the composite walkers (no Blender needed).
+"""Shared names and joint positions for the composite models (no Blender needed).
 
-MODEL=paladin (default) or MODEL=brute picks the walker; brute.py holds the Brute's settings.
+The model comes from the MODEL environment variable: `paladin` (default, paladin.py), `brute` (brute.py) or `seer`
+(seer.py). Each model module holds its labelling rules, joint tree, budgets and render labels; the pipeline scripts are
+shared.
+
+Units: solids, pegs, magnet pockets and the .blend are in print mm. PS is print mm per kit mm (1 for the Paladin,
+PRINT_SCALE for the Seer, GAME_SCALE for the Brute, whose kit is the bulwark frame grown 1.4x by the web); build.py
+scales the game GLBs back down to kit mm.
 """
+import importlib
 import json
 import os
 import sys
@@ -9,41 +16,44 @@ from pathlib import Path
 
 import numpy as np
 
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 REPO = Path(__file__).resolve().parents[4]
 KIT = json.loads((REPO / "data" / "model-kit.json").read_text())
-TUNE = KIT["frameTunes"]["covenant/titan"]["joints"]     # mm, left side, measured from the Meshy Paladin
 
-# part: (kit component it publishes as, joint its origin sits on, parent part it plugs into)
-TREE = {
-    "pelvis": ("pelvis", "pelvis", None),
-    "torso": ("torso", "spine", "pelvis"),
-    "helm": ("helm", "head", "torso"),
-    "back": ("back", "chest", "torso"),
-    "pauldron": ("pauldron", "shoulder", "torso"),
-    "arm": ("arm", "shoulder", "pauldron"),   # the Meshy shoulder joint sits inside the pauldron, so the arm plugs into it
-    "forearm": ("forearm", "elbow", "arm"),
-    "hand": ("hand", "wrist", "forearm"),
-    "thigh": ("thigh", "hip", "pelvis"),
-    "shin": ("shin", "knee", "thigh"),
-    "foot": ("foot", "ankle", "shin"),
-    "blade": (None, "wrist", "hand"),      # equipment: item_lance@paladin
-    "pod": (None, "chest", ("torso", "back")),   # equipment: item_carapace-gun@paladin (tries each parent in turn)
-}
-SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot", "blade", "pod"}
-RESEAT = {}
-LABEL = None
-NAME = "paladin"
-M = None
-if os.environ.get("MODEL", "paladin") == "brute":
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import brute as M  # noqa: E402
-    NAME, TREE, SIDED, RESEAT, LABEL = "brute", M.TREE, M.SIDED, M.RESEAT, M.LABEL
-    TUNE = {k: [round(float(v), 3) for v in M.to_mm(p)] for k, p in M.JOINTS.items()}
+MODEL = os.environ.get("MODEL", "paladin")
+M = importlib.import_module(MODEL)
+NAME = getattr(M, "NAME", MODEL)
+PS = getattr(M, "GAME_SCALE", getattr(M, "PRINT_SCALE", 1.0))
+TREE, SIDED, LABEL = M.TREE, M.SIDED, M.LABEL
+RESEAT = getattr(M, "RESEAT", {})      # part: the part whose socket it takes over (the Brute's gatling)
+LOADOUT = getattr(M, "LOADOUT", {})    # part: the side it is fitted on by default (the other copy is a hidden spare)
+
+if hasattr(M, "to_mm"):       # the model's own S and BASE are already print mm (the Brute)
+    to_mm, from_mm, MM = M.to_mm, M.from_mm, M.S
+else:
+    MM = M.S * PS             # print mm per Meshy unit
+
+    def to_mm(P):
+        """Meshy units (x already centred on the model's CX) to print mm."""
+        P = np.asarray(P, np.float64)
+        return np.stack([P[..., 0] * MM, P[..., 1] * MM, ((P[..., 2] - M.FOOT_Z) * M.S + M.BASE) * PS], -1)
+
+    def from_mm(P):
+        P = np.asarray(P, np.float64)
+        return np.stack([P[..., 0] / MM, P[..., 1] / MM, (P[..., 2] / PS - M.BASE) / M.S + M.FOOT_Z], -1)
+
+if hasattr(M, "JOINTS"):      # the model measures its own joints (centred Meshy units)
+    TUNE = {k: [float(v) / PS for v in to_mm(np.array(p, float))] for k, p in M.JOINTS.items()}
+else:                         # kit mm, left side, measured from the Meshy figure
+    TUNE = KIT["frameTunes"][M.TUNE]["joints"]
 JOINT_OF = {k: v[1] for k, v in TREE.items()}
 
 
-def joint(name, side="L"):
-    p = list(TUNE[name])
+def joint(name, side="L", scale=None):
+    """A joint's position, print mm by default (scale=1 gives kit mm)."""
+    s = PS if scale is None else scale
+    p = [v * s for v in TUNE[name]]
     if side == "R":
         p[0] = -p[0]
     return p

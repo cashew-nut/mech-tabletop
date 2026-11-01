@@ -1,4 +1,11 @@
-# The Paladin and the Brute as composites of real parts
+# Composite models: the Paladin, the Brute and the Seer as real parts
+
+One pipeline, three models so far: `MODEL=paladin` (default, settings in `paladin.py`), `MODEL=brute` (`brute.py`)
+and `MODEL=seer` (`seer.py`). The scripts are shared; each model module holds its labelling rules, joint tree, print
+scale, budgets, render labels, peg and magnet sizes, and any designed changes. `layout.py` picks the module.
+Solids, pegs, STLs and the .blend are in print mm; build.py writes the game GLBs at kit mm.
+
+## The Paladin
 
 The Iron Covenant Paladin rebuilt as 13 separate, closed parts that plug together with keyed pegs and magnets,
 then assembled in Blender into the full walker. It starts from Luke's Meshy Paladin (textured GLB in the project
@@ -161,3 +168,63 @@ Each gun is built with its origin on the elbow; the script moves it onto the num
 old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. Both guns are modelled for the left
 now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
 An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.
+
+## The Reliquary Seer (MODEL=seer)
+
+Luke's Meshy Gilded Seraphim, rebuilt as 17 closed parts. Same steps, with `MODEL=seer` and no `label` step (the
+Seer's rules work on the voxels directly; the banner is found by its red texels):
+
+```sh
+python3 -I ../meshy/cut.py extract Meshy_AI_The_Gilded_Seraphim_..._texture.glb WORK
+MODEL=seer ~/bvenv/bin/python split.py WORK        # ~5 min
+MODEL=seer ~/bvenv/bin/python joints.py WORK       # ~1 min
+MODEL=seer ~/bvenv/bin/python build.py WORK OUT    # bake, game GLB, print STL, seer_composite.blend
+MODEL=seer ~/bvenv/bin/python render.py OUT
+```
+
+`-I` is fine too (it ignores `PYTHON*` variables, not `MODEL`); run from a folder of your own.
+
+What the Paladin taught, and what changed for the Seer:
+
+- **Print scale.** Like the Brute, the Seer is cut at Luke's 1.5x collector scale (`PRINT_SCALE`; print mm = kit mm x
+  scale), about 56 mm to the helm top and 68 mm to the crown spire, and build.py scales the game GLBs back to kit mm.
+  The Paladin is still 1x; set `PRINT_SCALE = 1.5` in `paladin.py` and rerun to match.
+- **Designed joints.** The Seer's limbs are rods about 1.2 mm thick even at 1.5x, so no peg fits where Meshy joins them.
+  Every limb joint (neck, shoulders, elbows, wrists, hips, knees, ankles) now has a gilded ball knuckle with a sleeve
+  that runs deep into the parent part, and the cut between the parts is the plane through the ball's centre, square to
+  the bone. Each part gets half a ball with a flat round face; the peg grows from the child, the hole (with its magnet)
+  sits in the parent's sleeve. The sleeve has a domed end and two raised bands so it reads as a joint housing, not a
+  can. Knuckles carry UV (-2, -2) and bake as polished gold (`KNUCKLE_FINISH`).
+- **Pegs never cut through a neighbour.** joints.py clears each peg's whole length, with clearance, out of every part it
+  passes through, not only the parent (`passes_through` in joints.json). The Seer's fit check found pegs running through
+  a third part (the right pauldron sits between the arm and the torso).
+- **Magnets first.** With `PREFER_MAGNET`, joints.py takes the biggest peg that also takes a magnet, rather than the
+  biggest peg. Magnet sizes now include 3 x 2 mm.
+- **Both arms are their own.** The Seer's asymmetry is its character (sword hand on the left, spear on the right), so
+  the arms and pauldrons are built natively for each side (`arm`, `forearm`, `hand`, `pauldron`, and `*_r`). Legs are
+  built for the left and mirrored, like the Paladin.
+- **One solid per part.** The left wing is a loose shell in the Meshy file. `seer.design()` fuses any loose piece of a
+  part to its body with a short gold strut, and drops crumbs.
+- **Held equipment.** In the Meshy figure the spear is couched under the right arm and touches it only at the elbow,
+  with no room for a peg. It is now held: moved so a plain stretch of shaft runs through the right fist, turned (search
+  over small rotations) until it clears the body and legs, the grip stretch trued up as a 1.6 mm round shaft, and a
+  1.72 mm bore cut through the fist. It is a push fit and can be turned in the fist to set its angle.
+- **Centre line.** The first Seraphim cut used x = 0.28 as the centre; slices of the mesh (shoulder orbs, feet) put it at
+  0.235. The Seer measures its own joints (`JOINTS_ABS`) instead of reading `frameTunes["reliquary/striker"]`, so the
+  game's frame tunes will need updating when these parts are published.
+
+### Seer parts
+
+| Part | Plugs into | Notes |
+| --- | --- | --- |
+| pelvis | (root) | waist, the loincloths front and back, the banner below the waist |
+| torso | pelvis | chest, collar, the banner above the waist, the pendants on the back |
+| helm | torso | on a neck knuckle |
+| crown | helm | the halo and its crown spire (thin contact: an r 0.75 mm peg, no magnet) |
+| back | torso | the reliquary spires |
+| pauldron | torso | left shoulder plate and wing (the wing was a loose shell; now fused); on a small knuckle |
+| pauldron_r | torso | right shoulder plate and wing |
+| arm, forearm, hand | torso, arm, forearm | left: the hand carries the downward sword |
+| arm_r, forearm_r, hand_r | torso, arm_r, forearm_r | right: the fist has the spear bore |
+| thigh, shin, foot | pelvis, thigh, shin | mirrored for the right |
+| spear | hand_r (held) | equipment: `item_arc-cannon@seer` |

@@ -1,4 +1,4 @@
-"""Add a keyed peg and magnet pockets at every joint of the split Paladin (step 2 of 3; numpy, scipy, manifold3d).
+"""Add a keyed peg and magnet pockets at every joint of a split model (step 2 of 3; numpy, scipy, manifold3d).
 
     ~/bvenv/bin/python -I joints.py WORK          # reads WORK/parts/*.npz (split.py), writes WORK/kit/*.npz + joints.json
 
@@ -21,24 +21,18 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from layout import TREE, SIDED, RESEAT, NAME, joint  # noqa: E402
-import split  # noqa: E402
+from layout import M, TREE, SIDED, RESEAT, joint, from_mm  # noqa: E402
 
 CLEAR = 0.10          # peg-to-hole clearance (radius), mm
 WALL = 0.40           # minimum wall round a hole, mm
-MAGNETS = ((1.0, 1.0), (0.5, 1.0))     # (radius, thickness) mm: 2 x 1 mm discs, else 1 x 1 mm
-RADII = (2.0, 1.75, 1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55)
-LENGTHS = (3.0, 2.6, 2.2, 1.8, 1.5, 1.2, 1.0)
-CRUMB = 0.2           # mm3: loose bits smaller than this are dropped
-CLEAR_MIRRORED = False  # trim centre parts where mirrored right-hand parts would overlap them
-BOTH_WAYS = False     # also try the peg on the parent, and keep whichever holds better
-if NAME == "brute":   # cut at 1.5x print scale with thick joints: bigger pegs, and stock 5 x 2 or 3 x 2 mm magnets
-    MAGNETS = ((2.5, 2.0), (1.5, 2.0), (1.0, 1.0))
-    RADII = (4.0, 3.5, 3.0, 2.6, 2.3, 2.0) + RADII[1:]
-    LENGTHS = (5.0, 4.5, 4.0, 3.5) + LENGTHS
-    CRUMB = 1.0
-    BOTH_WAYS = True
-    CLEAR_MIRRORED = True
+# The model can override these (brute.py and seer.py are cut at print scale and take bigger pegs and magnets).
+MAGNETS = getattr(M, "MAGNETS", ((1.0, 1.0), (0.5, 1.0)))     # (radius, thickness) mm: 2 x 1 mm discs, else 1 x 1 mm
+RADII = getattr(M, "RADII", (2.0, 1.75, 1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55))
+LENGTHS = getattr(M, "LENGTHS", (3.0, 2.6, 2.2, 1.8, 1.5, 1.2, 1.0))
+CRUMB = getattr(M, "CRUMB", 0.2)                    # mm3: loose bits smaller than this are dropped
+PREFER_MAGNET = getattr(M, "PREFER_MAGNET", False)  # the biggest peg that takes a magnet, rather than the biggest peg
+BOTH_WAYS = getattr(M, "BOTH_WAYS", False)          # always try the peg on the parent too; keep whichever holds better
+CLEAR_MIRRORED = getattr(M, "CLEAR_MIRRORED", False)  # trim centre parts where mirrored right-hand parts would sit
 
 
 def load(path):
@@ -91,13 +85,13 @@ def interface(child, plabel, keys, parent_key, lo, h):
     """Cap faces of the child that face the parent: (centroids, normals, areas) in mm."""
     mm = child.to_mesh()
     P, T = np.asarray(mm.vert_properties), np.asarray(mm.tri_verts)
-    cap = (P[T, 3] < -0.5).all(1)
+    cap = (np.abs(P[T, 3] + 1) < 0.5).all(1)          # cut faces carry UV (-1, -1); designed knuckles (-2, -2)
     A, B, Cc = (P[T[:, k], :3] for k in range(3))
     n = np.cross(B - A, Cc - A)
     area = np.linalg.norm(n, axis=1) / 2
     n = n / (2 * area[:, None] + 1e-12)
     c = (A + B + Cc) / 3
-    probe = split.from_mm(c + 0.4 * n)
+    probe = from_mm(c + 0.4 * n)
     g = np.clip(np.round((probe - lo) / h).astype(int), 0, np.array(plabel.shape) - 1)
     hit = plabel[g[:, 0], g[:, 1], g[:, 2]] == keys.index(parent_key)
     sel = cap & hit & (area > 0)
@@ -140,7 +134,7 @@ class Grid:
         self.shape = np.array(plabel.shape)
 
     def who(self, P):
-        g = np.round((split.from_mm(P) - self.lo) / self.h).astype(int)
+        g = np.round((from_mm(P) - self.lo) / self.h).astype(int)
         inside = (g >= 0).all(1) & (g < self.shape).all(1)
         g = np.clip(g, 0, self.shape - 1)
         lab = self.lab[g[:, 0], g[:, 1], g[:, 2]].astype(int)
@@ -200,20 +194,41 @@ def candidates(parts, grid, child, parent):
         site, rho = peg_site(c, n, a, frame(fa, np.array([0.0, 0.0, 1.0])))
         centres += [site, c.mean(0)]
     axes += [np.array(v, float) for v in ([0, 0, 1], [0, 0, -1], [-1, 0, 0], [0, 1, 0], [0, -1, 0])]
+    kn = getattr(M, "KNUCKLES", {}).get(child)
+    if kn:      # a designed knuckle: its centre and bone axis come first
+        a = np.asarray(kn[1], float)
+        axes.insert(0, a / np.linalg.norm(a))
+        centres.insert(0, np.array(joint(kn[0])))
     return axes, centres, rho
 
 
 def search(grid, ci, pi, axes, centres, sign):
+    if PREFER_MAGNET:
+        # the biggest peg that also takes a magnet; else the biggest peg
+        fallback = None
+        for r in RADII:
+            res = search_r(grid, ci, pi, axes, centres, sign, r)
+            if res and res[3][2]:
+                return res
+            fallback = fallback or res
+        return fallback
     for r in RADII:
-        for ax in axes:
-            R = frame(ax, np.array([0.0, 0.0, 1.0]))
-            for c0 in centres:
-                for dx in (0, -1, 1, -2, 2, -3, 3):
-                    for dy in (0, -1, 1, -2, 2, -3, 3):
-                        cc = c0 + R[:, 0] * dx * 0.6 + R[:, 1] * dy * 0.6
-                        res = try_peg(grid, ci, pi, cc, sign * ax, r)
-                        if res:
-                            return r, sign * ax, cc, res
+        res = search_r(grid, ci, pi, axes, centres, sign, r)
+        if res:
+            return res
+    return None
+
+
+def search_r(grid, ci, pi, axes, centres, sign, r):
+    for ax in axes:
+        R = frame(ax, np.array([0.0, 0.0, 1.0]))
+        for c0 in centres:
+            for dx in (0, -1, 1, -2, 2, -3, 3):
+                for dy in (0, -1, 1, -2, 2, -3, 3):
+                    cc = c0 + R[:, 0] * dx * 0.6 + R[:, 1] * dy * 0.6
+                    res = try_peg(grid, ci, pi, cc, sign * ax, r)
+                    if res:
+                        return r, sign * ax, cc, res
     return None
 
 
@@ -298,15 +313,20 @@ def fit(parts, grid, child, parent):
     axes, centres, rho = candidates(parts, grid, child, parent)
     # the peg grows from the child into the parent; if there is no room, from the parent into the child
     found, flipped = search(grid, ci, pi, axes, centres, 1.0), False
-    if BOTH_WAYS:     # try the other way round too and keep the thicker (then longer) peg
+    if BOTH_WAYS:     # try the other way round too and keep the one that holds better
         other = search(grid, pi, ci, axes, centres, -1.0)
         if other and (not found or hold(other) > hold(found)):
             found, flipped = other, True
-    elif not found:
-        found, flipped = search(grid, pi, ci, axes, centres, -1.0), True
+    elif not found or (PREFER_MAGNET and not found[3][2]):
+        # also try the peg on the parent; keep whichever takes a magnet, then the fatter, then the longer
+        alt = search(grid, pi, ci, axes, centres, -1.0)
+        score = lambda f: (f[3][2] is not None, f[0], f[3][1]) if f else (False, 0, 0)
+        if alt and score(alt) > score(found):
+            found, flipped = alt, True
     if not found:
         return None
     r, axis, cc, (t0, L, mag) = found
+    R = frame(axis, np.array([0.0, -1.0, 0.0]) if abs(axis[1]) < 0.8 else np.array([0.0, 0.0, 1.0]))
     centre = cc + t0 * axis
     male, female = (parent, child) if flipped else (child, parent)
     add, sub = peg_shapes(r, L, mag, axis, centre)
@@ -318,11 +338,23 @@ def fit(parts, grid, child, parent):
         else:
             newf = newf - mirror(sub)
     parts[male], parts[female] = newm, newf
+    # The peg's root can pass through a third part on its way (a pauldron between arm and torso, a tabard over the
+    # hip): clear the peg's whole length, with clearance, out of every other part it touches.
+    full = d_shape(r + CLEAR, -1.25, L + 0.15, R, centre, flat=0.6 + CLEAR / r)
+    touched = []
+    for k in list(parts):
+        if k == male:
+            continue
+        for shape in ([full, mirror(full)] if (child in SIDED and parent not in SIDED and k not in SIDED) else [full]):
+            if (parts[k] ^ shape).volume() > 1e-4:
+                parts[k] = parts[k] - shape
+                touched.append(k)
     return {"parent": parent, "peg_on": male, "centre": [round(float(v), 3) for v in centre],
             "axis": [round(float(v), 4) for v in axis], "peg_radius": r, "peg_length": L,
             "_mag": list(mag) if mag else None,
             "magnet": f"{2 * mag[0]:g} x {mag[1]:g} mm" if mag else None, "face_inradius": round(float(rho), 2),
-            "mirrored_for_right": child in SIDED and parent not in SIDED}
+            "mirrored_for_right": child in SIDED and parent not in SIDED,
+            "passes_through": sorted(set(touched) - {female})}
 
 
 def main(work):
@@ -337,7 +369,11 @@ def main(work):
     for child, (_, _, parents) in TREE.items():
         if parents is None or child not in parts:
             continue
-        if child in RESEAT:
+        if child in getattr(M, "HELD", {}):
+            log[child] = M.HELD[child]
+            print(f"{child}: held, {M.HELD[child]['how']}", flush=True)
+            continue
+        if child in RESEAT:       # takes over another part's socket, below
             continue
         for parent in (parents if isinstance(parents, tuple) else (parents,)):
             entry = fit(parts, grid, child, parent)

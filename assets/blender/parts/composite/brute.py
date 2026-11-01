@@ -21,6 +21,7 @@ like the Paladin, so split.py cuts it into closed parts the same way. What is di
 """
 import numpy as np
 
+NAME = "brute"
 CX = 0.12                     # centre line in Meshy x (feet sit at 0.53 and -0.30)
 FOOT_Z = -0.95                # Meshy z of the sole
 PRINT_SCALE = 1.5             # Luke's print scale, relative to the size the game shows
@@ -87,6 +88,24 @@ TREE = {
 SIDED = {"pauldron", "thigh", "shin", "foot", "rockets", "gatling"}
 RESEAT = {"gatling": "rockets"}            # part: the part whose socket (frame and peg) it takes over
 LOADOUT = {"rockets": "L", "gatling": "R"} # default arms, as Meshy had them; the other copies are hidden spares
+
+# Cut at 1.5x print scale with thick joints: bigger pegs, stock 5 x 2 or 3 x 2 mm magnets, and pegs tried both ways.
+MAGNETS = ((2.5, 2.0), (1.5, 2.0), (1.0, 1.0))
+RADII = (4.0, 3.5, 3.0, 2.6, 2.3, 2.0, 1.75, 1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55)
+LENGTHS = (5.0, 4.5, 4.0, 3.5, 3.0, 2.6, 2.2, 1.8, 1.5, 1.2, 1.0)
+CRUMB = 1.0                   # mm3: loose bits smaller than this are dropped after the pegs are cut
+BOTH_WAYS = True
+CLEAR_MIRRORED = True
+CHIP_SCALE = 1.0              # split.py's sliver sizes stay as they were (not scaled with the print volume)
+RAY = 1.8                     # bake ray reach, relative to the Paladin's
+EXPLODE, EXPLODE_DROP = 14.0, 0.0     # render.py: exploded view reach (print mm), centred on the chest
+POSE_MARGIN = 0.9
+# The Meshy Brute's own stance, rebuilt from symmetric parts: gatling raised to fire, left leg striding (degrees).
+POSE = {
+    "gatling_R": (-55, 0, 0), "rockets_L": (-10, 0, 0), "helm": (0, 0, 15),
+    "thigh_L": (-14, 0, 0), "shin_L": (10, 0, 0), "foot_L": (4, 0, 0),
+    "thigh_R": (12, 0, 0), "shin_R": (6, 0, 0), "foot_R": (-18, 0, 0),
+}
 
 # part: (game triangles, texture size)
 BUDGET = {
