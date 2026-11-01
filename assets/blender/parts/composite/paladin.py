@@ -16,11 +16,21 @@ import cut  # noqa: E402  (joint and bone positions, Meshy units)
 NAME = "paladin"
 TUNE = "covenant/titan"          # data/model-kit.json frameTunes entry the joints come from (mm, game scale)
 CX = cut.CX                      # the figure's centre line (Meshy x)
-PRINT_SCALE = 1.0                # print mm per game mm (the pegs and magnets are cut at this scale)
+PRINT_SCALE = 1.5                # Luke, 2026-11-01: collector scale is 1.5x the game (pegs and magnets are cut at it)
 
 S, FOOT_Z, BASE = 50 / 1.5, -0.90, 3.0      # mm per Meshy unit, foot level, base thickness (as ../meshy/build.py)
-H = 0.0075                                   # voxel size in Meshy units (0.25 mm)
+H = 0.25 / (S * PRINT_SCALE)                 # voxel size in Meshy units (0.25 mm at print scale)
 CLOTH_T = 0.02                               # cloth is a thin sheet: only voxels this close to a cloth triangle are cloth
+
+# Joints at print scale (as seer.py): 3 x 2 mm magnets where there is room, then 2 x 1, then 1 x 1. The Paladin's torso,
+# helm and pauldron faces are broad enough for a 6 mm peg, so the radii start at 3 mm.
+MAGNETS = ((1.5, 2.0), (1.0, 1.0), (0.5, 1.0))
+RADII = (3.0, 2.75, 2.5, 2.2, 2.0, 1.75, 1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55)
+LENGTHS = (3.5, 3.0, 2.6, 2.2, 1.8, 1.5, 1.2, 1.0)
+PREFER_MAGNET = True        # a slightly thinner peg with a magnet beats a fatter one without
+STRICT = True               # joints.py: check holes against the real solids (no collisions, no break-outs)
+CLEAR_MIRRORED = True       # trim the pelvis and torso where the mirrored right thigh and pauldron would sink in
+CRUMB = 4.0                 # mm3: drops the scrap of pelvis armour that trim cuts loose (3.1 mm3)
 
 # Physical parts and the cut labels each is made of. Sided parts are built for the walker's left (+X) only and mirrored
 # for the right, so the right side's labels exist only to carve the torso and pelvis.
@@ -93,7 +103,20 @@ def label_points(P, cloth_near):
     setl(cl & (a >= 0.30) & ~L, "cloth_R")
     setl(cl & (a < 0.30) & (z < 0.05), "cloth_lower")
     setl(cl & (a < 0.30) & (z >= 0.05), "cloth_upper")
+    # Elbow: Meshy sculpted a thin lip over a 0.5 mm slot at the top of the left forearm. Cut at the bone rule, the
+    # forearm's face is that lip, with air behind it, so no peg fits (1.5 mm across at best). Hand the lip, the slot
+    # and the top 2 mm of the forearm (print scale) to the arm so the seam is a flat face through solid metal.
+    d = P - ELBOW_C
+    s = d @ ELBOW_AX
+    rad = np.linalg.norm(d - s[:, None] * ELBOW_AX, axis=1)
+    setl((lab == names.index("forearm_L")) & (s < ELBOW_SEAM) & (rad < ELBOW_RAD), "arm_L")
     return lab, names
+
+
+# the elbow peg's line (centred Meshy units, axis pointing down the forearm), the new seam and the column it applies to
+ELBOW_C = np.array([0.4172, -0.0976, 0.1035])
+ELBOW_AX = np.array([0.3962, -0.1408, -0.9073])
+ELBOW_SEAM, ELBOW_RAD = 0.040, 0.066        # 2.0 mm and 3.3 mm at print scale
 
 
 def cloth_tris(work, V, F, UV):
@@ -106,6 +129,7 @@ def cloth_tris(work, V, F, UV):
 # part: (kit component it publishes as, joint its origin sits on, parent part it plugs into)
 TREE = {
     "pelvis": ("pelvis", "pelvis", None),
+    "thigh": ("thigh", "hip", "pelvis"),       # before the torso: the hips get first pick of the pelvis for their holes
     "torso": ("torso", "spine", "pelvis"),
     "helm": ("helm", "head", "torso"),
     "back": ("back", "chest", "torso"),
@@ -113,7 +137,6 @@ TREE = {
     "arm": ("arm", "shoulder", "pauldron"),   # the Meshy shoulder joint sits inside the pauldron, so the arm plugs into it
     "forearm": ("forearm", "elbow", "arm"),
     "hand": ("hand", "wrist", "forearm"),
-    "thigh": ("thigh", "hip", "pelvis"),
     "shin": ("shin", "knee", "thigh"),
     "foot": ("foot", "ankle", "shin"),
     "blade": (None, "wrist", "hand"),      # equipment: item_lance@paladin
