@@ -5,3 +5,4 @@ export * from './rng';
 export * from './types';
 export * from './engine';
 export * from './builder';
+export * from './mapgen';
