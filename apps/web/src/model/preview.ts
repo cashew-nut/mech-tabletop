@@ -106,7 +106,9 @@ if (q.get('dump')) {
     if (j) out.joints[j] = o.getWorldPosition(new THREE.Vector3()).toArray();
     if (o.name.startsWith('part_')) {
       const b = new THREE.Box3().setFromObject(o);
-      out.items.push({ id: o.name.slice(5), hp: o.parent?.name ?? '', min: b.min.toArray(), max: b.max.toArray() });
+      let hp: THREE.Object3D | null = o.parent;
+      while (hp && !hp.name.startsWith('hp_') && !hp.name.startsWith('mount_')) hp = hp.parent;
+      out.items.push({ id: o.name.slice(5), hp: hp?.name ?? o.parent?.name ?? '', min: b.min.toArray(), max: b.max.toArray() });
     }
   });
   document.body.dataset.dump = JSON.stringify(out);

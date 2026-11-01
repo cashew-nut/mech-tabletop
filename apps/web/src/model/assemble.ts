@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { LOCATIONS, getChassis, getEquipment, type Location, type WalkerInput } from '@brass-charter/rules';
 import { bake } from './kit';
-import { FIT, fitClass, hardpoint, planLocation, pivotOf, poseOf, type Placement } from './fit';
+import { FIT, fitClass, hardpoint, nudgeOf, planLocation, pivotOf, poseOf, type Placement } from './fit';
 import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
@@ -227,7 +227,24 @@ function placeAtHardpoint(
     joint.add(anchor);
   }
   anchor.name = `hp_${place.hp}`;
-  anchor.rotation.copy(rot);
+  // anchor (the hardpoint, mirrored on the right) > nudge (the placement table's hand adjustment, in the hardpoint's axes)
+  // > turn (the hardpoint's own rotation) > the item.
+  const nudge = new THREE.Object3D();
+  nudge.name = `nudge_${place.hp}`;
+  const adjust = nudgeOf(chassisId, place.hp, id);
+  if (adjust) {
+    // Offsets are fractions of body height; a numbered mount may sit in a scaled parent, so convert to its units.
+    const unit = new THREE.Vector3();
+    anchor.parent!.getWorldScale(unit);
+    nudge.position.set(...(adjust.offset.map((v, i) => (v * height) / (Math.abs(unit.getComponent(i)) || 1)) as [number, number, number]));
+    nudge.rotation.set(...(adjust.rot.map((d) => (d * Math.PI) / 180) as [number, number, number]));
+    nudge.scale.setScalar(adjust.scale);
+  }
+  const turn = new THREE.Object3D();
+  turn.name = `turn_${place.hp}`;
+  turn.rotation.copy(rot);
+  anchor.add(nudge);
+  nudge.add(turn);
   const pose = poseOf(id, place.hp);
   scale *= pose.scale;
   // Class items are modelled for one hand; on the other side they are flipped (as the numbered mounts always did).
@@ -240,7 +257,9 @@ function placeAtHardpoint(
   const itemRot = new THREE.Euler(...((pose.rot ?? [0, 0, 0]).map((d) => (d * Math.PI) / 180) as [number, number, number]));
   part.rotation.copy(itemRot);
   part.position.copy(pivot.applyEuler(itemRot).negate());
-  anchor.add(part);
+  // The sliders tool finds the item again by this.
+  part.userData.fit = { item: id, hp: place.hp, side: place.side ?? null };
+  turn.add(part);
   return true;
 }
 
