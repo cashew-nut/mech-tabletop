@@ -142,3 +142,22 @@ What the Paladin taught, and what the Brute does differently:
 
 `brute_composite.blend` holds every part with both guns on both arms; the default loadout (cannon left, gatling
 right) is shown and the other two are hidden spares (custom property `spare`).
+
+### The Brute in the game
+
+```sh
+node scripts/publish-composite.mjs ../models/brute-composite/glb brute     # from the build output
+KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs <the files this prints>
+node scripts/item-bounds.mjs
+```
+
+The 8 body parts become `kit/foundries_<part>_brute.glb` (left only; the web mirrors the right) and the two guns the
+items `item_rocket-pod@brute` (rockets) and `item_autocannon@brute` (gatling). The old open-shell Brute parts (arm,
+forearm and hand, and every `-right` copy) are deleted and dropped from the manifest, and `data/model-kit.json`
+`omit.brute` keeps the Bulwark's arm, forearm, hand and collar from filling in. The 8 parts and 2 guns come to 4.4 MB
+(the old cut was 5.25 MB).
+
+Each gun is built with its origin on the elbow; the script moves it onto the numbered arm mount (`mount_armLeft_0`) the
+old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. Both guns are modelled for the left
+now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
+An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.

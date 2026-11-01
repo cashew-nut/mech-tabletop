@@ -136,10 +136,17 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub.",
     "paladin": [
       "cloth",
       "collar"
+    ],
+    "brute": [
+      "cloth",
+      "collar",
+      "arm",
+      "forearm",
+      "hand"
     ]
   },
   "spareMounts": {
@@ -414,7 +421,6 @@
       }
     },
     "nativeRight": [
-      "autocannon@brute",
       "arc-cannon@seer"
     ],
     "hardpoints": {
