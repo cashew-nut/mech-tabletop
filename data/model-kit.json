@@ -136,7 +136,7 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron.",
     "paladin": [
       "cloth",
       "collar"
@@ -655,10 +655,23 @@
       },
       "brute": {
         "grip": {
+          "joint": "elbow",
           "offset": [
             0.0,
-            -0.03,
-            0.0
+            -0.01,
+            0.01
+          ],
+          "rot": [
+            45,
+            0,
+            0
+          ],
+          "contact": [
+            "back"
+          ],
+          "blocks": [
+            "grip-native",
+            "forearm-top"
           ]
         },
         "chest-front": {
@@ -680,6 +693,12 @@
             -0.17,
             0.0,
             0.08
+          ]
+        },
+        "grip-native": {
+          "blocks": [
+            "grip",
+            "forearm-top"
           ]
         }
       },
@@ -1037,7 +1056,18 @@
     "placements": {
       "$comment": "Hand adjustments from the sliders (apps/web/place.html): class, then hardpoint, then an item id or * for every item there. offset is in fractions of body height in the hardpoint's axes, rot in degrees, scale multiplies the item. Missing rows change nothing. Merge a copy from the tool with: node scripts/merge-placements.mjs placements.json",
       "paladin": {},
-      "brute": {},
+      "brute": {
+        "grip": {
+          "*": {
+            "scale": 0.75
+          }
+        },
+        "shoulder-top": {
+          "*": {
+            "scale": 0.7
+          }
+        }
+      },
       "seer": {}
     }
   }

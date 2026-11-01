@@ -24,6 +24,10 @@ export interface HardpointDef {
   /** Degrees. Back-facing hardpoints turn the item to face away from the body. */
   rot?: [number, number, number];
   pair?: boolean;
+  /** The item face that lands here when the item's own pose names none (the Brute's elbow socket takes the item's back). */
+  contact?: Contact[];
+  /** Hardpoints this one fills too: the Brute's elbow socket holds one forearm, gun (grip-native) or not (grip). */
+  blocks?: string[];
 }
 
 export interface ItemFit {
@@ -87,6 +91,7 @@ export function planLocation(chassisId: string, loc: string, ids: string[], nati
       const def = hardpoint(chassisId, name);
       if (!def || taken.has(name)) continue;
       taken.add(name);
+      for (const b of def.blocks ?? []) taken.add(b);
       if (def.side === 'pair') return (['L', 'R'] as Side[]).map((side) => ({ hp: name, side }));
       const side = def.side === 'loc' ? armSide : def.side === 'L' || def.side === 'R' ? def.side : undefined;
       return [{ hp: name, side }];
