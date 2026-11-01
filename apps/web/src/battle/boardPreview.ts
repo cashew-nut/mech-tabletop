@@ -1,16 +1,17 @@
 // Preview of the Blender board kit: every piece on a row of tiles, lit like the board. Used for review renders.
 //   render-board.html?piece=tower_spire&angle=30&dist=6   (no piece: the whole kit in a row)
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { KIT_PIECES, loadBoardKit, type KitPiece } from './boardKit';
 
 const params = new URLSearchParams(location.search);
 const only = params.get('piece') as KitPiece | null;
 const angle = (Number(params.get('angle') ?? (only ? 30 : 0)) * Math.PI) / 180;
-const pixel = Number(params.get('pixel') ?? 2);
+const pixel = Number(params.get('pixel') ?? 1);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setClearColor(0x232a36);
@@ -21,7 +22,9 @@ renderer.domElement.style.cssText = `width:${w}px;height:${h}px;image-rendering:
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 1.05));
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture; // as in Board3D
+scene.environmentIntensity = 0.45;
+scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 0.5));
 const sun = new THREE.DirectionalLight(0xffd9a0, 1.4);
 sun.position.set(-10, 18, -7);
 sun.castShadow = true;

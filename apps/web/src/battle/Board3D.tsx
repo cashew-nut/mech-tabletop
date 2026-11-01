@@ -3,12 +3,19 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
 import { hexCentre, type Highlight } from './HexMap';
 import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
+import { WalkerLibrary } from './boardWalkers';
 import { PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
 
-const PIXEL = 2;
+// Render scale: 1 draws at full resolution so the walker textures stay crisp (?pixel=2 gives the old half-resolution look).
+const PIXEL = Number(new URLSearchParams(location.search).get('pixel') ?? 1);
 const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
 const ELEVATION_STEP = 0.35;
 
@@ -43,6 +50,14 @@ const mat = (color: number, extra: THREE.MeshLambertMaterialParameters = {}) => 
 const world = (hex: Hex, y = 0) => {
   const { x, y: z } = hexCentre(hex);
   return new THREE.Vector3(x * UNIT, y, z * UNIT);
+};
+/** A tower for hex `n`: the Meshy hero towers when they are loaded (most of the time), otherwise the procedural ones. */
+const TOWERS: KitPiece[] = ['tower_spire', 'tower_chimney', 'tower_ruined'];
+const pickTower = (kit: Kit, n: number): KitPiece => {
+  const heroes = (['hero_tower', 'hero_chimney'] as KitPiece[]).filter((p) => kit.has(p));
+  const r = rnd01(n * 1.7 + 2);
+  if (heroes.length && r < 0.75) return heroes[Math.floor(rnd01(n * 4.1 + 1) * heroes.length)];
+  return TOWERS[Math.floor(r * 3)];
 };
 let tileLift = 0; // the kit's flagstones stand a little proud of y = 0
 const heightOf = (state: GameState, hex: Hex) => (state.map.hexes[hexKey(hex)]?.elevation ?? 0) * ELEVATION_STEP + tileLift;
@@ -107,7 +122,7 @@ function dressTable(parent: THREE.Object3D, lo: { x: number; z: number }, hi: { 
     const g = new THREE.Group();
     g.position.set(x, -0.42, z1 - 1.0 - rnd(k + 20) * 0.9);
     if (kit) {
-      const piece = kit.make(k % 3 === 1 ? 'wall_long' : (['tower_spire', 'tower_ruined', 'tower_chimney'] as KitPiece[])[k % 3]);
+      const piece = kit.make(k % 3 === 1 ? (kit.has('hero_wall') && k % 2 ? 'hero_wall' : 'wall_long') : pickTower(kit, k + 30));
       g.add(piece);
       const anchor = piece.getObjectByName('smoke');
       if (anchor) chimneySmoke(piece, anchor.position, 200 + k);
@@ -120,7 +135,7 @@ function dressTable(parent: THREE.Object3D, lo: { x: number; z: number }, hi: { 
       const g = new THREE.Group();
       g.position.set(side + (rnd(k + 40) - 0.5) * 0.6, -0.42, z0 + 2.5 + ((z1 - z0 - 5) * (k + 0.5)) / 4);
       if (kit) {
-        const piece = kit.make(k % 2 ? 'wall_long' : (['tower_spire', 'tower_ruined', 'tower_chimney'] as KitPiece[])[(k + (side > cx ? 1 : 0)) % 3]);
+        const piece = kit.make(k % 2 ? 'wall_long' : pickTower(kit, k + (side > cx ? 50 : 40)));
         if (k % 2) piece.rotation.y = Math.PI / 2;
         g.add(piece);
         const anchor = piece.getObjectByName('smoke');
@@ -155,7 +170,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setClearColor(0x232a36);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = renderer.domElement;
@@ -163,7 +178,11 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     el.appendChild(canvas);
 
     const scene = new THREE.Scene();
-    scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 1.05));
+    // A soft studio environment so the walkers' metal and gilding catch light as they do in the Lance Ledger.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.45;
+    scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 0.5));
     const sun = new THREE.DirectionalLight(0xffd9a0, 1.4);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -187,6 +206,12 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     });
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+    // Bloom picks up only the brightest things: hex markers, furnace mouths and the walkers' glowing eyes.
+    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 }));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.35, 0.5, 0.92);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
     const controls = new OrbitControls(camera, canvas);
     controls.enablePan = false;
     controls.maxPolarAngle = Math.PI * 0.42;
@@ -200,6 +225,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const pickables: THREE.Object3D[] = [];
     const pulsing: THREE.Mesh[] = [];
 
+    const walkerLib = new WalkerLibrary(renderer, () => api.current?.rebuild());
     const markerTextures = { attack: markerTexture('attack'), move: markerTexture('move'), jump: markerTexture('jump'), smoke: markerTexture('smoke') };
     let kit: Kit | null = null;
     const mapCentre = new THREE.Vector3();
@@ -239,13 +265,13 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
           const prop = new THREE.Group();
           prop.position.set(base.x, top, base.z);
           if (info.terrain === 'blocking') {
-            const t = kit.make((['tower_spire', 'tower_chimney', 'tower_ruined'] as KitPiece[])[Math.floor(rnd01(i * 1.7 + 2) * 3)]);
+            const t = kit.make(pickTower(kit, i));
             t.rotation.y = Math.floor(rnd01(i * 5.3) * 4) * (Math.PI / 2);
             prop.add(t);
             const anchor = t.getObjectByName('smoke');
             if (anchor) chimneySmoke(t, anchor.position, i);
           } else if (info.terrain === 'heavy') {
-            const w = kit.make('wall_arched');
+            const w = kit.make(kit.has('hero_wall') && rnd01(i * 6.1 + 3) < 0.6 ? 'hero_wall' : 'wall_arched');
             w.scale.setScalar(1.2); // ruins stand tall beside the walkers, as in the concept art
             w.rotation.y = Math.floor(rnd01(i * 2.9) * 3) * (Math.PI / 3);
             prop.add(w);
@@ -287,7 +313,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         mapCentre.z = lo.z + (hi.z - lo.z) * 0.3; // start on your deployment edge
         focus.copy(mapCentre);
         controls.target.copy(focus);
-        camera.position.set(focus.x, 12, focus.z - 12.5); // row 0 (your deployment edge) faces the camera
+        camera.position.set(focus.x, 14, focus.z - 15); // row 0 (your deployment edge) faces the camera
         controls.update();
       }
     };
@@ -360,26 +386,41 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       for (const w of state.walkers) {
         if (w.destroyed) continue;
         const p = world(w.pos, heightOf(state, w.pos));
-        const g = walkerMesh(w.side, w.size);
-        g.traverse((o) => (o.castShadow = true));
-        g.position.copy(p);
-        g.rotation.y = Math.PI / 2 + (60 * w.facing * Math.PI) / 180; // +Z nose -> SVG angle -60 * facing
-        if (w.prone) {
-          g.rotation.x = Math.PI / 2;
-          g.position.y += 0.2;
+        // The kit model once its parts have loaded; a pixel box until then and for any class without a model.
+        const bw = walkerLib.get(w);
+        let g: THREE.Object3D;
+        let top = 1.3;
+        if (bw) {
+          g = bw.group;
+          bw.setDim(w.activated);
+          top = bw.height + 0.35;
+          g.position.copy(p);
+          g.rotation.set(0, Math.PI / 2 + (60 * w.facing * Math.PI) / 180, 0); // +Z nose -> SVG angle -60 * facing
+          bw.setProne(w.prone);
+          pickables.push(bw.proxy);
+        } else {
+          g = walkerMesh(w.side, w.size);
+          g.traverse((o) => (o.castShadow = true));
+          g.position.copy(p);
+          g.rotation.y = Math.PI / 2 + (60 * w.facing * Math.PI) / 180;
+          if (w.prone) {
+            g.rotation.x = Math.PI / 2;
+            g.position.y += 0.2;
+          }
+          g.userData.walkerId = w.id;
+          if (w.activated) g.traverse((o) => ((o as THREE.Mesh).material && ((o as THREE.Mesh).material as THREE.MeshLambertMaterial).color.multiplyScalar(0.55)));
+          pickables.push(g);
         }
-        g.userData.walkerId = w.id;
-        if (w.activated) g.traverse((o) => ((o as THREE.Mesh).material && ((o as THREE.Mesh).material as THREE.MeshLambertMaterial).color.multiplyScalar(0.55)));
         dynamic.add(g);
-        pickables.push(g);
+        const ringBase = bw ? bw.radius + 0.12 : 0.8;
         const ring = (colour: number, radius: number) => {
           const m = add(dynamic, hexShape, new THREE.MeshBasicMaterial({ color: colour }), [p.x, p.y + 0.02, p.z], [radius, 0.03, radius]);
           return m;
         };
-        if (w.id === activeId) ring(0xf5f0d8, 0.8);
-        if (w.id === selectedId) ring(0x2f9e8f, 0.7);
-        if (w.id === targetId) pulsing.push(ring(0xffd34d, 0.75));
-        for (let i = 0; i < w.overpressure; i++) add(dynamic, box, new THREE.MeshBasicMaterial({ color: 0xff8a3d }), [p.x - 0.4 + i * 0.12, p.y + 1.3, p.z], [0.08, 0.08, 0.08]);
+        if (w.id === activeId) ring(0xf5f0d8, ringBase);
+        if (w.id === selectedId) ring(0x2f9e8f, ringBase - 0.1);
+        if (w.id === targetId) pulsing.push(ring(0xffd34d, ringBase - 0.05));
+        for (let i = 0; i < w.overpressure; i++) add(dynamic, box, new THREE.MeshBasicMaterial({ color: 0xff8a3d }), [p.x - 0.4 + i * 0.12, p.y + top, p.z], [0.08, 0.08, 0.08]);
       }
     };
     api.current = { rebuild };
@@ -398,6 +439,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       const h = Math.max(260, Math.round(w * 0.72));
       el.style.height = `${h}px`;
       renderer.setSize(Math.ceil(w / PIXEL), Math.ceil(h / PIXEL), false);
+      composer.setSize(Math.ceil(w / PIXEL), Math.ceil(h / PIXEL));
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
@@ -446,7 +488,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       sun.target.position.copy(controls.target);
       sun.position.copy(controls.target).add(sunOffset);
       controls.update();
-      renderer.render(scene, camera);
+      composer.render();
     };
     raf = requestAnimationFrame(loop);
 
@@ -457,6 +499,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp);
       controls.dispose();
+      composer.dispose();
       renderer.dispose();
       canvas.remove();
       api.current = null;

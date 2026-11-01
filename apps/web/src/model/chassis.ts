@@ -81,6 +81,7 @@ function base(diameter: number, p: Palette) {
   ]) {
     g.add(at(plate(r * s, r * s * 0.7, r * s * 0.8, p.ground, 0.2), x * r, 3.4, z * r, 0.4, x * 3, 0.3));
   }
+  g.userData.boardBase = true; // the 3D board draws its own hex-sized base
   return g;
 }
 
