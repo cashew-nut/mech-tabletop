@@ -10,6 +10,8 @@ import {
   getMap,
   getScenario,
   type EquipmentDef,
+  type MapDef,
+  type ScenarioDef,
   type Location,
   type RangeBand,
 } from './data';
@@ -65,8 +67,10 @@ export interface Deployment {
 
 export interface GameSetup {
   seed: number;
-  scenario: string;
-  map: string;
+  /** A scenario id from data/scenarios.json, or a scenario built elsewhere (for example by the board generator). */
+  scenario: string | ScenarioDef;
+  /** A map id from data/maps.json, or a map built elsewhere (for example by the board generator). */
+  map: string | MapDef;
   lances: [LanceInput, LanceInput];
   /** Optional fixed positions per side; otherwise walkers line up on their edge. */
   deployments?: [Deployment[], Deployment[]];
@@ -78,8 +82,8 @@ export interface GameSetup {
 }
 
 export function createGame(setup: GameSetup): GameState {
-  const mapDef = getMap(setup.map);
-  const scenario = getScenario(setup.scenario);
+  const mapDef = typeof setup.map === 'string' ? getMap(setup.map) : setup.map;
+  const scenario = typeof setup.scenario === 'string' ? getScenario(setup.scenario) : setup.scenario;
   const hexes: Record<string, HexInfo> = {};
   for (let row = 0; row < mapDef.height; row++) {
     for (let col = 0; col < mapDef.width; col++) {
@@ -306,7 +310,7 @@ export function walkerAt(state: GameState, hex: Hex): WalkerState | null {
   return state.walkers.find((w) => !w.destroyed && hexEq(w.pos, hex)) ?? null;
 }
 
-function passable(state: GameState, hex: Hex): boolean {
+export function passable(state: GameState, hex: Hex): boolean {
   const info = hexInfo(state, hex);
   return !!info && info.terrain !== 'blocking' && !state.wrecks.includes(hexKey(hex));
 }
@@ -348,7 +352,7 @@ export function stride(state: GameState, w: WalkerState): number {
   return Math.max(1, s);
 }
 
-function stepCost(state: GameState, from: Hex, to: Hex): number {
+export function stepCost(state: GameState, from: Hex, to: Hex): number {
   const a = hexInfo(state, from)!;
   const b = hexInfo(state, to)!;
   const base = b.terrain === 'rough' || b.terrain === 'heavy' ? 2 : 1;
