@@ -3,6 +3,9 @@
 The Iron Covenant Paladin is Luke's Meshy image-to-3D model (textured GLB, 2.95M triangles, one mesh) cut into
 kit parts. Assembled at rest, the parts reproduce the Meshy figure.
 
+These parts are open shells that only look right in place. `../composite/` cuts the same figure into closed,
+standalone parts with joints; use that for anything a part has to do on its own (cards, printing).
+
 ```sh
 python3 -I cut.py extract Meshy_..._texture.glb WORK     # mesh.npz and textures (numpy only)
 python3 -I cut.py label WORK --preview                   # lab.npy, names.json, colour-coded views (needs scipy, pillow)

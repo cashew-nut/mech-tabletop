@@ -1,0 +1,274 @@
+"""Cut the Meshy Paladin into closed, separate solid parts (step 1 of 2; numpy, scipy, scikit-image, manifold3d).
+
+    ~/bvenv/bin/python -I split.py WORK            # WORK holds mesh.npz, lab.npy, names.json from ../meshy/cut.py
+
+The Meshy figure is one closed (watertight) surface, so it can be treated as a solid. The old route (../meshy/build.py)
+gave each part the triangles labelled for it, which leaves open, ragged shells that only look right in place. Here the
+space around the figure is labelled voxel by voxel with the same rules as ../meshy/cut.py (bone capsules for the body,
+boxes for helm, collar, back, pods and blades, the red-cloth triangles for cloth), every part's region is turned into a
+closed mesh, and the figure is intersected with it. Each part comes out closed, with a flat-ish cap where it met its
+neighbour, and keeps Meshy's UVs on the original surface (cap faces get UV (-1, -1) so the bake can tell them apart).
+
+Then joints.py adds a keyed peg and magnet pockets at every joint. Output: WORK/parts/<part>.npz (mm, kit axes).
+"""
+import json
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "meshy"))
+import cut  # noqa: E402  (joint and bone positions, Meshy units)
+
+S, FOOT_Z, BASE = 50 / 1.5, -0.90, 3.0      # mm per Meshy unit, foot level, base thickness (as ../meshy/build.py)
+H = 0.0075                                   # voxel size in Meshy units (0.25 mm)
+CLOTH_T = 0.02                               # cloth is a thin sheet: only voxels this close to a cloth triangle are cloth
+
+# Physical parts and the cut labels each is made of. Sided parts are built for the walker's left (+X) only and mirrored
+# for the right, so the right side's labels exist only to carve the torso and pelvis.
+PARTS = {
+    "torso": ["torso", "collar", "cloth_upper"],
+    "pelvis": ["pelvis", "cloth_lower"],
+    "helm": ["helm"],
+    "back": ["back"],
+    "pauldron": ["pauldron_L", "cloth_L"],
+    "arm": ["arm_L"], "forearm": ["forearm_L"], "hand": ["hand_L"],
+    "thigh": ["thigh_L"], "shin": ["shin_L"], "foot": ["foot_L"],
+    "blade": ["sword_L"], "pod": ["pod_L"],
+    # right side, used only to know where the torso and pelvis end
+    "_pauldron_R": ["pauldron_R", "cloth_R"], "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"],
+    "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"], "_blade_R": ["sword_R"], "_pod_R": ["pod_R"],
+}
+
+
+def to_mm(P):
+    return np.stack([P[..., 0] * S, P[..., 1] * S, (P[..., 2] - FOOT_Z) * S + BASE], -1)
+
+
+def from_mm(P):
+    return np.stack([P[..., 0] / S, P[..., 1] / S, (P[..., 2] - BASE) / S + FOOT_Z], -1)
+
+
+def label_points(P, cloth_near):
+    """cut.label's rules applied to arbitrary points P (Meshy units, x centred). cloth_near: bool per point."""
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    a = np.abs(x)
+    names, D = [], []
+    mir = lambda p: (-p[0], p[1], p[2])
+    for k, (p, q, r) in cut.BONES_C.items():
+        names.append(k)
+        D.append(cut.seg_d(P, p, q) - r)
+    for k, (p, q, r) in cut.BONES_S.items():
+        names.append(k + "_L")
+        D.append(cut.seg_d(P, p, q) - r)
+        # the figure's own right side (its right arm hangs closer in), so the torso is cut where that arm really is
+        p2, q2, r2 = cut.BONES_R.get(k, (mir(p), mir(q), r))
+        names.append(k + "_R")
+        D.append(cut.seg_d(P, p2, q2) - r2)
+    lab = np.stack(D, 1).argmin(1).astype(np.int16)
+    del D
+
+    def setl(mask, name):
+        if name not in names:
+            names.append(name)
+        lab[mask] = names.index(name)
+
+    L = x >= 0
+    for s, sg in (("L", L), ("R", ~L)):
+        setl(sg & (z < -0.805) & (a < 0.5), f"foot_{s}")
+
+    def sword(s, A, B, w):
+        sg = L if s == "L" else ~L
+        Q = np.stack([x, z], 1).astype(np.float32)
+        A, B = np.array(A, np.float32), np.array(B, np.float32)
+        AB = B - A
+        t = np.clip(((Q - A) @ AB) / (AB @ AB), 0, 1)
+        dd = np.linalg.norm(Q - (A + t[:, None] * AB), axis=1)
+        setl(sg & (dd < w) & (z < -0.33) & (np.abs(y + 0.31) < 0.16) & (a > 0.38), f"sword_{s}")
+    sword("L", (0.61, -0.35), (0.92, -0.95), 0.055)
+    sword("R", (-0.45, -0.36), (-0.94, -0.95), 0.055)
+    spire = (z > 0.56) & (x > -0.015) & (x < 0.07) & (y > -0.12)
+    pod = (z > 0.56) & (a < 0.33) & (y > -0.12) & ~spire
+    setl(pod & L, "pod_L")
+    setl(pod & ~L, "pod_R")
+    setl(spire, "back")
+    setl((y > 0.12) & (z > 0.2) & (z <= 0.56) & (a < 0.32), "back")
+    helm = (x ** 2 / 0.10 ** 2 + (y + 0.10) ** 2 / 0.13 ** 2 + (z - 0.52) ** 2 / 0.11 ** 2 < 1) & (z > 0.44)
+    setl(helm & (lab != names.index("back")), "helm")
+    setl((z > 0.455) & (a < 0.17) & (y < 0.06) & (z < 0.57) & ~helm
+         & np.isin(lab, [names.index("torso"), names.index("helm")]), "collar")
+    # Cloth: capes on the arms go with the pauldrons, the tabard with the pelvis, the banner on the back with the torso.
+    cl = cloth_near & (lab != names.index("back")) & (z < 0.46)
+    setl(cl & (a >= 0.30) & L, "cloth_L")
+    setl(cl & (a >= 0.30) & ~L, "cloth_R")
+    setl(cl & (a < 0.30) & (z < 0.05), "cloth_lower")
+    setl(cl & (a < 0.30) & (z >= 0.05), "cloth_upper")
+    return lab, names
+
+
+def main(work):
+    from scipy import ndimage
+    from scipy.spatial import cKDTree
+    from skimage.measure import marching_cubes
+    import manifold3d as mf
+
+    work = Path(work)
+    out = work / "parts"
+    out.mkdir(exist_ok=True)
+    t0 = time.time()
+    d = np.load(work / "mesh.npz")
+    V, F, UV = d["V"].copy(), d["F"], d["UV"]
+    V[:, 0] -= cut.CX
+    tlab = np.load(work / "lab.npy")
+    tnames = json.loads((work / "names.json").read_text())
+
+    # --- voxel labels -------------------------------------------------------------------------------------------
+    lo, hi = V.min(0) - 4 * H, V.max(0) + 4 * H
+    shape = np.ceil((hi - lo) / H).astype(int) + 1
+    print("grid", shape, int(np.prod(shape)) / 1e6, "M voxels", flush=True)
+    C = V[F].mean(1)
+    cloth_tris = C[tlab == tnames.index("cloth")]
+    ctree = cKDTree(cloth_tris)
+    labels = np.empty(tuple(shape), np.int16)
+    names = None
+    xs = lo[0] + H * np.arange(shape[0])
+    ys = lo[1] + H * np.arange(shape[1])
+    zs = lo[2] + H * np.arange(shape[2])
+    for i0 in range(0, shape[0], 24):
+        xi = xs[i0:i0 + 24]
+        P = np.stack(np.meshgrid(xi, ys, zs, indexing="ij"), -1).reshape(-1, 3).astype(np.float32)
+        dc, _ = ctree.query(P, k=1, distance_upper_bound=CLOTH_T, workers=-1)
+        lab, names = label_points(P, np.isfinite(dc))
+        labels[i0:i0 + len(xi)] = lab.reshape(len(xi), shape[1], shape[2])
+    print("labelled", f"{time.time() - t0:.0f}s", flush=True)
+
+    # --- the figure as a manifold, with UVs as vertex properties ------------------------------------------------
+    Vmm = to_mm(V).astype(np.float32)
+    props = np.concatenate([Vmm, UV], 1).astype(np.float32)
+    mesh = mf.Mesh(vert_properties=props, tri_verts=F.astype(np.uint32))
+    mesh.merge()            # Meshy splits vertices along its UV seams: tell manifold which ones are the same point
+    fig = mf.Manifold(mesh)
+    print("figure", fig.status(), fig.num_tri(), "tris", f"{time.time() - t0:.0f}s", flush=True)
+
+    # --- one region mesh per part, intersected with the figure --------------------------------------------------
+    info = {"keys": list(PARTS), "names": names, "lo": lo.tolist(), "h": H, "shape": shape.tolist(), "parts": {}}
+    part_of = np.full(len(names), -1, np.int16)
+    keys = list(PARTS)
+    for pi, k in enumerate(keys):
+        for n in PARTS[k]:
+            part_of[names.index(n)] = pi
+    assert (part_of >= 0).all(), [n for n, p in zip(names, part_of) if p < 0]
+    plabel = part_of[labels]
+
+    # Occupancy: slice the figure at every voxel layer and fill the outlines (even-odd, so holes stay holes).
+    from skimage.draw import polygon as fillpoly
+    occ = np.zeros(tuple(shape), bool)
+    for kz in range(shape[2]):
+        layer = np.zeros((shape[0], shape[1]), bool)
+        for poly in fig.slice(float(to_mm(np.array([0, 0, zs[kz]]))[2])).to_polygons():
+            q = np.asarray(poly) / S
+            rr, cc = fillpoly((q[:, 0] - lo[0]) / H, (q[:, 1] - lo[1]) / H, layer.shape)
+            layer[rr, cc] ^= True
+        occ[:, :, kz] = layer
+    print("occupancy", f"{occ.mean():.3f}", f"{time.time() - t0:.0f}s", flush=True)
+    # Inside the figure, every part should be one connected lump. Smaller lumps (a plate whose only link to its part
+    # runs through a neighbour) are handed to the neighbour they touch most, voxel by voxel, so the part they join
+    # stays one connected solid.
+    st = ndimage.generate_binary_structure(3, 1)
+    for _ in range(3):
+        moved = 0
+        for pi, k in enumerate(keys):
+            comp, n = ndimage.label((plabel == pi) & occ, st)
+            if n < 2:
+                continue
+            sizes = np.bincount(comp.ravel())[1:]
+            big = sizes.argmax() + 1
+            for c in range(1, n + 1):
+                if c == big or sizes[c - 1] > 0.25 * sizes.max():
+                    continue
+                m = comp == c
+                ring = ndimage.binary_dilation(m, st) & ~m & occ
+                nb = plabel[ring]
+                nb = nb[nb != pi]
+                if len(nb):
+                    plabel[m] = np.bincount(nb).argmax()
+                    moved += 1
+        print("relabelled lumps:", moved, flush=True)
+        if not moved:
+            break
+    np.save(work / "part_grid.npy", plabel.astype(np.int8))
+    np.save(work / "occ.npy", occ)
+    solids, pieces_of = {}, {}
+    for pi, k in enumerate(keys):
+        ind = (plabel == pi)
+        if not ind.any():
+            print("empty", k)
+            continue
+        idx = np.argwhere(ind)
+        a, b = np.maximum(idx.min(0) - 3, 0), np.minimum(idx.max(0) + 4, shape)
+        sub = ndimage.gaussian_filter(ind[a[0]:b[0], a[1]:b[1], a[2]:b[2]].astype(np.float32), 1.0)
+        sub = np.pad(sub, 1)
+        vv, ff, _, _ = marching_cubes(sub, 0.5)
+        rm = to_mm(lo + H * (vv - 1 + a)).astype(np.float32)
+        rp = np.concatenate([rm, -np.ones((len(rm), 2), np.float32)], 1)   # cap faces get UV (-1, -1)
+        region = mf.Manifold(mf.Mesh(vert_properties=rp, tri_verts=ff[:, ::-1].astype(np.uint32)))
+        if region.status() != mf.Error.NoError:
+            print("region not manifold", k, region.status())
+        pieces_of[k] = sorted((fig ^ region).decompose(), key=lambda m: -m.volume())
+    print("intersected", f"{time.time() - t0:.0f}s", flush=True)
+
+    # A part's smaller loose pieces (a plate whose only link to the part ran through a neighbour) go to the neighbour
+    # they touch most; crumbs are dropped. Pieces of the right-side parts are only there to carve the torso and pelvis.
+    def neighbour(piece, own):
+        mm = piece.to_mesh()
+        P = np.asarray(mm.vert_properties)[:, :3]
+        g = np.round((from_mm(P) - lo) / H).astype(int)
+        hits = []
+        for dx in (-2, 0, 2):
+            for dy in (-2, 0, 2):
+                for dz in (-2, 0, 2):
+                    q = np.clip(g + (dx, dy, dz), 0, shape - 1)
+                    hits.append(plabel[q[:, 0], q[:, 1], q[:, 2]])
+        hits = np.concatenate(hits)
+        hits = hits[hits != own]
+        return keys[np.bincount(hits).argmax()] if len(hits) else None
+    final = {k: [] for k in pieces_of}
+    moved = []
+    for k, ps in pieces_of.items():
+        if not ps:
+            continue
+        main_v = ps[0].volume()
+        final[k].append(ps[0])
+        for p in ps[1:]:
+            v = p.volume()
+            if v < 0.02:
+                continue
+            if v > 0.25 * main_v:
+                final[k].append(p)
+                continue
+            to = neighbour(p, keys.index(k))
+            if to is not None and to in final:
+                final[to].append(p)
+                moved.append((k, to, round(v, 2)))
+    for k, to, v in moved:
+        print(f"  piece {v} mm3: {k} -> {to}")
+    for k, ps in final.items():
+        if k.startswith("_") or not ps:
+            continue
+        part = mf.Manifold.batch_boolean(ps, mf.OpType.Add) if len(ps) > 1 else ps[0]
+        keep = [p for p in part.decompose() if p.volume() > 0.05]      # zero-volume slivers from the cut
+        part = mf.Manifold.batch_boolean(keep, mf.OpType.Add) if len(keep) > 1 else keep[0]
+        n = len(keep)
+        m = part.to_mesh()
+        P, T = np.asarray(m.vert_properties), np.asarray(m.tri_verts)
+        np.savez(out / f"{k}.npz", P=P, T=T, mf=np.asarray(m.merge_from_vert), mt=np.asarray(m.merge_to_vert))
+        info["parts"][k] = {"tris": int(len(T)), "pieces": n, "volume": round(part.volume(), 1)}
+        print(f"{k:10s} {len(T):7d} tris  {n} piece(s)  vol {part.volume():8.1f} mm3", flush=True)
+    info["moved"] = moved
+    (work / "split.json").write_text(json.dumps(info, indent=1))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
