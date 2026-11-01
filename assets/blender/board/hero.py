@@ -2,7 +2,7 @@
 
     python3 -I assets/blender/parts/meshy/cut.py extract MESHY.glb WORK        # mesh.npz + tex_*.jpg
     ~/bvenv/bin/python -I assets/blender/board/hero.py WORK NAME --height H [--max-width W] [--crop-base F] [--tris N]
-        [--size 1024] [--smoke]
+        [--size 1024] [--stretch F] [--cage F] [--smoke]
 
 Scales the piece so it is H board units tall (one hex has circumradius 1) and at most W wide, stands it on z = 0 centred on
 x = y = 0, and cuts away the plinth Meshy invents under it (--crop-base F removes the lowest fraction F of the height, so the
@@ -35,6 +35,7 @@ def main(args):
     crop = opt(args, "--crop-base", 0.0, float)
     tris = opt(args, "--tris", 12000, int)
     size = opt(args, "--size", 1024, int)
+    cage = opt(args, "--cage", 1.0, float)  # a coarsely clustered low mesh strays further from the high one: widen the bake rays
     d = np.load(work / "mesh.npz")
     V, F, UV = d["V"].copy(), d["F"], d["UV"]
 
@@ -49,9 +50,10 @@ def main(args):
         V, UV, F = V[used], UV[used], remap[F]
     z0, z1 = V[:, 2].min(), V[:, 2].max()
     ext = V.max(0) - V.min(0)
-    s = min(height / (z1 - z0), max_w / max(ext[0], ext[1]))
+    stretch = opt(args, "--stretch", 1.0, float)  # >1 makes a squat piece taller than Meshy drew it
+    s = min(height / ((z1 - z0) * stretch), max_w / max(ext[0], ext[1]))
     c = (V.max(0) + V.min(0)) / 2
-    P = np.stack([(V[:, 0] - c[0]) * s, (V[:, 1] - c[1]) * s, (V[:, 2] - z0) * s], 1).astype(np.float32)
+    P = np.stack([(V[:, 0] - c[0]) * s, (V[:, 1] - c[1]) * s, (V[:, 2] - z0) * s * stretch], 1).astype(np.float32)
     top = float(P[:, 2].max())
 
     scene = kit.reset_scene()
@@ -192,8 +194,8 @@ def main(args):
         hi.select_set(True)
         lo.select_set(True)
         bpy.context.view_layer.objects.active = lo
-        kw = dict(type="NORMAL" if mode == "normal" else "EMIT", use_selected_to_active=True, cage_extrusion=0.02 * height / 4,
-                  max_ray_distance=0.05 * height / 4, margin=6, use_clear=True)
+        kw = dict(type="NORMAL" if mode == "normal" else "EMIT", use_selected_to_active=True, cage_extrusion=0.02 * height / 4 * cage,
+                  max_ray_distance=0.05 * height / 4 * cage, margin=6, use_clear=True)
         if mode == "normal":
             kw["normal_space"] = "TANGENT"
         bpy.ops.object.bake(**kw)

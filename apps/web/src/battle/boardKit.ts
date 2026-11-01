@@ -20,7 +20,7 @@ export interface Kit {
 
 /** Grain, pitting and hairline cracks over the baked vertex colours: a generated granite texture projected from three axes
  * in world space, so every tile and wall shares one continuous surface and adjacent pieces never show a seam. */
-function addStoneDetail(material: THREE.MeshStandardMaterial, detail: THREE.Texture) {
+function addStoneDetail(material: THREE.Material, detail: THREE.Texture) {
   detail.wrapS = detail.wrapT = THREE.RepeatWrapping;
   detail.anisotropy = 4;
   material.onBeforeCompile = (shader) => {
@@ -52,7 +52,8 @@ export function loadBoardKit(): Promise<Kit | null> {
       const loader = new GLTFLoader();
       const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, color: 0xa8a8a8 });
       const base = `${import.meta.env.BASE_URL}board/`;
-      addStoneDetail(material, new THREE.TextureLoader().load(`${base}stone_detail.jpg`));
+      const detail = new THREE.TextureLoader().load(`${base}stone_detail.jpg`);
+      addStoneDetail(material, detail);
       const loaded = await Promise.all(KIT_PIECES.map((name) => loader.loadAsync(`${base}${name}.glb`)));
       const pieces = new Map<string, THREE.Object3D>();
       loaded.forEach((gltf, i) => {
@@ -80,6 +81,12 @@ export function loadBoardKit(): Promise<Kit | null> {
           if (mesh.isMesh) {
             mesh.castShadow = true;
             mesh.receiveShadow = true;
+            // The bell tower came back near-white: grade it to the board's stone and give it the same grain and cracks.
+            if (HERO_PIECES[i] === 'hero_tower') {
+              const m = mesh.material as THREE.MeshStandardMaterial;
+              m.color.setHex(0xa8a5a0);
+              addStoneDetail(m, detail);
+            }
           }
         });
         pieces.set(HERO_PIECES[i], r.value.scene);
