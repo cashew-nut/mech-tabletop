@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Brass Charter: Paladin card sheet</title><style>
+@page { size: A4; margin: 0 }
+* { box-sizing: border-box; margin: 0; padding: 0 }
+body { background: #fff; font-family: Inter, 'DejaVu Sans', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+.page { position: relative; width: 210mm; height: 297mm; page-break-after: always; overflow: hidden; background: #fff }
+.grid { position: absolute; left: 10.5mm; top: 16.5mm; width: 189mm; display: grid; grid-template-columns: repeat(3, 63mm); grid-auto-rows: 88mm }
+.cap { position: absolute; left: 10.5mm; right: 10.5mm; bottom: 6mm; font: 7pt 'JetBrains Mono', monospace; color: #666 }
+.mark { position: absolute; background: #000 }
+.mark.h { height: 0.2mm; width: 4mm } .mark.v { width: 0.2mm; height: 4mm }
+
+.card { width: 63mm; height: 88mm; padding: 0; position: relative; background: #111; --edge: #8b8b8b; --edge2: #5d5d5d; --accent: #b88a2e; color: #eee6d4 }
+.card.covenant { --accent: #c9a04a; --wash: #4a1313 } .card.foundries { --accent: #d2813a; --wash: #4a2a10 } .card.reliquary { --accent: #5fb3a8; --wash: #12403d }
+.card.t1 { --edge: #8d8f93; --edge2: #55575b }
+.card.t2 { --edge: #c1824a; --edge2: #7a4a22 }
+.card.t3 { --edge: #aebfce; --edge2: #5f7388 }
+.card.t4 { --edge: #e2b84a; --edge2: #8e6a14 }
+.card.t5 { --edge: conic-gradient(from 20deg, #ffd1f0, #c8f1ff, #d6ffd1, #fff3b0, #ffd1f0); --edge2: #888 }
+.card::before { content: ''; position: absolute; inset: 0; border-radius: 3mm; background: linear-gradient(145deg, var(--edge), var(--edge2) 60%, var(--edge)) }
+.card.t5::before { background: var(--edge) }
+.inner { position: absolute; inset: 1.8mm; border-radius: 1.8mm; background: radial-gradient(120% 70% at 50% 0%, var(--wash, #333), #141210 70%); display: flex; flex-direction: column; padding: 2mm 2.2mm 1.6mm; overflow: hidden }
+header h2 { font: 700 3.9mm/1.05 'Bitstream Charter', 'DejaVu Serif', serif; letter-spacing: 0.01em }
+.kind { font-size: 2mm; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-top: 0.5mm }
+.art { position: relative; margin-top: 1.4mm; height: 45mm; border-radius: 1mm; overflow: hidden; border: 0.3mm solid var(--accent); background: #22252a }
+.art img { width: 100%; height: 100%; object-fit: cover; display: block }
+.faction { position: absolute; left: 0; bottom: 0; padding: 0.5mm 1.6mm; font-size: 1.9mm; text-transform: uppercase; letter-spacing: 0.12em; background: rgba(10, 8, 6, .78); color: var(--accent); border-top-right-radius: 1mm }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8mm; margin-top: 1.5mm }
+.stat { background: rgba(0, 0, 0, .45); border: 0.2mm solid rgba(255, 255, 255, .14); border-radius: 0.8mm; text-align: center; padding: 0.5mm 0.3mm 0.4mm }
+.stat b { display: block; font: 700 3.4mm/1.1 'Bitstream Charter', 'DejaVu Serif', serif; color: #fff }
+.stat span { display: block; font-size: 1.55mm; text-transform: uppercase; letter-spacing: 0.08em; color: #b9ad94 }
+.rules { margin-top: 1.2mm; font: italic 2.1mm/1.25 'Bitstream Charter', 'DejaVu Serif', serif; color: #d8cfba }
+footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 1mm; font-size: 1.8mm; text-transform: uppercase; letter-spacing: 0.08em }
+footer .id { font: 1.8mm 'JetBrains Mono', monospace; color: #a79c85; letter-spacing: 0 }
+footer .tier { color: var(--edge2); background: var(--edge); border-radius: 0.8mm; padding: 0.3mm 1.4mm; font-weight: 700; color: #151515 }
+.card.t5 footer .tier { background: linear-gradient(90deg, #ffb6e6, #b6f0ff, #c8ffb6, #fff0a0) }
+.pips { display: inline-flex; gap: 0.5mm } .pips i { width: 1.5mm; height: 1.5mm; background: var(--accent); border-radius: 0.2mm; display: block }
+.ph { position: absolute; right: 2.2mm; top: 7.2mm; font: normal 1.5mm 'JetBrains Mono', monospace; color: #e8dcc0; background: rgba(0, 0, 0, .6); padding: 0.2mm 0.8mm; border-radius: 0.5mm; text-transform: uppercase }
+.run { position: absolute; left: 2.2mm; right: 2.2mm; bottom: 5.4mm; text-align: center; font: normal 2mm 'JetBrains Mono', monospace; color: #ffe9a8 }
+</style></head><body>
+<section class="page"><i class="mark v" style="left:10.4mm;top:11.5mm"></i><i class="mark v" style="left:10.4mm;top:281.5mm"></i><i class="mark v" style="left:73.4mm;top:11.5mm"></i><i class="mark v" style="left:73.4mm;top:281.5mm"></i><i class="mark v" style="left:136.4mm;top:11.5mm"></i><i class="mark v" style="left:136.4mm;top:281.5mm"></i><i class="mark v" style="left:199.4mm;top:11.5mm"></i><i class="mark v" style="left:199.4mm;top:281.5mm"></i><i class="mark h" style="left:5.5mm;top:16.4mm"></i><i class="mark h" style="left:200.5mm;top:16.4mm"></i><i class="mark h" style="left:5.5mm;top:104.4mm"></i><i class="mark h" style="left:200.5mm;top:104.4mm"></i><i class="mark h" style="left:5.5mm;top:192.4mm"></i><i class="mark h" style="left:200.5mm;top:192.4mm"></i><i class="mark h" style="left:5.5mm;top:280.4mm"></i><i class="mark h" style="left:200.5mm;top:280.4mm"></i><div class="grid"><article class="card t1 covenant body" data-print-id="CV-PAL-LEG-T1">
+  <div class="inner">
+    <header><h2>Paladin Legs</h2><div class="kind">Body · Legs</div></header>
+    <div class="art"><img src="art/paladin-legs.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>5</b><span>Points</span></div><div class="stat"><b>2</b><span>Stride</span></div><div class="stat"><b>6</b><span>Armour legs</span></div><div class="stat"><b>1</b><span>Leg slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-LEG-T1</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant body" data-print-id="CV-PAL-TOR-T1">
+  <div class="inner">
+    <header><h2>Paladin Torso</h2><div class="kind">Body · Torso + pelvis</div></header>
+    <div class="art"><img src="art/paladin-torso.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>6</b><span>Points</span></div><div class="stat"><b>6</b><span>Armour front</span></div><div class="stat"><b>3</b><span>Armour rear</span></div><div class="stat"><b>6</b><span>Structure</span></div><div class="stat"><b>2</b><span>Core slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-TOR-T1</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant body" data-print-id="CV-PAL-ARM-T1">
+  <div class="inner">
+    <header><h2>Paladin Arms</h2><div class="kind">Body · Arms</div></header>
+    <div class="art"><img src="art/paladin-arms.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>3</b><span>Points</span></div><div class="stat"><b>3</b><span>Armour arm</span></div><div class="stat"><b>5</b><span>Structure limb</span></div><div class="stat"><b>2 + 2</b><span>Arm slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-ARM-T1</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant body" data-print-id="CV-PAL-HLM-T1">
+  <div class="inner">
+    <header><h2>Paladin Helm</h2><div class="kind">Body · Helm</div></header>
+    <div class="art"><img src="art/paladin-helm.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>3</b><span>Points</span></div><div class="stat"><b>2</b><span>Armour front</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-HLM-T1</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant body" data-print-id="CV-PAL-PLD-T1">
+  <div class="inner">
+    <header><h2>Paladin Pauldrons</h2><div class="kind">Body · Pauldrons</div></header>
+    <div class="art"><img src="art/paladin-pauldrons.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>3</b><span>Points</span></div><div class="stat"><b>2</b><span>Armour front</span></div><div class="stat"><b>2</b><span>Armour arm</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-PLD-T1</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant body" data-print-id="CV-PAL-CRB-T1">
+  <div class="inner">
+    <header><h2>Paladin Crown &amp; Back</h2><div class="kind">Body · Crown / back</div></header>
+    <div class="art"><img src="art/paladin-crown-back.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>2</b><span>Points</span></div><div class="stat"><b>6</b><span>Boiler</span></div><div class="stat"><b>2</b><span>Armour rear</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-CRB-T1</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant equipment" data-print-id="CV-EQ-LANCE-T1">
+  <div class="inner">
+    <header><h2>Lance</h2><div class="kind">Equipment · weapon</div></header>
+    <div class="art"><img src="art/paladin-lance.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>1</b><span>Slots</span></div><div class="stat"><b>1</b><span>Pressure</span></div><div class="stat"><b>10</b><span>Points</span></div><div class="stat"><b>2×3</b><span>Dice</span></div><div class="stat"><b>melee</b><span>Range</span></div></div>
+    <p class="rules">Charge: +1 die if this war-walker has moved 2 or more hexes this activation.</p>
+    <footer>
+      <span class="id">CV-EQ-LANCE-T1</span>
+      
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant equipment" data-print-id="CV-EQ-CARAP-T1">
+  <div class="inner">
+    <header><h2>Carapace Gun</h2><div class="kind">Equipment · weapon</div></header>
+    <div class="art"><img src="art/paladin-carapace-gun.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>1</b><span>Slots</span></div><div class="stat"><b>2</b><span>Pressure</span></div><div class="stat"><b>5</b><span>Points</span></div><div class="stat"><b>2×2</b><span>Dice</span></div><div class="stat"><b>medium</b><span>Range</span></div><div class="stat"><b>1</b><span>Pierce</span></div></div>
+    <p class="rules">Mounts on the core, not an arm. No ammo. Pierce 1.</p>
+    <footer>
+      <span class="id">CV-EQ-CARAP-T1</span>
+      
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t1 covenant equipment" data-print-id="CV-EQ-GYROS-T1">
+  <div class="inner">
+    <header><h2>Gyro Stabilisers</h2><div class="kind">Equipment · mobility</div></header>
+    <div class="art"><img src="art/paladin-gyro-stabilisers.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>1</b><span>Slots</span></div><div class="stat"><b>0</b><span>Pressure</span></div><div class="stat"><b>3</b><span>Points</span></div><div class="stat"><b>legs</b><span>Mount</span></div></div>
+    <p class="rules">Ignore the attacker-moved TN penalty, including the Rail Lance's extra +1.</p>
+    <footer>
+      <span class="id">CV-EQ-GYROS-T1</span>
+      
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article></div>
+<div class="cap">Brass Charter · Paladin cards · page 1/3 · 63×88 mm, print at 100% · cut on the marks · tier 2–5 stats are placeholders</div></section>
+<section class="page"><i class="mark v" style="left:10.4mm;top:11.5mm"></i><i class="mark v" style="left:10.4mm;top:281.5mm"></i><i class="mark v" style="left:73.4mm;top:11.5mm"></i><i class="mark v" style="left:73.4mm;top:281.5mm"></i><i class="mark v" style="left:136.4mm;top:11.5mm"></i><i class="mark v" style="left:136.4mm;top:281.5mm"></i><i class="mark v" style="left:199.4mm;top:11.5mm"></i><i class="mark v" style="left:199.4mm;top:281.5mm"></i><i class="mark h" style="left:5.5mm;top:16.4mm"></i><i class="mark h" style="left:200.5mm;top:16.4mm"></i><i class="mark h" style="left:5.5mm;top:104.4mm"></i><i class="mark h" style="left:200.5mm;top:104.4mm"></i><i class="mark h" style="left:5.5mm;top:192.4mm"></i><i class="mark h" style="left:200.5mm;top:192.4mm"></i><i class="mark h" style="left:5.5mm;top:280.4mm"></i><i class="mark h" style="left:200.5mm;top:280.4mm"></i><div class="grid"><article class="card t1 covenant equipment" data-print-id="CV-EQ-TARGE-T1">
+  <div class="inner">
+    <header><h2>Targeting Array</h2><div class="kind">Equipment · system</div></header>
+    <div class="art"><img src="art/paladin-targeting-array.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>1</b><span>Slots</span></div><div class="stat"><b>0</b><span>Pressure</span></div><div class="stat"><b>4</b><span>Points</span></div><div class="stat"><b>core</b><span>Mount</span></div></div>
+    <p class="rules">-1 TN on all your attacks.</p>
+    <footer>
+      <span class="id">CV-EQ-TARGE-T1</span>
+      
+      <span class="tier">Stamped</span>
+    </footer>
+    
+  </div>
+</article>
+<article class="card t2 covenant body" data-print-id="CV-PAL-LEG-T2">
+  <div class="inner">
+    <header><h2>Paladin Legs</h2><div class="kind">Body · Legs</div></header>
+    <div class="art"><img src="art/paladin-legs.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>6</b><span>Points</span></div><div class="stat"><b>2</b><span>Stride</span></div><div class="stat"><b>7</b><span>Armour legs</span></div><div class="stat"><b>1</b><span>Leg slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-LEG-T2</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Riveted</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t3 covenant body" data-print-id="CV-PAL-LEG-T3">
+  <div class="inner">
+    <header><h2>Paladin Legs</h2><div class="kind">Body · Legs</div></header>
+    <div class="art"><img src="art/paladin-legs.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>7</b><span>Points</span></div><div class="stat"><b>2</b><span>Stride</span></div><div class="stat"><b>8</b><span>Armour legs</span></div><div class="stat"><b>1</b><span>Leg slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-LEG-T3</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Guild-forged</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t4 covenant body" data-print-id="CV-PAL-LEG-T4">
+  <div class="inner">
+    <header><h2>Paladin Legs</h2><div class="kind">Body · Legs</div></header>
+    <div class="art"><img src="art/paladin-legs.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>8</b><span>Points</span></div><div class="stat"><b>2</b><span>Stride</span></div><div class="stat"><b>9</b><span>Armour legs</span></div><div class="stat"><b>1</b><span>Leg slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-LEG-T4</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Masterwork</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t5 covenant body" data-print-id="CV-PAL-LEG-T5">
+  <div class="inner">
+    <header><h2>Paladin Legs</h2><div class="kind">Body · Legs</div></header>
+    <div class="art"><img src="art/paladin-legs.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>9</b><span>Points</span></div><div class="stat"><b>2</b><span>Stride</span></div><div class="stat"><b>10</b><span>Armour legs</span></div><div class="stat"><b>1</b><span>Leg slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-LEG-T5</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Legendary Relic</span>
+    </footer>
+    <em class="ph">placeholder stats</em><em class="run">No. ___ / 50</em>
+  </div>
+</article>
+<article class="card t2 covenant body" data-print-id="CV-PAL-TOR-T2">
+  <div class="inner">
+    <header><h2>Paladin Torso</h2><div class="kind">Body · Torso + pelvis</div></header>
+    <div class="art"><img src="art/paladin-torso.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>7</b><span>Points</span></div><div class="stat"><b>7</b><span>Armour front</span></div><div class="stat"><b>3</b><span>Armour rear</span></div><div class="stat"><b>6</b><span>Structure</span></div><div class="stat"><b>2</b><span>Core slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-TOR-T2</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Riveted</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t3 covenant body" data-print-id="CV-PAL-TOR-T3">
+  <div class="inner">
+    <header><h2>Paladin Torso</h2><div class="kind">Body · Torso + pelvis</div></header>
+    <div class="art"><img src="art/paladin-torso.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>8</b><span>Points</span></div><div class="stat"><b>8</b><span>Armour front</span></div><div class="stat"><b>3</b><span>Armour rear</span></div><div class="stat"><b>6</b><span>Structure</span></div><div class="stat"><b>2</b><span>Core slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-TOR-T3</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Guild-forged</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t4 covenant body" data-print-id="CV-PAL-TOR-T4">
+  <div class="inner">
+    <header><h2>Paladin Torso</h2><div class="kind">Body · Torso + pelvis</div></header>
+    <div class="art"><img src="art/paladin-torso.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>9</b><span>Points</span></div><div class="stat"><b>9</b><span>Armour front</span></div><div class="stat"><b>3</b><span>Armour rear</span></div><div class="stat"><b>6</b><span>Structure</span></div><div class="stat"><b>2</b><span>Core slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-TOR-T4</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Masterwork</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t5 covenant body" data-print-id="CV-PAL-TOR-T5">
+  <div class="inner">
+    <header><h2>Paladin Torso</h2><div class="kind">Body · Torso + pelvis</div></header>
+    <div class="art"><img src="art/paladin-torso.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>10</b><span>Points</span></div><div class="stat"><b>10</b><span>Armour front</span></div><div class="stat"><b>3</b><span>Armour rear</span></div><div class="stat"><b>6</b><span>Structure</span></div><div class="stat"><b>2</b><span>Core slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-TOR-T5</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Legendary Relic</span>
+    </footer>
+    <em class="ph">placeholder stats</em><em class="run">No. ___ / 50</em>
+  </div>
+</article></div>
+<div class="cap">Brass Charter · Paladin cards · page 2/3 · 63×88 mm, print at 100% · cut on the marks · tier 2–5 stats are placeholders</div></section>
+<section class="page"><i class="mark v" style="left:10.4mm;top:11.5mm"></i><i class="mark v" style="left:10.4mm;top:281.5mm"></i><i class="mark v" style="left:73.4mm;top:11.5mm"></i><i class="mark v" style="left:73.4mm;top:281.5mm"></i><i class="mark v" style="left:136.4mm;top:11.5mm"></i><i class="mark v" style="left:136.4mm;top:281.5mm"></i><i class="mark v" style="left:199.4mm;top:11.5mm"></i><i class="mark v" style="left:199.4mm;top:281.5mm"></i><i class="mark h" style="left:5.5mm;top:16.4mm"></i><i class="mark h" style="left:200.5mm;top:16.4mm"></i><i class="mark h" style="left:5.5mm;top:104.4mm"></i><i class="mark h" style="left:200.5mm;top:104.4mm"></i><i class="mark h" style="left:5.5mm;top:192.4mm"></i><i class="mark h" style="left:200.5mm;top:192.4mm"></i><i class="mark h" style="left:5.5mm;top:280.4mm"></i><i class="mark h" style="left:200.5mm;top:280.4mm"></i><div class="grid"><article class="card t2 covenant body" data-print-id="CV-PAL-ARM-T2">
+  <div class="inner">
+    <header><h2>Paladin Arms</h2><div class="kind">Body · Arms</div></header>
+    <div class="art"><img src="art/paladin-arms.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>4</b><span>Points</span></div><div class="stat"><b>4</b><span>Armour arm</span></div><div class="stat"><b>5</b><span>Structure limb</span></div><div class="stat"><b>2 + 2</b><span>Arm slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-ARM-T2</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Riveted</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t3 covenant body" data-print-id="CV-PAL-ARM-T3">
+  <div class="inner">
+    <header><h2>Paladin Arms</h2><div class="kind">Body · Arms</div></header>
+    <div class="art"><img src="art/paladin-arms.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>5</b><span>Points</span></div><div class="stat"><b>5</b><span>Armour arm</span></div><div class="stat"><b>5</b><span>Structure limb</span></div><div class="stat"><b>2 + 2</b><span>Arm slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-ARM-T3</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Guild-forged</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t4 covenant body" data-print-id="CV-PAL-ARM-T4">
+  <div class="inner">
+    <header><h2>Paladin Arms</h2><div class="kind">Body · Arms</div></header>
+    <div class="art"><img src="art/paladin-arms.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>6</b><span>Points</span></div><div class="stat"><b>6</b><span>Armour arm</span></div><div class="stat"><b>5</b><span>Structure limb</span></div><div class="stat"><b>2 + 2</b><span>Arm slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-ARM-T4</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Masterwork</span>
+    </footer>
+    <em class="ph">placeholder stats</em>
+  </div>
+</article>
+<article class="card t5 covenant body" data-print-id="CV-PAL-ARM-T5">
+  <div class="inner">
+    <header><h2>Paladin Arms</h2><div class="kind">Body · Arms</div></header>
+    <div class="art"><img src="art/paladin-arms.jpg" alt=""><span class="faction">Iron Covenant</span></div>
+    <div class="stats"><div class="stat"><b>7</b><span>Points</span></div><div class="stat"><b>7</b><span>Armour arm</span></div><div class="stat"><b>5</b><span>Structure limb</span></div><div class="stat"><b>2 + 2</b><span>Arm slots</span></div></div>
+    
+    <footer>
+      <span class="id">CV-PAL-ARM-T5</span>
+      <span class="pips" title="Frame size 4"><i></i><i></i><i></i><i></i></span>
+      <span class="tier">Legendary Relic</span>
+    </footer>
+    <em class="ph">placeholder stats</em><em class="run">No. ___ / 50</em>
+  </div>
+</article></div>
+<div class="cap">Brass Charter · Paladin cards · page 3/3 · 63×88 mm, print at 100% · cut on the marks · tier 2–5 stats are placeholders</div></section>
+</body></html>
