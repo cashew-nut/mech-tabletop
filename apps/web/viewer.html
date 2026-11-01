@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brass Charter: walker viewer</title>
+    <style>
+      :root { --bg: #1d1a17; --panel: #26221e; --line: #3a342d; --ink: #e8dfd0; --mute: #9b9384; --gold: #c9a24b; color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+      #app { display: grid; grid-template-columns: 1fr 300px; height: 100%; }
+      @media (max-width: 760px) { #app { grid-template-columns: 1fr; grid-template-rows: 58% 42%; } }
+      #view { position: relative; min-height: 0; overflow: hidden; }
+      #view canvas { display: block; width: 100%; height: 100%; }
+      #hud { position: absolute; left: 16px; top: 12px; pointer-events: none; }
+      #hud h1 { margin: 0; font-size: 20px; letter-spacing: .05em; color: var(--gold); }
+      #hud p { margin: 2px 0 0; color: var(--mute); }
+      #msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mute); pointer-events: none; }
+      #views { position: absolute; left: 16px; bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+      aside { background: var(--panel); border-left: 1px solid var(--line); padding: 14px 16px; overflow: auto; }
+      aside h2 { margin: 16px 0 6px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+      aside h2:first-child { margin-top: 0; }
+      button { font: inherit; color: var(--ink); background: #1d1a17; border: 1px solid #4a4238; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+      button:hover { border-color: var(--gold); }
+      button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+      button[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); }
+      #explode-btn { width: 100%; padding: 10px 12px; font-size: 16px; font-weight: 600; letter-spacing: .04em; background: #3a2f19; border-color: var(--gold); color: var(--gold); }
+      #explode-btn[aria-pressed='true'] { background: var(--gold); color: #1d1a17; }
+      .seg { display: flex; gap: 6px; }
+      .seg button { flex: 1; }
+      input[type='range'] { width: 100%; accent-color: var(--gold); margin: 8px 0 0; }
+      label.row { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+      label.row .n { color: var(--mute); margin-left: auto; font-variant-numeric: tabular-nums; }
+      .hint { color: var(--mute); font-size: 12px; margin: 6px 0 0; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="view">
+        <div id="hud"><h1 id="title"></h1><p id="sub"></p></div>
+        <div id="views"></div>
+        <div id="msg">Loading model…</div>
+      </div>
+      <aside>
+        <h2>Walker</h2>
+        <div class="seg" id="walkers"></div>
+        <h2>Compositionality</h2>
+        <button id="explode-btn" aria-pressed="false">Explode</button>
+        <input id="explode" type="range" min="0" max="1" step="0.01" value="0" aria-label="Pull the parts apart" />
+        <p class="hint">Each part slides off along the line from its parent, so the joint tree shows. The lines mark the joints.</p>
+        <label class="row"><input type="checkbox" id="guides" checked /> Joint lines</label>
+        <label class="row"><input type="checkbox" id="turntable" checked /> Turntable</label>
+        <label class="row"><input type="checkbox" id="equipment" checked /> Equipment</label>
+        <h2>Parts</h2>
+        <div id="parts"></div>
+      </aside>
+    </div>
+    <script type="module" src="/src/model/viewer.ts"></script>
+  </body>
+</html>
