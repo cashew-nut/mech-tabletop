@@ -228,3 +228,24 @@ What the Paladin taught, and what changed for the Seer:
 | arm_r, forearm_r, hand_r | torso, arm_r, forearm_r | right: the fist has the spear bore |
 | thigh, shin, foot | pelvis, thigh, shin | mirrored for the right |
 | spear | hand_r (held) | equipment: `item_arc-cannon@seer` |
+
+### The Seer in the game
+
+```sh
+node scripts/publish-composite.mjs ../models/seer-composite/glb seer     # from the build output
+KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs <the files this prints>
+node scripts/item-bounds.mjs
+```
+
+No Blender needed. The 16 body parts become `kit/reliquary_<part>_seer.glb`; the right arm and pauldron (`arm_r`,
+`forearm_r`, `hand_r`, `pauldron_r`) publish as the `-right` variants, so the web uses them as they are instead of
+mirroring the left. The legs are left only (the web mirrors them), and the old open-shell `thigh-right`, `shin-right`
+and `foot-right` are deleted and dropped from the manifest. The spear is `item_arc-cannon@seer`. All of it comes to
+5.1 MB. `data/model-kit.json` `omit.seer` keeps the Striker's collar from filling in (the torso has its own).
+
+The script also writes the Seer's skeleton onto `reliquary_frame_striker.glb` from `frameTunes["reliquary/striker"]`:
+the new joints, `jointsRight` for the right shoulder, elbow and wrist (the Seer's right arm is posed differently, so it
+is not the mirror of the left), and `mount_armRight_0` placed on the spear's grip (`mount_armLeft_0` is its mirror).
+`assets/blender/kit/skeleton.py` reads `jointsRight` too, so a rebuilt frame matches. The helm is built on the neck
+knuckle but hangs on `joint_head`; the script moves its vertices by the difference. The spear's origin is its grip, which
+is where the mount is, so it only needs dividing by 1.2 (the web's Striker part scale).
