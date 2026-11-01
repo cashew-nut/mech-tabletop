@@ -69,6 +69,7 @@ These match the web builder, so a part made here drops straight in.
 - `test_plates.py`: a test plate per faction in every material role, rendered beside the board swatches.
 - `render_part.py`: Cycles renders of any part beside a named crop of the art (`assets/art/crops.json`).
 - `parts/<package>/`: each component package's part scripts and `.blend` sources.
+- `parts/composite/`: the Paladin rebuilt as 13 closed parts with keyed pegs and magnet pockets, assembled joint to joint (see its README).
 - `starter_parts.py`: writes a starter `parts.blend` from `data/`.
 - `export_parts.py`: exports `chassis_*`, `item_*` and kit roots as GLB and updates the manifest.
 - `build_walker.py`: assembles one walker from the exported GLBs (kit first) and saves an STL.
