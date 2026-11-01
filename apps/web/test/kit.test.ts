@@ -80,6 +80,14 @@ describe('kit part resolution', () => {
     expect(plan.missing).toContain('helm');
   });
 
+  it('leaves out components a class omits, rather than falling back to the frame part', () => {
+    const names = new Set(['covenant_frame_titan', 'covenant_collar_titan', 'covenant_cloth_titan', 'covenant_torso_paladin']);
+    const parts = planKit(names, 'covenant', 'paladin', 'titan')!.parts.map((p) => p.component);
+    expect(parts).toEqual(['torso']);
+    expect(planKit(names, 'covenant', 'sentinel', 'titan')!.parts.map((p) => p.component)).toContain('collar');
+    expect(kitCandidates('covenant', 'paladin', 'titan')).not.toContain('covenant_collar_titan');
+  });
+
   it('needs the frame skeleton', () => {
     expect(planKit(new Set(['covenant_helm_titan']), 'covenant', 'paladin', 'titan')).toBeNull();
   });
