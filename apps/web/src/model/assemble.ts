@@ -222,13 +222,13 @@ function placeAtHardpoint(
     anchor = new THREE.Object3D();
     const sign = place.side === 'R' ? -1 : 1;
     anchor.position.set(def.offset[0] * sign * height, def.offset[1] * height, def.offset[2] * height);
-    // The right-hand anchor mirrors across the walker, so a pose written for the left works on both sides.
-    if (place.side === 'R') anchor.scale.x = -1;
     joint.add(anchor);
   }
   anchor.name = `hp_${place.hp}`;
-  // anchor (the hardpoint, mirrored on the right) > nudge (the placement table's hand adjustment, in the hardpoint's axes)
-  // > turn (the hardpoint's own rotation) > the item.
+  // anchor (the hardpoint) > nudge (the placement table's hand adjustment, in the hardpoint's axes) > turn (the hardpoint's
+  // own rotation, and the mirror across the walker on the right, so a pose written for the left works on both sides)
+  // > the item.
+  const mirror = !def.mount && place.side === 'R';
   const nudge = new THREE.Object3D();
   nudge.name = `nudge_${place.hp}`;
   const adjust = nudgeOf(chassisId, place.hp, id);
@@ -238,18 +238,25 @@ function placeAtHardpoint(
     anchor.parent!.getWorldScale(unit);
     nudge.position.set(...(adjust.offset.map((v, i) => (v * height) / (Math.abs(unit.getComponent(i)) || 1)) as [number, number, number]));
     nudge.rotation.set(...(adjust.rot.map((d) => (d * Math.PI) / 180) as [number, number, number]));
+    // The right side is the mirror image of the left: out stays out, and turns about y and z reverse.
+    if (mirror) {
+      nudge.position.x *= -1;
+      nudge.rotation.y *= -1;
+      nudge.rotation.z *= -1;
+    }
     nudge.scale.setScalar(adjust.scale);
   }
   const turn = new THREE.Object3D();
   turn.name = `turn_${place.hp}`;
   turn.rotation.copy(rot);
+  if (mirror) turn.scale.x = -1;
   anchor.add(nudge);
   nudge.add(turn);
   const pose = poseOf(id, place.hp);
   scale *= pose.scale;
   // Class items are modelled for one hand; on the other side they are flipped (as the numbered mounts always did).
   const nativeRight = libName ? NATIVE_RIGHT.has(libName) : false;
-  // A right-hand anchor is already mirrored, so only a numbered mount (not mirrored) needs the side in the decision.
+  // A right-hand hardpoint on a joint is already mirrored, so only a numbered mount (not mirrored) needs the side in the decision.
   const flip = def.mount && place.side === 'R' ? !nativeRight : nativeRight;
   const pivot = new THREE.Vector3(...pivotOf(libName ?? id, pose.contact)).multiplyScalar(scale);
   if (flip) pivot.x *= -1;

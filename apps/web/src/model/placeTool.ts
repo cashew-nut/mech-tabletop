@@ -9,7 +9,7 @@ import { getChassis, type WalkerInput } from '@brass-charter/rules';
 import equipmentData from '../../../../data/equipment.json';
 import fitSets from '../../../../scripts/fit-sets.json';
 import { FACTION_COLOURS, buildWalkerModel, ensureKitParts, loadPartLibrary } from './assemble';
-import { FIT, IDENTITY_NUDGE, compactPlacements, nudgeOf, type Nudge } from './fit';
+import { FIT, IDENTITY_NUDGE, compactPlacements, hardpoint, nudgeOf, type Nudge } from './fit';
 import { createStage, type Backdrop } from './stage';
 
 type Loadout = WalkerInput['loadout'];
@@ -137,6 +137,8 @@ function rebuild() {
       const axes = new THREE.AxesHelper(height * 0.07);
       (axes.material as THREE.Material).depthTest = false;
       axes.renderOrder = 10;
+      // On the right the hardpoint is the mirror image of the left, so out still points away from the body.
+      if (part.userData.fit?.side === 'R' && !hardpoint(chassis, part.userData.fit.hp)?.mount) axes.scale.x = -1;
       anchor.add(axes);
     }
   }
@@ -377,4 +379,5 @@ await load();
     for (const part of p?.parts ?? []) b.expandByObject(part);
     return { item: selected?.item, hp: selected?.hp, min: b.min.toArray(), max: b.max.toArray() };
   },
+  centres: () => (placed.find((x) => x.item === selected?.item && x.hp === selected?.hp)?.parts ?? []).map((part) => new THREE.Box3().setFromObject(part).getCenter(new THREE.Vector3()).toArray()),
 };
