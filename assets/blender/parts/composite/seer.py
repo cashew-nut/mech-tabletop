@@ -410,4 +410,4 @@ POSE = {
     "arm": (25, 0, 10), "forearm": (-35, 0, 0), "arm_r": (-30, 0, 0), "helm": (0, 0, 20),
     "thigh_L": (-20, 0, 0), "shin_L": (25, 0, 0), "foot_L": (-5, 0, 0),
 }
-EXPLODE = 15.0              # render.py: exploded view reach, print mm
+EXPLODE, EXPLODE_MARGIN = 10.0, 0.85     # render.py: exploded view reach (print mm) and framing

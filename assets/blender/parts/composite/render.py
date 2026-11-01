@@ -109,7 +109,7 @@ def main(a):
         paths = []
         for az in (20, 160):
             p = rd / f"_exp_{az}.png"
-            shot(meshes(), p, az=az, el=10, samples=samples, res=(900, 1000), margin=0.75)
+            shot(meshes(), p, az=az, el=10, samples=samples, res=(900, 1000), margin=getattr(M, "EXPLODE_MARGIN", 0.75))
             post(p)
             paths.append(p)
         sheet(paths, rd / "exploded.png", 2, ["exploded, front", "exploded, back"])
