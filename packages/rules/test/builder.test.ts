@@ -25,7 +25,7 @@ describe('walker stats', () => {
 
   it('filters items by location', () => {
     const legs = mountableItems('legs', EQUIPMENT).map((e) => e.id);
-    expect(legs).toContain('jump-jets');
+    expect(legs).toContain('sprint-servos');
     expect(legs).toContain('ablative-plating');
     expect(legs).not.toContain('autocannon');
   });

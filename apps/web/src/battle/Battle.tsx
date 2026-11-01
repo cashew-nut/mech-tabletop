@@ -230,7 +230,6 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     [state, mineActive, mode],
   );
 
-  const jetUid = mineActive ? workingItems(mineActive, 'jump-jets')[0]?.uid : undefined;
   const smokeUid = mineActive ? workingItems(mineActive, 'smoke-launcher')[0]?.uid : undefined;
 
   const highlights = useMemo(() => {
@@ -244,12 +243,6 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     if (!mineActive) return h;
     if (mode === 'escort') for (const k of escorts.keys()) h.set(k, 'jump');
     if (mode === 'move') for (const k of moves.keys()) h.set(k, 'move');
-    if (mode === 'jump' && jetUid) {
-      for (const k of Object.keys(state.map.hexes)) {
-        const [q, r] = k.split(',').map(Number);
-        if (can({ type: 'useItem', itemUid: jetUid, hex: { q, r } })) h.set(k, 'jump');
-      }
-    }
     if (mode === 'smoke' && smokeUid) {
       for (const k of Object.keys(state.map.hexes)) {
         const [q, r] = k.split(',').map(Number);
@@ -257,7 +250,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
       }
     }
     return h;
-  }, [mode, moves, escorts, state, mineActive, jetUid, smokeUid, deploying, selectedId]);
+  }, [mode, moves, escorts, state, mineActive, smokeUid, deploying, selectedId]);
 
   // Red target rings: everything within short range of the active walker.
   const threat = useMemo(() => {
@@ -286,10 +279,6 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     if (mode === 'move' && moves.has(key)) {
       const enemy = aliveWalkers(state, 1).sort((a, b) => distance(a.pos, hex) - distance(b.pos, hex))[0];
       act({ type: 'move', path: moves.get(key)!, facing: enemy ? facingTowards(hex, enemy.pos) : undefined });
-    } else if (mode === 'jump' && jetUid && highlights.has(key)) {
-      const enemy = aliveWalkers(state, 1).sort((a, b) => distance(a.pos, hex) - distance(b.pos, hex))[0];
-      act({ type: 'useItem', itemUid: jetUid, hex, facing: enemy ? facingTowards(hex, enemy.pos) : undefined });
-      setMode('move');
     } else if (mode === 'smoke' && smokeUid && highlights.has(key)) {
       act({ type: 'useItem', itemUid: smokeUid, hex });
       setMode('move');
@@ -398,7 +387,6 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
             setMode={setMode}
             act={act}
             can={can}
-            jetUid={jetUid}
             smokeUid={smokeUid}
           />
         ) : (
@@ -449,7 +437,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   );
 }
 
-type Mode = 'move' | 'jump' | 'smoke' | 'escort';
+type Mode = 'move' | 'smoke' | 'escort';
 
 /** Hexes the friendly surveyor can be escorted to from here, with the path to each. */
 function escortMoves(state: GameState, can: (a: Action) => boolean): Map<string, Hex[]> {
@@ -476,23 +464,19 @@ interface PanelProps {
   setMode: (m: Mode) => void;
   act: (a: Action) => void;
   can: (a: Action) => boolean;
-  jetUid?: string;
   smokeUid?: string;
 }
 
-function ActivationPanel({ state, walker, target, targetId, targetName, mode, setMode, act, can, jetUid, smokeUid }: PanelProps) {
+function ActivationPanel({ state, walker, target, targetId, targetName, mode, setMode, act, can, smokeUid }: PanelProps) {
   const a = state.active!;
   const sv = state.surveyor;
   const canEscort = sv?.status === 'active' && sv.side === walker.side && distance(sv.pos, walker.pos) === 1 && a.pressure >= 1;
   const weapons = workingItems(walker).filter((it) => getEquipment(it.id).weapon);
-  const damagedZone = (Object.keys(walker.armour) as Zone[]).find((z) => walker.armour[z] < walker.maxArmour[z]);
   const utilities: Array<{ label: string; action: Action; title: string }> = [];
   for (const it of workingItems(walker)) {
     const def = getEquipment(it.id);
-    if (it.id === 'coolant-loop' || it.id === 'anchor-spikes') utilities.push({ label: def.name, action: { type: 'useItem', itemUid: it.uid }, title: def.rules });
+    if (it.id === 'coolant-loop') utilities.push({ label: def.name, action: { type: 'useItem', itemUid: it.uid }, title: def.rules });
     if (it.id === 'spotter-drone' && target) utilities.push({ label: `${def.name} → ${target.name}`, action: { type: 'useItem', itemUid: it.uid, walkerId: target.id }, title: def.rules });
-    if (it.id === 'field-repair-rig' && damagedZone)
-      utilities.push({ label: `Repair ${ZONE_NAMES[damagedZone]}`, action: { type: 'useItem', itemUid: it.uid, zone: damagedZone }, title: def.rules });
   }
 
   return (
@@ -509,11 +493,9 @@ function ActivationPanel({ state, walker, target, targetId, targetName, mode, se
           ? a.pressure < 1
             ? 'Out of Pressure: end the activation.'
             : `Click a highlighted hex to move up to ${moveAllowance(state, walker)} hexes for 1 Pressure. You can move again while Pressure lasts, and you end facing the nearest enemy.`
-          : mode === 'jump'
-            ? 'Click a highlighted hex to jump (2 Pressure, +1 Overpressure).'
-            : mode === 'escort'
-              ? 'Click a highlighted hex to move the surveyor there (1 Pressure, up to 2 hexes).'
-              : 'Click this or an adjacent hex to lay smoke.'}
+          : mode === 'escort'
+            ? 'Click a highlighted hex to move the surveyor there (1 Pressure, up to 2 hexes).'
+            : 'Click this or an adjacent hex to lay smoke.'}
       </p>
 
       <div className="turns" role="group" aria-label="Turn to face (1 Pressure)">
@@ -573,11 +555,6 @@ function ActivationPanel({ state, walker, target, targetId, targetName, mode, se
             Stand up
           </button>
         )}
-        {jetUid && (
-          <button className={mode === 'jump' ? 'on' : ''} disabled={a.pressure < 2} onClick={() => setMode(mode === 'jump' ? 'move' : 'jump')}>
-            Jump Jets
-          </button>
-        )}
         {canEscort && (
           <button className={mode === 'escort' ? 'on' : ''} onClick={() => setMode(mode === 'escort' ? 'move' : 'escort')} title="1 Pressure: move the surveyor up to 2 hexes">
             Escort surveyor
@@ -627,7 +604,6 @@ function WalkerCard({ walker }: { walker: WalkerState }) {
     walker.destroyed && 'Destroyed',
     walker.prone && 'Prone',
     walker.braced && 'Braced',
-    walker.anchored && 'Anchored',
     walker.spottedBy !== null && 'Spotted',
     walker.activated && 'Activated',
   ].filter(Boolean);

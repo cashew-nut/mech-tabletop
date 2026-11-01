@@ -1,4 +1,4 @@
-# Brass Charter — Core Rules v0.5
+# Brass Charter — Core Rules v0.7
 
 > Draft for playtesting. Numbers will change. All class and equipment stats live in
 > [`data/`](../data) and are the source of truth; tables here are for reading convenience.
@@ -129,8 +129,7 @@ or "reaction" (for example the Kinetic Shield). It is lost in the end phase.
 
 ### 7.4 Overpressure
 
-Overpressure comes from Opening the Throttle, Hellfire Missile hits, some items and some
-criticals. At 3 or more, you roll for Faults at the start of each activation. At **6 or more**
+Overpressure comes from Opening the Throttle, some items and some criticals. At 3 or more, you roll for Faults at the start of each activation. At **6 or more**
 the safety valve blows: the war-walker removes all Overpressure and immediately ends its
 activation (or skips its next one, if this happens outside its activation).
 
@@ -305,16 +304,14 @@ the Trial ends at once and the other side wins.
 
 | Faction | Weapon | Mount | Slots | Pressure | Pts | Range | Dice | Damage | Rules |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Covenant | Lance | Arm | 1 | 1 | 10 | Melee | 2 | 3 | **Charge:** +1 die if this war-walker has moved 2 or more hexes this activation. |
-| Covenant | Melee Blade | Arm | 1 | 1 | 9 | Melee | 3 | 2 | Rolls of 5 or 6 are criticals. |
+| Covenant | Siege Blade (id `lance`) | Arm | 1 | 1 | 10 | Melee | 2 | 3 | **Charge:** +1 die if this war-walker has moved 2 or more hexes this activation. |
 | Covenant | Carapace Gun | Core | 1 | 2 | 5 | Medium | 2 | 2 | Pierce 1. No ammo. |
-| Covenant | Missile Rack | Arm | 2 | 1 | 6 | Long | 5 | 1 | Indirect. Ammo 4. |
+| Covenant | Missile Rack | Core | 2 | 1 | 6 | Long | 5 | 1 | Indirect. Ammo 4. |
 | Foundries | Autocannon | Arm | 1 | 1 | 3 | Medium | 3 | 1 | Ammo 6. |
 | Foundries | Rail Cannon | Arm | 2 | 2 | 7 | Long | 1 | 4 | Pierce 2. +2 TN instead of +1 after moving. |
 | Foundries | Rocket Pod | Arm | 2 | 2 | 4 | Long | 2 | 2 | Blast. Minimum range 4. |
 | Foundries | Industrial Claw | Arm | 1 | 1 | 5 | Melee | 2 | 3 | Push the target 1 hex away on a hit. |
-| Reliquary | Arc Cannon | Arm | 1 | 1 | 6 | Medium | 3 | 1 | Each hit drains 1 Pressure from the target's next activation. No ammo. |
-| Reliquary | Hellfire Missiles | Arm | 2 | 1 | 5 | Long | 3 | 1 | Indirect. Each hit adds 1 Overpressure. Ammo 3. |
+| Reliquary | Arc Spear (id `arc-cannon`) | Arm | 1 | 1 | 6 | Medium | 3 | 1 | Each hit drains 1 Pressure from the target's next activation. No ammo. |
 | Reliquary | Kinetic Claws | Arm | 1 | 1 | 6 | Melee | 4 | 1 | **Backstab:** rolls of 5 or 6 are criticals from the target's rear arc. |
 | Reliquary | Soul Lantern | Core (system) | 1 | 0 | 5 | | | | Enemy attacks on friendly war-walkers within 2 hexes get +1 TN. Does not stack. |
 
@@ -325,8 +322,7 @@ Shared equipment and Driver traits are listed in [`data/equipment.json`](../data
 
 - Does the Artillery's Stride 1 feel too slow to reach objectives?
 - Do the factions feel different enough at the table, or do they need more exclusive systems?
-- Smoke, Jump Jets and Field Repair test weakly, but the AI barely uses them. Do they feel weak
-  in human play?
+- Smoke tests weakly, but the AI barely uses it. Does it feel weak in human play?
 - Should Reserve be capped at 1 instead of 2?
 
 ## 15. Changes in v0.2
@@ -395,3 +391,19 @@ and the budget stayed at 100 (see [`balance.md`](balance.md)).
 
 - Example lances were rebuilt with fuller loadouts, and a wide and a heavy example were added
   per faction line-up (Vigil Host, Scrap Horde, Twin Colossi).
+
+## 20. Changes in v0.7: items follow the models
+
+Every item that has a model must plug into a socket its walker was built with (see
+[`equipment-fit.md`](equipment-fit.md)), so the item list was cut to what can be built or is honest as a card.
+
+- **Cut:** Melee Blade, Hellfire Missiles, Anchor Spikes, Jump Jets, Overcharged Boiler and Field Repair Rig.
+  Their rules, AI use and battle buttons are gone (so is the Anchored state). Saved lances lose them on load.
+  The four example slots that used them were swapped: Vigil gets a Kinetic Shield and a Reactive Shell, Long Tom
+  Gyro Stabilisers, Oracle an Arc Spear and Eternal Kinetic Claws.
+- **Card only** (rules and cards kept, no model, `fit.cardOnly` in `data/model-kit.json`): Ablative Plating,
+  Reactive Shell, Smoke Launcher, Sprint Servos, Gyro Stabilisers, Targeting Array, Coolant Loop and Spotter Drone.
+- **Renamed** (display only, ids and rules unchanged): Lance is the Siege Blade, Arc Cannon is the Arc Spear.
+- **Missile Rack moved from the arm to the core.** It still takes 2 slots, so a Lancer (1 core slot) can no longer
+  carry it. Censer and Psalm in the example lances became Sentinels.
+- Not rebalanced. The cut items' win rates are in [`balance.md`](balance.md) as they stood in v0.6.

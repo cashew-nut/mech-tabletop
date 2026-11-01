@@ -40,7 +40,7 @@ project's `renders/<package>/` folder before opening a pull request.
 | `<faction>_<component>_<frame>` | The faction's part for every class on that frame. Used when the class has none. | `foundries_torso_bulwark` |
 | `<faction>_<component>-right_<class or frame>` | Optional right-hand version of a sided part. Without one, the left part is mirrored. | `reliquary_hand-right_goliath` |
 | `item_<id>` | Equipment, ids from `data/equipment.json`. | `item_lance` |
-| `item_<id>@<faction>` | A faction's version of shared equipment. | `item_jump-jets@foundries` |
+| `item_<id>@<faction>` | A faction's version of shared equipment. | `item_kinetic-shield@covenant` |
 
 Factions are `covenant`, `foundries` and `reliquary`. Frames are `scout`,
 `striker`, `bulwark` and `titan`. Classes and the frame each uses are in

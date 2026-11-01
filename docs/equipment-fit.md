@@ -4,6 +4,12 @@ Where weapons and equipment sit on a walker. Only the classes with full models u
 **Paladin, Brute, Seer** (`fit.classes` in `data/model-kit.json`). Every other class keeps the numbered
 mounts (`mount_core_0`, ...) exactly as before.
 
+**Card-only items** (`fit.cardOnly`: Ablative Plating, Reactive Shell, Smoke Launcher, Sprint Servos, Gyro Stabilisers,
+Targeting Array, Coolant Loop, Spotter Drone) have rules and a card but no model, no fit entry and no hardpoint; the
+walker shows nothing for them. `npm run validate` fails if an item has neither a fit entry nor a `cardOnly` listing.
+Hardpoints that no item uses any more (`chest-front`, `back-high`, `back-low`, `calf-back`, `knee-outer`, `heel`,
+`shin-front`, `pelvis-ring`) are kept for the Paladin, Brute and Seer item threads to reuse or retire.
+
 ## How it works
 
 - **Hardpoints** (`fit.hardpoints`): a kit joint plus an offset in fractions of body height (the head joint's

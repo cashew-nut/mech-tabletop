@@ -177,7 +177,6 @@ export function createGame(setup: GameSetup): GameState {
         overpressure: 0,
         reserve: 0,
         prone: false,
-        anchored: false,
         braced: false,
         activated: false,
         destroyed: false,
@@ -338,7 +337,7 @@ export function workingItems(w: WalkerState, id?: string): ItemState[] {
 const hasWorking = (w: WalkerState, id: string) => workingItems(w, id).length > 0;
 
 function faultThreshold(w: WalkerState): number {
-  let t = hasWorking(w, 'overcharged-boiler') ? 2 : 3;
+  let t = 3;
   if (w.trait === 'iron-nerve') t += 1;
   return t;
 }
@@ -507,7 +506,7 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
   }
   if (t) {
     if (t.lastMoveDistance >= 4) tn += 1;
-    if (t.braced || t.anchored) tn += 1;
+    if (t.braced) tn += 1;
     if (t.prone) tn -= 1;
     if (t.spottedBy === w.side) tn -= 1;
   }
@@ -521,7 +520,6 @@ export function previewAttack(state: GameState, itemUid: string, targetId: strin
 
   let dice = wp.dice;
   if (def.tags?.includes('charge') && w.lastMoveDistance >= 2) dice += 1;
-  if (band === 'long' && w.anchored && hasWorking(w, 'anchor-spikes')) dice += 1;
   if (w.actuator[item.location]) dice -= 1;
   dice = Math.max(1, dice);
   return { ok: true, tn, dice, band, indirect, pressure };
@@ -633,7 +631,6 @@ function doActivate(ctx: Ctx, walkerId: string, throttle: number) {
   }
 
   let pressure = getChassis(w.chassis).boiler;
-  if (hasWorking(w, 'overcharged-boiler')) pressure += 1;
   if (w.actuator.core) pressure -= 1;
   if (a.faults.includes('valve-stick')) pressure -= 1;
   pressure -= w.pendingDrain;
@@ -687,7 +684,6 @@ function doWalkerAction(ctx: Ctx, w: WalkerState, a: Activation, action: Exclude
       const last = action.path.length > 1 ? action.path[action.path.length - 2] : w.pos;
       w.facing = action.facing ?? (directionTo(last, at) as Facing);
       w.pos = at;
-      w.anchored = false;
       a.moved = true;
       a.usedMoveAction = true;
       w.lastMoveDistance += action.path.length;
@@ -861,31 +857,6 @@ function useItem(ctx: Ctx, w: WalkerState, a: Activation, action: Extract<Action
     if (item.uses !== null) item.uses -= 1;
   };
   switch (item.id) {
-    case 'jump-jets': {
-      if (w.prone) illegal('Prone war-walkers cannot jump');
-      const dest = action.hex ?? illegal('Jump needs a destination hex');
-      const d = distance(w.pos, dest);
-      if (d < 1 || d > 3) illegal('Jump range is 1-3 hexes');
-      if (!enterable(state, dest)) illegal('Cannot land there');
-      spend(a, def.pressure);
-      const from = w.pos;
-      w.pos = dest;
-      w.facing = action.facing ?? facingTowards(from, dest);
-      w.anchored = false;
-      a.moved = true;
-      w.lastMoveDistance += d;
-      emit('jump', `${w.name} jumps ${d} hexes.`, { walkerId: w.id, hex: dest });
-      addOverpressure(ctx, w, 1);
-      return;
-    }
-    case 'anchor-spikes': {
-      if (w.prone) illegal('Prone war-walkers cannot anchor');
-      if (w.anchored) illegal('Already anchored');
-      spend(a, def.pressure);
-      w.anchored = true;
-      emit('anchor', `${w.name} drives in its anchor spikes.`, { walkerId: w.id });
-      return;
-    }
     case 'coolant-loop': {
       spend(a, def.pressure);
       w.overpressure = Math.max(0, w.overpressure - 2);
@@ -910,18 +881,6 @@ function useItem(ctx: Ctx, w: WalkerState, a: Activation, action: Extract<Action
       spend(a, def.pressure);
       t.spottedBy = w.side;
       emit('spot', `${w.name}'s drone marks ${t.name}.`, { walkerId: w.id, targetId: t.id });
-      return;
-    }
-    case 'field-repair-rig': {
-      const t = action.walkerId ? getWalker(state, action.walkerId) : w;
-      if (t.destroyed || t.side !== w.side || distance(w.pos, t.pos) > 1) illegal('Repair needs this or an adjacent friendly war-walker');
-      const zone = action.zone ?? illegal('Repair needs a zone');
-      const loc: Location = zone === 'coreFront' || zone === 'coreRear' ? 'core' : zone;
-      if (t.destroyedLocations.includes(loc)) illegal('Cannot repair a destroyed location');
-      spend(a, def.pressure);
-      useUp();
-      t.armour[zone] = Math.min(t.maxArmour[zone], t.armour[zone] + 2);
-      emit('repair', `${w.name} patches ${t.name}'s ${zone}.`, { walkerId: w.id, targetId: t.id, zone });
       return;
     }
     default:
@@ -1069,12 +1028,8 @@ function critical(ctx: Ctx, t: WalkerState, hitLoc: Location) {
     t.actuator[loc] = true;
     emit('critical', `Critical: ${t.name}'s ${loc} actuator is damaged.`, { walkerId: t.id, location: loc });
   } else if (roll === 5) {
-    if (t.anchored && hasWorking(t, 'anchor-spikes')) {
-      emit('critical', `Critical: ${t.name} is rocked but its anchors hold.`, { walkerId: t.id });
-    } else {
-      t.prone = true;
-      emit('critical', `Critical: ${t.name} is knocked down.`, { walkerId: t.id });
-    }
+    t.prone = true;
+    emit('critical', `Critical: ${t.name} is knocked down.`, { walkerId: t.id });
   } else {
     emit('critical', `Critical: a shot goes clean through ${t.name}'s core.`, { walkerId: t.id });
     damageStructure(ctx, t, 'core', 1);
@@ -1093,7 +1048,6 @@ function addOverpressure(ctx: Ctx, w: WalkerState, n: number) {
 }
 
 function push(ctx: Ctx, attacker: WalkerState, t: WalkerState) {
-  if (t.anchored && hasWorking(t, 'anchor-spikes')) return;
   const dir = directionTo(attacker.pos, t.pos);
   const dest = neighbor(t.pos, dir);
   if (!enterable(ctx.state, dest)) return;
@@ -1203,22 +1157,10 @@ export function legalActions(state: GameState): Action[] {
       for (const it of workingItems(w)) {
         const def = getEquipment(it.id);
         if (def.weapon) for (const e of enemies) candidates.push({ type: 'fire', itemUid: it.uid, targetId: e.id });
-        else if (it.id === 'jump-jets') {
-          for (const h of Object.keys(state.map.hexes)) {
-            const [q, r] = h.split(',').map(Number);
-            const d = distance(w.pos, { q, r });
-            if (d >= 1 && d <= 3) candidates.push({ type: 'useItem', itemUid: it.uid, hex: { q, r } });
-          }
-        } else if (it.id === 'spotter-drone') {
+        else if (it.id === 'spotter-drone') {
           for (const e of enemies) candidates.push({ type: 'useItem', itemUid: it.uid, walkerId: e.id });
         } else if (it.id === 'smoke-launcher') {
           for (const h of [w.pos, ...neighbors(w.pos)]) candidates.push({ type: 'useItem', itemUid: it.uid, hex: h });
-        } else if (it.id === 'field-repair-rig') {
-          for (const f of aliveWalkers(state, w.side).filter((f) => distance(f.pos, w.pos) <= 1)) {
-            for (const zone of ['coreFront', 'coreRear', 'armLeft', 'armRight', 'legs'] as Zone[]) {
-              if (f.armour[zone] < f.maxArmour[zone]) candidates.push({ type: 'useItem', itemUid: it.uid, walkerId: f.id, zone });
-            }
-          }
         } else candidates.push({ type: 'useItem', itemUid: it.uid });
       }
       for (const e of enemies) if (distance(e.pos, w.pos) === 1) candidates.push({ type: 'ram', targetId: e.id });

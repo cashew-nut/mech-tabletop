@@ -35,7 +35,7 @@ Each class in `chassis.json` splits into six parts: **legs, torso + pelvis, helm
 | `printRun` | Relics only; placeholder number for the numbered run |
 | `art` | File in `cards/art/` |
 
-Three example parts, Paladin legs, torso and arms, exist at all five tiers. Tier 1 equals the part. Tiers 2 to 5 add 1 to the primary stat and 1 point per step; this is only so the cards differ, not balance. The other three Paladin parts and four items (Lance, Carapace Gun, Gyro Stabilisers, Targeting Array) exist at tier 1.
+Three example parts, Paladin legs, torso and arms, exist at all five tiers. Tier 1 equals the part. Tiers 2 to 5 add 1 to the primary stat and 1 point per step; this is only so the cards differ, not balance. The other three Paladin parts and four items (Siege Blade, Carapace Gun, Gyro Stabilisers, Targeting Array) exist at tier 1. Gyro Stabilisers and Targeting Array are card-only items (no model), so their art is kept as rendered and the art script no longer redraws it.
 
 ## Art, faces and the sheet
 

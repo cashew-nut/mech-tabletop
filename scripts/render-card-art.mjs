@@ -23,8 +23,8 @@ const SPECS = {
   'paladin-crown-back': `${BODY}&show=back&angle=150&zoom=1.3`,
   'paladin-lance': `part=item_lance@paladin&${ITEM}&roll=-58&zoom=1.05`,
   'paladin-carapace-gun': `part=item_carapace-gun@paladin&${ITEM}&zoom=1.1`,
-  'paladin-gyro-stabilisers': `part=item_gyro-stabilisers@covenant&${ITEM}&zoom=1.1`,
-  'paladin-targeting-array': `part=item_targeting-array@covenant&${ITEM}&zoom=1.1`,
+  // paladin-gyro-stabilisers and paladin-targeting-array are card-only items now (no model), so their art in cards/art is
+  // kept as it was rendered and cannot be re-rendered here.
 };
 
 const [outDir = 'cards/art', ...picked] = process.argv.slice(2);

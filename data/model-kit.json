@@ -522,6 +522,16 @@
     "nativeRight": [
       "arc-cannon@seer"
     ],
+    "cardOnly": [
+      "ablative-plating",
+      "reactive-shell",
+      "smoke-launcher",
+      "sprint-servos",
+      "gyro-stabilisers",
+      "targeting-array",
+      "coolant-loop",
+      "spotter-drone"
+    ],
     "hardpoints": {
       "grip": {
         "joint": "wrist",
@@ -819,19 +829,18 @@
           "shoulder-top"
         ]
       },
-      "melee-blade": {
-        "arm": [
-          "grip",
-          "forearm-top",
-          "shoulder-top"
-        ]
-      },
       "missile-rack": {
-        "arm": [
-          "grip",
-          "forearm-top",
-          "shoulder-top"
-        ]
+        "core": [
+          "shoulder-top-L",
+          "shoulder-top-R"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "bottom"
+            ]
+          }
+        }
       },
       "autocannon": {
         "arm": [
@@ -862,13 +871,6 @@
         ]
       },
       "arc-cannon": {
-        "arm": [
-          "grip",
-          "forearm-top",
-          "shoulder-top"
-        ]
-      },
-      "hellfire-missiles": {
         "arm": [
           "grip",
           "forearm-top",
@@ -917,215 +919,6 @@
           "default": {
             "contact": [
               "back"
-            ]
-          }
-        }
-      },
-      "ablative-plating": {
-        "arm": [
-          "bracer",
-          "forearm-top"
-        ],
-        "core": [
-          "chest-front",
-          "back-high"
-        ],
-        "legs": [
-          "shin-front"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ]
-          },
-          "chest-front": {
-            "contact": [
-              "back"
-            ],
-            "scale": 2.0
-          },
-          "back-high": {
-            "contact": [
-              "back"
-            ],
-            "scale": 2.0
-          },
-          "bracer": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.6
-          },
-          "forearm-top": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.6
-          },
-          "shin-front": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.6
-          }
-        }
-      },
-      "reactive-shell": {
-        "core": [
-          "chest-front",
-          "back-high"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ]
-          },
-          "chest-front": {
-            "contact": [
-              "back"
-            ],
-            "scale": 2.0
-          },
-          "back-high": {
-            "contact": [
-              "back"
-            ],
-            "scale": 2.0
-          }
-        }
-      },
-      "smoke-launcher": {
-        "core": [
-          "waist-R",
-          "waist-L",
-          "back-high"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.6
-          }
-        }
-      },
-      "field-repair-rig": {
-        "core": [
-          "waist-L",
-          "waist-R",
-          "back-low"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.6
-          }
-        }
-      },
-      "spotter-drone": {
-        "core": [
-          "back-high",
-          "back-low"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.5
-          }
-        }
-      },
-      "targeting-array": {
-        "core": [
-          "back-high",
-          "back-low"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back",
-              "bottom"
-            ]
-          }
-        }
-      },
-      "coolant-loop": {
-        "core": [
-          "back-low",
-          "back-high"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back",
-              "bottom"
-            ]
-          }
-        }
-      },
-      "overcharged-boiler": {
-        "core": [
-          "back-low",
-          "back-high"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ],
-            "scale": 1.3
-          }
-        }
-      },
-      "jump-jets": {
-        "legs": [
-          "calf-back"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ]
-          }
-        }
-      },
-      "sprint-servos": {
-        "legs": [
-          "knee-outer"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "back"
-            ]
-          }
-        }
-      },
-      "anchor-spikes": {
-        "legs": [
-          "heel"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "bottom"
-            ]
-          }
-        }
-      },
-      "gyro-stabilisers": {
-        "legs": [
-          "pelvis-ring"
-        ],
-        "pose": {
-          "default": {
-            "contact": [
-              "center"
             ]
           }
         }

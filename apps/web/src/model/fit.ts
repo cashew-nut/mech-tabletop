@@ -50,6 +50,8 @@ export interface Nudge {
 export interface FitData {
   classes: Record<string, { scale: number }>;
   nativeRight: string[];
+  /** Items with a card and rules but no model (internal systems and effects): they take no mount and no hardpoint. */
+  cardOnly: string[];
   hardpoints: Record<string, HardpointDef>;
   overrides: Record<string, Record<string, Partial<HardpointDef>>>;
   items: Record<string, ItemFit>;
@@ -59,6 +61,8 @@ export interface FitData {
 
 export const FIT = (kitData as unknown as { fit: FitData }).fit;
 const BOUNDS = (boundsData as unknown as { items: Record<string, { min: number[]; max: number[] }> }).items;
+
+export const isCardOnly = (itemId: string) => FIT.cardOnly.includes(itemId);
 
 /** The fit settings for a class, or null when it still uses the numbered mounts. */
 export const fitClass = (chassisId: string) => FIT.classes[chassisId] ?? null;

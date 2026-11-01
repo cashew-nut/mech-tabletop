@@ -30,9 +30,9 @@ from kit.core import Vector, bmesh, empty, mesh_obj, mod  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 FACTION = {
-    "lance": "covenant", "melee-blade": "covenant", "carapace-gun": "covenant", "missile-rack": "covenant",
+    "lance": "covenant", "carapace-gun": "covenant", "missile-rack": "covenant",
     "autocannon": "foundries", "rail-cannon": "foundries", "rocket-pod": "foundries", "industrial-claw": "foundries",
-    "arc-cannon": "reliquary", "hellfire-missiles": "reliquary", "kinetic-claws": "reliquary", "soul-lantern": "reliquary",
+    "arc-cannon": "reliquary", "kinetic-claws": "reliquary", "soul-lantern": "reliquary",
 }
 FWD = (math.pi / 2, 0, 0)  # turns a part's local +Z to -Y, the walker's front
 
@@ -157,33 +157,6 @@ def lance(m, root):
         shapes.sweep(f"spike_flute{k}", pts, 0.07, m["trim"], parent=root)
     ring("spike_collar", 1.02, 0.16, -4.5, m["trim"], root)
     ring("spike_band", 0.7, 0.1, -8.7, m["trim"], root)
-
-
-def melee_blade(m, root):
-    """A long straight sword-blade on a gold-housed hilt with a swept guard."""
-    clamp_block(m, root)
-    along("grip", 0.45, 1.6, -0.8, m["metal"], root)
-    turned("pommel", [(0.0, 0.0), (0.5, 0.1), (0.62, 0.35), (0.45, 0.6)], m["trim"], root, y=2.2)
-    # Crossguard: a gold bar swept back at the tips, with ball finials.
-    guard = [(-2.2, -0.2, 0.35), (-1.4, -0.9, 0.0), (0, -1.1, 0), (1.4, -0.9, 0.0), (2.2, -0.2, 0.35)]
-    shapes.sweep("guard", guard, 0.24, m["trim"], parent=root)
-    for s in (-1, 1):
-        shapes.sphere(f"guard_finial{'LR'[s > 0]}", 0.32, m["trim"], loc=(2.2 * s, -0.2, 0.35), parent=root, segments=12)
-    # Ricasso housing: the ornate gold-framed block behind the blade.
-    rc = box("ricasso", (1.9, 2.4, 1.6), (0, -2.2, 0), m["filigree"], root, bevel=0.12)
-    relief(rc, 1.2)
-    for s in (-1, 1):
-        shapes.sweep(f"ricasso_rail{'LR'[s > 0]}", [(1.0 * s, -1.0, 0.82), (1.0 * s, -3.4, 0.82)], 0.1, m["trim"], parent=root, profile="square")
-        shapes.sweep(f"ricasso_rail_lo{'LR'[s > 0]}", [(1.0 * s, -1.0, -0.82), (1.0 * s, -3.4, -0.82)], 0.1, m["trim"], parent=root, profile="square")
-    shapes.lancet("ricasso_arch", 0.55, 0.85, 0.2, m["trim"], loc=(0, -2.2, 0.81), rot=(-math.pi / 2, 0, 0), parent=root)
-    # The blade: flat-faced with a fuller, tapering to a needle point.
-    n = 20
-    path = [(0, -3.3 - 10.0 * i / (n - 1), 0) for i in range(n)]
-    w = lambda u: 1.05 * (1 - u ** 1.6) * (1 - 0.2 * u) + 0.01  # noqa: E731
-    t = lambda u: 0.55 * (1 - u ** 1.6) + 0.01  # noqa: E731
-    loft("blade", path, w, t, m["metal"], root, shape="blade", up=(0, 0, 1))
-    # Gold edging up the spine of the blade's first third.
-    shapes.sweep("blade_spine", [(0, -3.4 - 3.5 * i / 7, 0.52 * (1 - (i / 7 * 0.35) ** 1.6)) for i in range(8)], 0.08, m["trim"], parent=root)
 
 
 def carapace_gun(m, root):
@@ -423,57 +396,6 @@ def arc_cannon(m, root):
              up=(c, 0, s))
 
 
-def hellfire_missiles(m, root):
-    """A curved horn of black metal, ribbed and latticed in gold, with lit
-    missile hatches along its back and a finial at the rear."""
-    clamp_block(m, root, w=2.0)
-    zc = 1.0
-    path = bezier((0, 0.6, zc), (0, -5.0, zc + 1.6), (0, -11.0, zc - 1.2), 28)
-    horn_w = lambda u: 1.55 * (1 - u) ** 0.9 + 0.02  # noqa: E731
-    loft("horn", path, horn_w, lambda u: 1.35 * (1 - u) ** 0.9 + 0.02, m["metal"], root, shape="round", sides=20)
-    # Gold ribs round the horn, following its taper.
-    for k, i in enumerate((2, 6, 10, 14, 18)):
-        p, q = path[i], path[i + 1]
-        tan = (q - p).normalized()
-        side = tan.cross(Vector((0, 0, 1))).normalized()
-        nup = side.cross(tan)
-        u = i / 27
-        pts = [p + side * math.cos(a) * (horn_w(u) + 0.04) + nup * math.sin(a) * (1.35 * (1 - u) ** 0.9 + 0.06)
-               for a in (2 * math.pi * j / 24 for j in range(24))]
-        shapes.sweep(f"rib{k}", pts, 0.11 - 0.012 * k, m["trim"], cyclic=True, parent=root)
-    # A lattice of gold strakes along the flanks.
-    for s in (-1, 1):
-        for j, off in enumerate((0.35, -0.35)):
-            pts = []
-            for i in range(2, 22):
-                p, q = path[i], path[i + 1]
-                tan = (q - p).normalized()
-                side = tan.cross(Vector((0, 0, 1))).normalized()
-                nup = side.cross(tan)
-                u = i / 27
-                a = s * (math.pi / 2) + off + 0.25 * math.sin(i * 0.9) * (1 if j else -1)
-                pts.append(p + side * math.sin(a) * (horn_w(u) + 0.05) + nup * math.cos(a) * (1.35 * (1 - u) ** 0.9 + 0.05))
-            shapes.sweep(f"strake{'LR'[s > 0]}{j}", pts, 0.07, m["trim"], parent=root)
-    # Missile hatches along the spine, each a teal slot in a gold frame.
-    for k, i in enumerate((5, 9, 13)):
-        p = path[i]
-        u = i / 27
-        h = 1.35 * (1 - u) ** 0.9
-        tan = (path[i + 1] - p).normalized()
-        pitch = math.atan2(tan.z, -tan.y)
-        hatch = box(f"hatch{k}", (0.9 - 0.12 * k, 0.9, 0.3), p + Vector((0, 0, h * 0.92)), m["trim"], root, bevel=0.05)
-        hatch.rotation_euler = (pitch, 0, 0)
-        glow = box(f"hatch_glow{k}", (0.6 - 0.1 * k, 0.6, 0.1), p + Vector((0, 0, h * 0.92 + 0.15)), m["glow"], root, bevel=0)
-        glow.rotation_euler = (pitch, 0, 0)
-    # Fins and the rear finial.
-    for s in (-1, 1):
-        pts = bezier((s * 1.2, -1.0, zc + 0.9), (s * 2.4, -2.4, zc + 2.4), (s * 1.0, -4.8, zc + 2.1), 10)
-        loft(f"fin{'LR'[s > 0]}", pts, lambda u: 0.32 * (1 - 0.8 * u), lambda u: 0.1, m["trim"], root, shape="diamond", up=(0, 1, 0))
-    turned("finial_cap", [(1.3, 0.0), (1.1, -0.4), (0.55, -0.8), (0.4, -1.4)], m["trim"], root, y=0.6, z=zc)
-    shapes.sphere("finial_knob", 0.5, m["trim"], loc=(0, 2.2, zc), parent=root, segments=16)
-    ring("finial_ring", 0.68, 0.12, 2.2, m["trim"], root, z=zc)
-
-
 def kinetic_claws(m, root):
     """A gauntlet of black metal and gold with four long, hooked talons that
     sweep forward and down, each jointed with gold knuckles."""
@@ -529,9 +451,9 @@ def soul_lantern(m, root):
 
 
 BUILDERS = {
-    "lance": lance, "melee-blade": melee_blade, "carapace-gun": carapace_gun, "missile-rack": missile_rack,
+    "lance": lance, "carapace-gun": carapace_gun, "missile-rack": missile_rack,
     "autocannon": autocannon, "rail-cannon": rail_cannon, "rocket-pod": rocket_pod, "industrial-claw": industrial_claw,
-    "arc-cannon": arc_cannon, "hellfire-missiles": hellfire_missiles, "kinetic-claws": kinetic_claws, "soul-lantern": soul_lantern,
+    "arc-cannon": arc_cannon, "kinetic-claws": kinetic_claws, "soul-lantern": soul_lantern,
 }
 
 
