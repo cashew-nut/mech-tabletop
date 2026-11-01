@@ -3,7 +3,7 @@
 The Iron Covenant Paladin is Luke's Meshy image-to-3D model (textured GLB, 2.95M triangles, one mesh) cut into
 kit parts. Assembled at rest, the parts reproduce the Meshy figure.
 
-The game now loads the composite cut instead (`../composite/`); this one is kept for the Brute and Seer pipelines.
+The game now loads the composite cut instead (`../composite/`) for the Paladin and the Brute; this one is kept for the Seer pipeline.
 These parts are open shells that only look right in place. `../composite/` cuts the same figure into closed,
 standalone parts with joints; use that for anything a part has to do on its own (cards, printing).
 

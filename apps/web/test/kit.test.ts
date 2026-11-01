@@ -88,6 +88,17 @@ describe('kit part resolution', () => {
     expect(kitCandidates('covenant', 'paladin', 'titan')).not.toContain('covenant_collar_titan');
   });
 
+  it('plans the composite Brute without arm, forearm or hand parts', () => {
+    const names = new Set(['foundries_frame_bulwark', 'foundries_collar_bulwark', 'foundries_arm_bulwark', 'foundries_forearm_bulwark', 'foundries_hand_bulwark']);
+    for (const c of ['pelvis', 'torso', 'helm', 'pauldron', 'thigh', 'shin', 'foot']) names.add(`foundries_${c}_brute`);
+    const plan = planKit(names, 'foundries', 'brute', 'bulwark')!;
+    expect(plan.missing).toEqual([]);
+    expect(plan.parts.map((p) => p.component)).not.toContain('arm');
+    expect(plan.parts.map((p) => p.component)).not.toContain('forearm');
+    expect(plan.parts.map((p) => p.component)).not.toContain('hand');
+    expect(plan.parts.map((p) => p.component)).not.toContain('collar');
+  });
+
   it('needs the frame skeleton', () => {
     expect(planKit(new Set(['covenant_helm_titan']), 'covenant', 'paladin', 'titan')).toBeNull();
   });
