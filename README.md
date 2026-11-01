@@ -21,6 +21,7 @@ Phase 7 of the plan: polish. Rules are at v0.5; see the [balance report](docs/ba
 | [`tools/sim`](tools/sim) | Balance simulator: `npm run sim -- 600 1` plays AI-vs-AI Trials and reports win rates by lance, faction, faction matchup, class, item and trait. |
 | [`assets/blender`](assets/blender) | Blender scripts: a starter parts file, part export to the web builder, and lance-to-STL assembly. |
 | [`scripts/render-walkers.mjs`](scripts/render-walkers.mjs) | `npm run render -- renders` saves preview images of each class with a showcase loadout, using headless Chromium (needs Playwright installed globally). |
+| [`docs/cards.md`](docs/cards.md) | Collectible cards: `data/parts.json` splits each class into six body part cards, `data/cards.json` holds the printable card records, `cards/` has the Paladin art and the 63 x 88 mm sheet. |
 | [`scripts/validate-data.mjs`](scripts/validate-data.mjs) | Checks the data and that every example lance is legal. |
 
 ```sh
