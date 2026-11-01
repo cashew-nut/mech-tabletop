@@ -7,11 +7,41 @@ export const KIT_PIECES = [
   'tile_plain_1', 'tile_plain_2', 'tile_cracked_3', 'tile_slab_4', 'tile_moss_5', 'tile_rough_6', 'tile_rubble_7', 'tile_plate_8', 'tile_scorched_9',
   'tower_spire', 'tower_chimney', 'tower_ruined', 'wall_arched', 'wall_long', 'wall_low', 'crate', 'rubble_pile',
 ] as const;
-export type KitPiece = (typeof KIT_PIECES)[number];
+/** Meshy-made hero scenery (textured, with its own material). Optional: the procedural pieces stand in when a file is missing. */
+export const HERO_PIECES = ['hero_tower', 'hero_chimney', 'hero_wall'] as const;
+export type KitPiece = (typeof KIT_PIECES)[number] | (typeof HERO_PIECES)[number];
 
 export interface Kit {
   /** A fresh instance of the piece; geometry and material are shared, so instances are cheap. */
   make: (piece: KitPiece) => THREE.Group;
+  /** Whether the piece loaded (hero pieces are optional). */
+  has: (piece: KitPiece) => boolean;
+}
+
+/** Grain, pitting and hairline cracks over the baked vertex colours: a generated granite texture projected from three axes
+ * in world space, so every tile and wall shares one continuous surface and adjacent pieces never show a seam. */
+function addStoneDetail(material: THREE.MeshStandardMaterial, detail: THREE.Texture) {
+  detail.wrapS = detail.wrapT = THREE.RepeatWrapping;
+  detail.anisotropy = 4;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uDetail = { value: detail };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = (modelMatrix * vec4(position, 1.0)).xyz;\nvWNrm = normalize(mat3(modelMatrix) * normal);');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform sampler2D uDetail;\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        {
+          vec3 w = pow(abs(normalize(vWNrm)), vec3(4.0));
+          w /= (w.x + w.y + w.z);
+          float d = texture2D(uDetail, vWPos.zy * 0.6).r * w.x + texture2D(uDetail, vWPos.xz * 0.6).r * w.y + texture2D(uDetail, vWPos.xy * 0.6).r * w.z;
+          diffuseColor.rgb *= mix(1.0, d * 1.7, 0.8);
+        }`,
+      );
+  };
+  material.customProgramCacheKey = () => 'board-stone-detail';
 }
 
 let loading: Promise<Kit | null> | null = null;
@@ -20,8 +50,9 @@ export function loadBoardKit(): Promise<Kit | null> {
   return (loading ??= (async () => {
     try {
       const loader = new GLTFLoader();
-      const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+      const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, color: 0xa8a8a8 });
       const base = `${import.meta.env.BASE_URL}board/`;
+      addStoneDetail(material, new THREE.TextureLoader().load(`${base}stone_detail.jpg`));
       const loaded = await Promise.all(KIT_PIECES.map((name) => loader.loadAsync(`${base}${name}.glb`)));
       const pieces = new Map<string, THREE.Object3D>();
       loaded.forEach((gltf, i) => {
@@ -41,7 +72,19 @@ export function loadBoardKit(): Promise<Kit | null> {
         });
         pieces.set(KIT_PIECES[i], gltf.scene);
       });
-      return { make: (piece: KitPiece) => pieces.get(piece)!.clone(true) as THREE.Group };
+      const heroes = await Promise.allSettled(HERO_PIECES.map((name) => loader.loadAsync(`${base}${name}.glb`)));
+      heroes.forEach((r, i) => {
+        if (r.status !== 'fulfilled') return;
+        r.value.scene.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+          }
+        });
+        pieces.set(HERO_PIECES[i], r.value.scene);
+      });
+      return { make: (piece: KitPiece) => pieces.get(piece)!.clone(true) as THREE.Group, has: (piece: KitPiece) => pieces.has(piece) };
     } catch (e) {
       console.warn('Board kit unavailable, using the procedural board', e);
       return null;

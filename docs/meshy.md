@@ -36,3 +36,12 @@ Check the muzzle points left (-Y) in a side render; use `--muzzle +x` when it do
 Ten signature weapons done this way (not Covenant lance or carapace gun, which stay procedural except the Paladin variants).
 
 Meshy meshes of 1.5M triangles (gyro stabilisers, targeting array) stall Blender's decimation (stuck at 85k tris) and bake badly. `--weld N` (high mesh) and `--lo-weld N` (clustered low mesh) get a result but it is shattered; regenerate those images with simpler, chunkier shapes instead.
+
+## Board scenery (2026-11-01)
+Three hero pieces for the 3D board came from Meshy: a bell tower, a furnace chimney tower and a lancet ruin wall. 99 credits in all: 3 for each text-to-image reference (isolated tabletop prop on a hex plinth, flat grey background) and 30 for each image-to-3D.
+Bake: `python3 -I assets/blender/parts/meshy/cut.py extract GLB WORK`, then `~/bvenv/bin/python -I assets/blender/board/hero.py WORK NAME --height H --max-width W --crop-base F --tris N --lo-weld 40 [--smoke]`. It writes `apps/web/public/board/hero_<name>.glb` (10 to 16k triangles, 1024 px colour and normal maps as JPEG, 1.1 to 1.5 MB each).
+- `--lo-weld` is needed: Meshy's 1.3M to 3.3M triangle meshes stall Blender's decimator, so the low mesh is clustered on a grid that coarsens until the count is near the target, and the normal map carries the detail.
+- `--crop-base` removes the plinth Meshy invents (the wall needed 0.16 to lose its floor slab).
+- `--smoke` adds an empty named `smoke` at the top, which the board uses for chimney smoke.
+- The tile detail texture (`stone_detail.jpg`) is one more 3-credit text-to-image ("seamless tileable granite"), made tileable and high-passed with numpy; the board material projects it from three axes in world space.
+Hero pieces are optional: `boardKit.ts` loads them separately and the procedural towers and walls stand in when a file is missing.
