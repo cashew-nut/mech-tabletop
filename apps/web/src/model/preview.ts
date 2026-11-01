@@ -3,10 +3,13 @@
 // part=covenant_helm_titan shows one Blender part from the manifest on its own.
 // Used by scripts/render-walkers.mjs to save preview images without the full app.
 // backdrop=covenant|foundries|reliquary picks the world; elev=0.12 drops the camera for a low hero shot.
+// lo={"core":["coolant-loop"]} (JSON) sets the loadout; dump=1 puts item and joint positions in data-dump (see scripts/fit-check.mjs).
+// fit=off shows the old numbered mounts instead of the hardpoints.
+// zoom=2 moves in, fy=0.7 aims at 70% of the height (for close-ups of a hardpoint).
 // lineup=8 stands that many walkers in a row; bench=120 then times that many frames into data-bench.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
-import { buildWalkerModel, ensureKitParts, loadPartLibrary, type KitMode } from './assemble';
+import { buildWalkerModel, ensureKitParts, loadPartLibrary, setFitEnabled, type KitMode } from './assemble';
 import { createStage, type Backdrop } from './stage';
 
 const SHOWCASE: Record<string, WalkerInput['loadout']> = {
@@ -41,8 +44,9 @@ const { scene, fit } = stage;
 
 const lib = await loadPartLibrary(renderer);
 const kit = (q.get('kit') as KitMode) ?? 'auto';
+setFitEnabled(q.get('fit') !== 'off');
 const build = (id: string) =>
-  buildWalkerModel({ name: id, chassis: id, driver: { command: 0, trait: null }, loadout: (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[id] ?? {} } as WalkerInput, q.get('paint') ?? '#7a2e22', lib, kit);
+  buildWalkerModel({ name: id, chassis: id, driver: { command: 0, trait: null }, loadout: q.get('lo') ? JSON.parse(q.get('lo')!) : (q.get('set') === 'b' ? SHOWCASE_B : SHOWCASE)[id] ?? {} } as WalkerInput, q.get('paint') ?? '#7a2e22', lib, kit);
 const lineup = Number(q.get('lineup') ?? 1);
 const model = new THREE.Group();
 const ids = Object.keys(SHOWCASE);
@@ -68,7 +72,8 @@ const centre = box.getCenter(new THREE.Vector3());
 const size = box.getSize(new THREE.Vector3()).length();
 const camera = new THREE.PerspectiveCamera(30, w / h, 1, 4000);
 const rad = (angle * Math.PI) / 180;
-const dist = size * 1.55;
+const dist = (size * 1.55) / Number(q.get('zoom') ?? 1);
+if (q.get('fy')) centre.y = box.min.y + (box.max.y - box.min.y) * Number(q.get('fy'));
 camera.position.set(centre.x + Math.sin(rad) * dist, centre.y + dist * Number(q.get('elev') ?? 0.38), centre.z + Math.cos(rad) * dist);
 camera.lookAt(centre);
 stage.render(camera);
@@ -91,5 +96,19 @@ if (bench) {
   }
   const ms = (performance.now() - t0) / bench;
   document.body.dataset.bench = JSON.stringify({ msPerFrame: +ms.toFixed(2), calls, triangles });
+}
+if (q.get('dump')) {
+  const out: { bbox: number[][]; joints: Record<string, number[]>; items: Array<{ id: string; hp: string; min: number[]; max: number[] }> } = { bbox: [], joints: {}, items: [] };
+  const bb = new THREE.Box3().setFromObject(model);
+  out.bbox = [bb.min.toArray(), bb.max.toArray()];
+  model.traverse((o) => {
+    const j = o.userData.joint ?? (o.name.startsWith('joint_') ? o.name : undefined);
+    if (j) out.joints[j] = o.getWorldPosition(new THREE.Vector3()).toArray();
+    if (o.name.startsWith('part_')) {
+      const b = new THREE.Box3().setFromObject(o);
+      out.items.push({ id: o.name.slice(5), hp: o.parent?.name ?? '', min: b.min.toArray(), max: b.max.toArray() });
+    }
+  });
+  document.body.dataset.dump = JSON.stringify(out);
 }
 document.body.dataset.ready = '1';

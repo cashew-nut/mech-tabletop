@@ -209,6 +209,33 @@ console.log(`chassis: ${chassis.length}, equipment: ${equipment.length}, traits:
 console.log('lances:');
 console.log(summary.join('\n'));
 
+// Equipment fit in model-kit.json: every item's hardpoints exist and every mount kind has a preference.
+{
+  const kit = load('model-kit.json');
+  const bounds = load('item-bounds.json').items;
+  const fit = kit.fit;
+  if (!fit) fail('model-kit.json', 'missing "fit"');
+  else {
+    for (const cls of Object.keys(fit.classes)) {
+      if (!chassisById.has(cls)) fail('model-kit.json fit.classes', `unknown class "${cls}"`);
+      if (!fit.overrides?.[cls]) fail('model-kit.json fit.overrides', `no section for "${cls}"`);
+    }
+    for (const [cls, hps] of Object.entries(fit.overrides ?? {})) {
+      for (const hp of Object.keys(hps)) if (!fit.hardpoints[hp]) fail(`model-kit.json fit.overrides.${cls}`, `unknown hardpoint "${hp}"`);
+    }
+    const kindOf = { arm: 'arm', core: 'core', legs: 'legs' };
+    for (const e of equipment) {
+      const item = fit.items[e.id];
+      if (!item) { fail('model-kit.json fit.items', `no fit for "${e.id}"`); continue; }
+      for (const m of e.mount.includes('any') ? ['arm', 'core', 'legs'] : e.mount) {
+        if (!item[kindOf[m]]?.length) fail(`model-kit.json fit.items.${e.id}`, `no hardpoints for ${m}`);
+      }
+      for (const k of ['arm', 'core', 'legs']) for (const hp of item[k] ?? []) if (!fit.hardpoints[hp]) fail(`model-kit.json fit.items.${e.id}`, `unknown hardpoint "${hp}"`);
+    }
+    for (const id of fit.nativeRight) if (!bounds[id]) fail('model-kit.json fit.nativeRight', `no part "${id}" in item-bounds.json (run node scripts/item-bounds.mjs)`);
+  }
+}
+
 if (errors.length) {
   console.error(`\n${errors.length} problem(s):`);
   for (const e of errors) console.error(`  - ${e}`);

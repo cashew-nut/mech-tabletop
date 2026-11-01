@@ -16,7 +16,9 @@
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
     "sim": "vite-node tools/sim/sim.ts --",
-    "render": "node scripts/render-walkers.mjs"
+    "render": "node scripts/render-walkers.mjs",
+    "fit": "node scripts/fit-check.mjs",
+    "fit:sheets": "node scripts/fit-sheets.mjs"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.5.1",

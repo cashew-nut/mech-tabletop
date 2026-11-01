@@ -392,5 +392,613 @@
         ]
       }
     }
+  },
+  "fit": {
+    "$comment": "Item fit for the classes we have full models for (Paladin, Brute, Seer): named hardpoints instead of numbered mounts. Offsets are fractions of body height (the head joint's height), in the joint's own axes: x outward (left side), y up, z forward. Classes not listed here keep the numbered mounts. See apps/web/src/model/fit.ts.",
+    "classes": {
+      "paladin": {
+        "scale": 1.0
+      },
+      "brute": {
+        "scale": 1.0
+      },
+      "seer": {
+        "scale": 1.0
+      }
+    },
+    "nativeRight": [
+      "autocannon@brute",
+      "arc-cannon@seer"
+    ],
+    "hardpoints": {
+      "grip": {
+        "joint": "wrist",
+        "offset": [
+          0.0,
+          -0.04,
+          0.04
+        ],
+        "side": "loc"
+      },
+      "grip-native": {
+        "mount": "mount_{loc}_0",
+        "side": "loc"
+      },
+      "forearm-top": {
+        "joint": "elbow",
+        "offset": [
+          0.07,
+          -0.04,
+          0.0
+        ],
+        "side": "loc"
+      },
+      "shoulder-top": {
+        "joint": "shoulder",
+        "offset": [
+          0.03,
+          0.07,
+          0.0
+        ],
+        "side": "loc"
+      },
+      "bracer": {
+        "joint": "elbow",
+        "offset": [
+          0.03,
+          -0.075,
+          0.06
+        ],
+        "side": "loc"
+      },
+      "chest-front": {
+        "joint": "chest",
+        "offset": [
+          0,
+          0.0,
+          0.1
+        ]
+      },
+      "back-high": {
+        "joint": "chest",
+        "offset": [
+          0,
+          0.07,
+          -0.11
+        ],
+        "rot": [
+          0,
+          180,
+          0
+        ]
+      },
+      "back-low": {
+        "joint": "spine",
+        "offset": [
+          0,
+          0.0,
+          -0.11
+        ],
+        "rot": [
+          0,
+          180,
+          0
+        ]
+      },
+      "waist-L": {
+        "joint": "pelvis",
+        "offset": [
+          0.12,
+          0,
+          0.0
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ]
+      },
+      "waist-R": {
+        "joint": "pelvis",
+        "offset": [
+          -0.12,
+          0,
+          0.0
+        ],
+        "rot": [
+          0,
+          -90,
+          0
+        ]
+      },
+      "shoulder-top-L": {
+        "joint": "shoulder",
+        "offset": [
+          0.0,
+          0.075,
+          -0.02
+        ],
+        "side": "L"
+      },
+      "shoulder-top-R": {
+        "joint": "shoulder",
+        "offset": [
+          0.0,
+          0.075,
+          -0.02
+        ],
+        "side": "R"
+      },
+      "pelvis-ring": {
+        "joint": "pelvis",
+        "offset": [
+          0,
+          0,
+          0
+        ]
+      },
+      "calf-back": {
+        "joint": "knee",
+        "offset": [
+          0,
+          -0.04,
+          -0.06
+        ],
+        "side": "pair",
+        "pair": true,
+        "rot": [
+          0,
+          180,
+          0
+        ]
+      },
+      "knee-outer": {
+        "joint": "knee",
+        "offset": [
+          0.06,
+          0,
+          0
+        ],
+        "side": "pair",
+        "pair": true,
+        "rot": [
+          0,
+          90,
+          0
+        ]
+      },
+      "heel": {
+        "joint": "ankle",
+        "offset": [
+          0,
+          -0.02,
+          -0.05
+        ],
+        "side": "pair",
+        "pair": true
+      },
+      "shin-front": {
+        "joint": "knee",
+        "offset": [
+          0,
+          -0.09,
+          0.06
+        ],
+        "side": "pair",
+        "pair": true
+      }
+    },
+    "overrides": {
+      "paladin": {
+        "grip": {
+          "offset": [
+            0.0,
+            -0.05,
+            0.17
+          ]
+        },
+        "chest-front": {
+          "offset": [
+            0,
+            0.0,
+            0.23
+          ]
+        },
+        "waist-L": {
+          "offset": [
+            0.17,
+            0.0,
+            0.12
+          ]
+        },
+        "waist-R": {
+          "offset": [
+            -0.17,
+            0.0,
+            0.12
+          ]
+        }
+      },
+      "brute": {
+        "grip": {
+          "offset": [
+            0.0,
+            -0.03,
+            0.0
+          ]
+        },
+        "chest-front": {
+          "offset": [
+            0,
+            0.0,
+            0.17
+          ]
+        },
+        "waist-L": {
+          "offset": [
+            0.17,
+            0.0,
+            0.08
+          ]
+        },
+        "waist-R": {
+          "offset": [
+            -0.17,
+            0.0,
+            0.08
+          ]
+        }
+      },
+      "seer": {
+        "back-high": {
+          "offset": [
+            0,
+            0.03,
+            -0.1
+          ]
+        },
+        "waist-L": {
+          "offset": [
+            0.15,
+            0.0,
+            0.1
+          ]
+        },
+        "waist-R": {
+          "offset": [
+            -0.15,
+            0.0,
+            0.1
+          ]
+        },
+        "chest-front": {
+          "offset": [
+            0,
+            0.0,
+            0.14
+          ]
+        }
+      }
+    },
+    "items": {
+      "lance": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "melee-blade": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "missile-rack": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "autocannon": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "rail-cannon": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "rocket-pod": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "industrial-claw": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "arc-cannon": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "hellfire-missiles": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "kinetic-claws": {
+        "arm": [
+          "grip",
+          "forearm-top",
+          "shoulder-top"
+        ]
+      },
+      "carapace-gun": {
+        "core": [
+          "shoulder-top-L",
+          "shoulder-top-R"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "bottom"
+            ]
+          }
+        }
+      },
+      "soul-lantern": {
+        "core": [
+          "waist-L",
+          "waist-R"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "top"
+            ]
+          }
+        }
+      },
+      "kinetic-shield": {
+        "arm": [
+          "bracer",
+          "forearm-top"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ]
+          }
+        }
+      },
+      "ablative-plating": {
+        "arm": [
+          "bracer",
+          "forearm-top"
+        ],
+        "core": [
+          "chest-front",
+          "back-high"
+        ],
+        "legs": [
+          "shin-front"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ]
+          },
+          "chest-front": {
+            "contact": [
+              "back"
+            ],
+            "scale": 2.0
+          },
+          "back-high": {
+            "contact": [
+              "back"
+            ],
+            "scale": 2.0
+          },
+          "bracer": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.6
+          },
+          "forearm-top": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.6
+          },
+          "shin-front": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.6
+          }
+        }
+      },
+      "reactive-shell": {
+        "core": [
+          "chest-front",
+          "back-high"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ]
+          },
+          "chest-front": {
+            "contact": [
+              "back"
+            ],
+            "scale": 2.0
+          },
+          "back-high": {
+            "contact": [
+              "back"
+            ],
+            "scale": 2.0
+          }
+        }
+      },
+      "smoke-launcher": {
+        "core": [
+          "waist-R",
+          "waist-L",
+          "back-high"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.6
+          }
+        }
+      },
+      "field-repair-rig": {
+        "core": [
+          "waist-L",
+          "waist-R",
+          "back-low"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.6
+          }
+        }
+      },
+      "spotter-drone": {
+        "core": [
+          "back-high",
+          "back-low"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.5
+          }
+        }
+      },
+      "targeting-array": {
+        "core": [
+          "back-high",
+          "back-low"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back",
+              "bottom"
+            ]
+          }
+        }
+      },
+      "coolant-loop": {
+        "core": [
+          "back-low",
+          "back-high"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back",
+              "bottom"
+            ]
+          }
+        }
+      },
+      "overcharged-boiler": {
+        "core": [
+          "back-low",
+          "back-high"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ],
+            "scale": 1.3
+          }
+        }
+      },
+      "jump-jets": {
+        "legs": [
+          "calf-back"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ]
+          }
+        }
+      },
+      "sprint-servos": {
+        "legs": [
+          "knee-outer"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "back"
+            ]
+          }
+        }
+      },
+      "anchor-spikes": {
+        "legs": [
+          "heel"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "bottom"
+            ]
+          }
+        }
+      },
+      "gyro-stabilisers": {
+        "legs": [
+          "pelvis-ring"
+        ],
+        "pose": {
+          "default": {
+            "contact": [
+              "center"
+            ]
+          }
+        }
+      }
+    }
   }
 }

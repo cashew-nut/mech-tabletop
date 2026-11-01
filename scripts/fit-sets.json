@@ -1,0 +1,21 @@
+{
+  "$comment": "Loadouts for the equipment fit review (scripts/fit-sheets.mjs, scripts/fit-check.mjs). Only the classes with full models.",
+  "paladin": {
+    "weapons": { "armRight": ["lance", "melee-blade"], "armLeft": ["missile-rack"], "core": ["carapace-gun", "ablative-plating"], "legs": ["jump-jets"] },
+    "shield": { "armRight": ["melee-blade", "ablative-plating"], "armLeft": ["kinetic-shield", "lance"], "core": ["reactive-shell", "smoke-launcher"], "legs": ["anchor-spikes"] },
+    "backpack": { "armRight": ["lance"], "armLeft": ["melee-blade"], "core": ["targeting-array", "coolant-loop"], "legs": ["gyro-stabilisers"] },
+    "support": { "armRight": ["melee-blade"], "armLeft": ["lance"], "core": ["spotter-drone", "overcharged-boiler"], "legs": ["sprint-servos"] }
+  },
+  "brute": {
+    "weapons": { "armRight": ["autocannon", "autocannon"], "armLeft": ["rocket-pod"], "core": ["ablative-plating", "coolant-loop"], "legs": ["gyro-stabilisers"] },
+    "heavy": { "armRight": ["rail-cannon"], "armLeft": ["industrial-claw", "kinetic-shield"], "core": ["reactive-shell", "targeting-array"], "legs": ["jump-jets"] },
+    "backpack": { "armRight": ["autocannon", "industrial-claw"], "armLeft": ["autocannon"], "core": ["spotter-drone", "overcharged-boiler"], "legs": ["anchor-spikes"] },
+    "support": { "armRight": ["industrial-claw"], "armLeft": ["autocannon", "autocannon"], "core": ["field-repair-rig", "smoke-launcher"], "legs": ["sprint-servos"] }
+  },
+  "seer": {
+    "weapons": { "armRight": ["arc-cannon", "kinetic-claws"], "armLeft": ["kinetic-claws"], "core": ["soul-lantern", "spotter-drone", "coolant-loop"], "legs": ["gyro-stabilisers"] },
+    "heavy": { "armRight": ["hellfire-missiles"], "armLeft": ["arc-cannon"], "core": ["targeting-array", "reactive-shell", "smoke-launcher"], "legs": ["jump-jets"] },
+    "backpack": { "armRight": ["kinetic-claws", "kinetic-shield"], "armLeft": ["kinetic-claws"], "core": ["overcharged-boiler", "field-repair-rig", "ablative-plating"], "legs": ["sprint-servos"] },
+    "support": { "armRight": ["arc-cannon", "arc-cannon"], "armLeft": ["arc-cannon"], "core": ["soul-lantern", "targeting-array", "coolant-loop"], "legs": ["anchor-spikes"] }
+  }
+}
