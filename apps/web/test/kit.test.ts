@@ -101,6 +101,13 @@ describe('kit part resolution', () => {
     expect(plan.omitted).toEqual(expect.arrayContaining(['arm', 'forearm', 'hand']));
   });
 
+  it("uses a class's own frame over the shared one, so its parts hang on the joints they were cut on", () => {
+    const names = new Set(['foundries_frame_bulwark', 'foundries_frame_brute', 'foundries_pelvis_brute']);
+    expect(planKit(names, 'foundries', 'brute', 'bulwark')!.frame).toBe('foundries_frame_brute');
+    expect(planKit(names, 'foundries', 'artillery', 'bulwark')!.frame).toBe('foundries_frame_bulwark');
+    expect(kitCandidates('foundries', 'brute', 'bulwark')).toContain('foundries_frame_brute');
+  });
+
   it('plans the composite Seer with its own right arm and no collar', () => {
     const names = new Set(['reliquary_frame_striker', 'reliquary_collar_striker']);
     for (const c of ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot']) names.add(`reliquary_${c}_seer`);

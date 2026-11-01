@@ -32,7 +32,8 @@ const MODELS = {
     items: { blade: ['lance@paladin', 'mount_armLeft_0'], pod: ['carapace-gun@paladin', 'mount_core_0'] },
   },
   brute: {
-    faction: 'foundries', cls: 'brute', tunes: 'foundries/bulwark', itemScale: 1.4,
+    // Its own frame: a copy of the bulwark frame (Artillery keeps that one) with the joints the parts were cut on.
+    faction: 'foundries', cls: 'brute', tunes: 'foundries/brute', itemScale: 1.4, frame: 'foundries_frame_brute', frameFrom: 'foundries_frame_bulwark',
     kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'thigh', 'shin', 'foot'],
     items: { rockets: ['rocket-pod@brute', 'mount_armLeft_0', 'elbow'], gatling: ['autocannon@brute', 'mount_armLeft_0', 'elbow'] },
   },
@@ -100,11 +101,16 @@ for (const [k, [id, mount, originJoint]] of Object.entries(ITEMS)) {
   written.push(await convert(join(src, `${k}.glb`), name, join(PARTS, `${name}.glb`), (p) => p.map((c, i) => (c - off[i]) / ITEM_SCALE)));
 }
 
-// The Seer measures its own skeleton: move the frame's joints (and the numbered arm mounts) to the tunes, the right arm's
-// shoulder, elbow and wrist to "jointsRight". Nodes hang from their parent joint, so each is placed by the difference.
+// The Seer and the Brute measure their own skeletons: move the frame's joints (and the numbered arm mounts) to the tunes,
+// the right arm's shoulder, elbow and wrist to "jointsRight". Nodes hang from their parent joint, so each is placed by the
+// difference. The Brute's frame is a class frame (foundries_frame_brute, which the web prefers over the bulwark frame),
+// copied from the frame it shares with Artillery.
 if (model.frame) {
   const framePath = join(PARTS, 'kit', `${model.frame}.glb`);
-  const doc = await io.read(framePath);
+  const doc = await io.read(model.frameFrom ? join(PARTS, 'kit', `${model.frameFrom}.glb`) : framePath);
+  if (model.frameFrom) {
+    doc.getRoot().getDefaultScene().listChildren()[0].setName(model.frame);
+  }
   const nodes = new Map(doc.getRoot().listNodes().map((n) => [n.getName(), n]));
   const PARENT = { hip: 'pelvis', spine: 'pelvis', knee: 'hip', ankle: 'knee', chest: 'spine', neck: 'chest', head: 'neck', shoulder: 'chest', elbow: 'shoulder', wrist: 'elbow' };
   const SIDED = new Set(['shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle']);
@@ -124,12 +130,13 @@ if (model.frame) {
     }
   for (const [mount, [, off]] of Object.entries(tunes.mounts)) if (nodes.has(mount)) nodes.get(mount).setTranslation(toGltf(off));
   await io.write(framePath, doc);
+  if (model.frameFrom) written.push(framePath);
 }
 
 // Retire the old cut: right-hand copies and every part the composite does not have (cloth, collar, the Brute's arm and hands).
 const manifestPath = join(PARTS, 'manifest.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-const keep = new Set(KIT.map(kitName));
+const keep = new Set([...KIT.map(kitName), ...(model.frameFrom ? [model.frame] : [])]);
 const old = new RegExp(`^${faction}_.+_${cls}$`);
 for (const key of Object.keys(manifest.kit)) {
   if (!old.test(key)) continue;
@@ -139,6 +146,7 @@ for (const key of Object.keys(manifest.kit)) {
   }
 }
 for (const k of KIT) manifest.kit[kitName(k)] = `kit/${kitName(k)}.glb`;
+if (model.frameFrom) manifest.kit[model.frame] = `kit/${model.frame}.glb`;
 for (const [, [id]] of Object.entries(ITEMS)) manifest.items[id] = `item_${id}.glb`;
 for (const kind of ['items', 'kit']) manifest[kind] = Object.fromEntries(Object.entries(manifest[kind]).sort(([a], [b]) => (a < b ? -1 : 1)));
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
