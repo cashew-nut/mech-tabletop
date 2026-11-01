@@ -46,6 +46,8 @@ export interface KitPlan {
   parts: PlannedPart[];
   /** Required components with no part yet: the stand-ins show instead. */
   missing: string[];
+  /** Components the class never shows: their stand-ins go too (the composite Brute's arms are its guns). */
+  omitted: string[];
 }
 
 interface Names {
@@ -69,8 +71,12 @@ export function planKit(names: Names, faction: string, cls: string, frame: strin
   if (!names.has(frameName(faction, frame))) return null;
   const parts: PlannedPart[] = [];
   const missing = new Set<string>();
+  const omitted: string[] = [];
   for (const c of COMPONENTS) {
-    if (OMIT[cls]?.includes(c.id)) continue;
+    if (OMIT[cls]?.includes(c.id)) {
+      omitted.push(c.id);
+      continue;
+    }
     for (const side of c.sided ? (['L', 'R'] as Side[]) : [undefined]) {
       const found = resolvePart(names, faction, c.id, cls, frame, side);
       if (!found) {
@@ -80,7 +86,7 @@ export function planKit(names: Names, faction: string, cls: string, frame: strin
       parts.push({ component: c.id, side, joint: jointName(c.joint, side), name: found.name, mirror: side === 'R' && !found.ownRight });
     }
   }
-  return { frame: frameName(faction, frame), parts, missing: [...missing] };
+  return { frame: frameName(faction, frame), parts, missing: [...missing], omitted };
 }
 
 /** Every kit name a class could use, for loading only what it needs. */

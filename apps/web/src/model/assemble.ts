@@ -183,6 +183,9 @@ function kitBody(chassisId: string, lib: PartLibrary | null, palette: Palette, m
     joint.add(part);
     for (const s of standins) if (s.userData.standin === p.component && (s.userData.side ?? undefined) === p.side) s.visible = false;
   }
+  // A component the class never shows has no part to hide its stand-in, so it goes here; otherwise the frame's
+  // placeholder cylinders hang where the class has none (the composite Brute's arm and forearm under its pauldrons).
+  for (const s of standins) if (plan.omitted.includes(s.userData.standin)) s.visible = false;
   for (const s of standins) if (!s.visible) s.removeFromParent();
   return { root, mounts: collectMounts(root), joints };
 }
@@ -258,7 +261,7 @@ function placeAtHardpoint(
   const nativeRight = libName ? NATIVE_RIGHT.has(libName) : false;
   // A right-hand hardpoint on a joint is already mirrored, so only a numbered mount (not mirrored) needs the side in the decision.
   const flip = def.mount && place.side === 'R' ? !nativeRight : nativeRight;
-  const pivot = new THREE.Vector3(...pivotOf(libName ?? id, pose.contact)).multiplyScalar(scale);
+  const pivot = new THREE.Vector3(...pivotOf(libName ?? id, pose.contact.length ? pose.contact : def.contact)).multiplyScalar(scale);
   if (flip) pivot.x *= -1;
   part.scale.set(flip ? -scale : scale, scale, scale);
   const itemRot = new THREE.Euler(...((pose.rot ?? [0, 0, 0]).map((d) => (d * Math.PI) / 180) as [number, number, number]));
@@ -284,15 +287,28 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
     height = head ? head.getWorldPosition(new THREE.Vector3()).y : 0;
   }
 
-  const libName_ = (id: string) => (lib ? itemPartName(lib.items, id, c.faction, c.id) : null);
   for (const loc of LOCATIONS) {
     let slot = 0;
     const ids = walker.loadout[loc] ?? [];
-    const native = ids.map((id) => !!libName_(id)?.endsWith(`@${c.id}`));
+    // An arm holds one of the class's own items (the Brute's guns are whole forearms on its one elbow socket); a second
+    // copy on the same arm is the faction's or shared model, placed like any other item.
+    const arm = loc === 'armLeft' || loc === 'armRight';
+    let ownUsed = false;
+    const libNames = ids.map((id) => {
+      if (!lib) return null;
+      const own = itemPartName(lib.items, id, c.faction, c.id);
+      if (!own?.endsWith(`@${c.id}`) || !arm) return own;
+      if (!ownUsed) {
+        ownUsed = true;
+        return own;
+      }
+      return itemPartName(lib.items, id, c.faction);
+    });
+    const native = libNames.map((n) => !!n?.endsWith(`@${c.id}`));
     const plan = fit && height > 0 ? planLocation(c.id, loc, ids, native) : null;
     ids.forEach((id, index) => {
       const def = getEquipment(id);
-      const libName = lib ? itemPartName(lib.items, id, c.faction, c.id) : null;
+      const libName = libNames[index];
       const fromLib = libName ? lib!.items.get(libName) : undefined;
       const make = () => {
         const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());

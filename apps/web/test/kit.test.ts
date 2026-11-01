@@ -97,6 +97,8 @@ describe('kit part resolution', () => {
     expect(plan.parts.map((p) => p.component)).not.toContain('forearm');
     expect(plan.parts.map((p) => p.component)).not.toContain('hand');
     expect(plan.parts.map((p) => p.component)).not.toContain('collar');
+    // The frame's stand-ins for these go too, or its placeholder cylinders hang under the pauldrons.
+    expect(plan.omitted).toEqual(expect.arrayContaining(['arm', 'forearm', 'hand']));
   });
 
   it('plans the composite Seer with its own right arm and no collar', () => {
@@ -136,6 +138,9 @@ describe('kit walker assembly', () => {
     // Optional components with no part keep their stand-ins; covered ones go.
     expect(standins).not.toContain('helm');
     expect(standins).toContain('pauldron');
+    // Components the class omits (the Paladin's torso has its own collar and tabard) lose their stand-ins too.
+    expect(standins).not.toContain('collar');
+    expect(standins).not.toContain('cloth');
     // Equipment still snaps to the frame's mounts.
     expect(model.getObjectByName('part_lance')!.parent!.userData.mount).toBe('mount_armRight_0');
     // Livery is multiplied into the baked hull texture.
