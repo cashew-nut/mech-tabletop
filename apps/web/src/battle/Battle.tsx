@@ -33,6 +33,7 @@ import examples from '../../../../data/lances/examples.json';
 import { loadDraft, loadSaved } from '../storage';
 import { Board3D } from './Board3D';
 import { BoardHud } from './BoardHud';
+import { CombatReplay, ReplayToggle, useCombatReplay } from './CombatReplay';
 import { HexMap, type Highlight } from './HexMap';
 
 function webglAvailable() {
@@ -165,6 +166,7 @@ function tryApply(state: GameState, action: Action): GameState | null {
 
 function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) {
   const [state, setState] = useState(initial);
+  const replay = useCombatReplay(state);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('move');
@@ -188,10 +190,11 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
 
   // The AI plays its side on a short timer so you can follow what it does.
   useEffect(() => {
-    if (state.phase === 'over' || state.activeSide === HUMAN) return;
+    // Hold the AI back while a dice roll is being shown so each exchange can be followed.
+    if (state.phase === 'over' || state.activeSide === HUMAN || replay.busy) return;
     const t = setTimeout(() => setState((s) => (s.activeSide === HUMAN || s.phase === 'over' ? s : applyAction(s, chooseAction(s)).state)), AI_DELAY_MS);
     return () => clearTimeout(t);
-  }, [state]);
+  }, [state, replay.busy]);
 
   const active = state.active ? state.walkers.find((w) => w.id === state.active!.walkerId)! : null;
   const mineActive = active && active.side === HUMAN ? active : null;
@@ -435,11 +438,13 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
         {error && <div className="errors">{error}</div>}
         {selected && <WalkerCard walker={selected} />}
         {target && target.id !== selected?.id && <WalkerCard walker={target} />}
+        <ReplayToggle replay={replay} />
         <Log state={state} />
         <button className="secondary" onClick={onQuit}>
           Abandon Trial
         </button>
       </div>
+      <CombatReplay replay={replay} />
     </div>
   );
 }
