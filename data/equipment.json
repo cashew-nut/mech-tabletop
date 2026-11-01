@@ -24,7 +24,7 @@
       ],
       "slots": 1,
       "pressure": 1,
-      "points": 9,
+      "points": 10,
       "weapon": {
         "dice": 2,
         "damage": 3,
@@ -45,7 +45,7 @@
       ],
       "slots": 1,
       "pressure": 1,
-      "points": 8,
+      "points": 9,
       "weapon": {
         "dice": 3,
         "damage": 2,

@@ -15,11 +15,11 @@ describe('lance building', () => {
 
   it('applies faction discounts', () => {
     const w = walker('Plated', 'brute', { core: ['ablative-plating'] });
-    expect(walkerCost(w, null)).toBe(27);
-    expect(walkerCost(w, getFaction('foundries'))).toBe(26);
+    expect(walkerCost(w, null)).toBe(17);
+    expect(walkerCost(w, getFaction('foundries'))).toBe(16);
     const knight = walker('Sworn', 'lancer', {}, 'brawler');
-    expect(walkerCost(knight, null)).toBe(26);
-    expect(walkerCost(knight, getFaction('covenant'))).toBe(25);
+    expect(walkerCost(knight, null)).toBe(19);
+    expect(walkerCost(knight, getFaction('covenant'))).toBe(18);
   });
 
   it('keeps classes and signature gear inside their faction', () => {
@@ -47,9 +47,9 @@ describe('lance building', () => {
   });
 
   it('enforces lance size and budget', () => {
-    const paladins = Array.from({ length: 4 }, (_, i) => walker(`P${i}`, 'paladin'));
+    const paladins = Array.from({ length: 5 }, (_, i) => walker(`P${i}`, 'paladin', { armLeft: ['lance'], armRight: ['lance'] }));
     const report = validateLance(lance('Heavy', paladins));
-    expect(report.errors).toContain('costs 136 points, budget is 100');
+    expect(report.errors).toContain('costs 210 points, budget is 100');
     expect(validateLance(lance('Tiny', [walker('S', 'scavenger')])).errors[0]).toMatch(/needs 3-5/);
   });
 });

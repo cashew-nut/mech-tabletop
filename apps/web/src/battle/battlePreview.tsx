@@ -8,7 +8,7 @@ import '../styles.css';
 const params = new URLSearchParams(location.search);
 import examples from '../../../../data/lances/examples.json';
 
-const EXAMPLE = Object.fromEntries((examples.lances as LanceInput[]).map((l) => [l.faction, l]));
+const EXAMPLE = Object.fromEntries((examples.lances as LanceInput[]).reverse().map((l) => [l.faction, l]));
 // What to show instead of each example walker: the Meshy-built classes first, then the older ones.
 const SHOW: Record<string, Array<[string, Record<string, string[]>]>> = {
   covenant: [['paladin', { armLeft: ['lance'], armRight: ['lance'] }], ['paladin', { armLeft: ['lance'] }], ['lancer', { armLeft: ['lance'] }]],

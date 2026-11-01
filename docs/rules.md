@@ -291,22 +291,22 @@ the Trial ends at once and the other side wins.
 
 | Faction | Class | Role | Size | Pts | Stride | Boiler | Slots (arm / arm / core / legs) | Armour (core front / rear / arm / legs) | Structure (core / other) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Covenant | Lancer | Assault | 2 | 23 | 3 | 5 | 2 / 2 / 1 / 1 | 6 / 3 / 3 / 3 | 4 / 3 |
-| Covenant | Sentinel | Defence and support | 3 | 28 | 2 | 6 | 1 / 1 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
-| Covenant | Paladin | Heavy melee | 4 | 34 | 2 | 6 | 2 / 2 / 2 / 1 | 10 / 5 / 5 / 6 | 6 / 5 |
-| Foundries | Scavenger | Utility and recon | 1 | 12 | 3 | 4 | 1 / 1 / 2 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
-| Foundries | Brute | Frontline | 3 | 25 | 2 | 6 | 2 / 2 / 2 / 1 | 9 / 4 / 5 / 5 | 5 / 4 |
-| Foundries | Artillery | Long range | 3 | 22 | 1 | 7 | 3 / 3 / 2 / 1 | 7 / 3 / 3 / 5 | 5 / 4 |
-| Reliquary | Wraith | Assassin | 1 | 11 | 4 | 5 | 1 / 1 / 1 / 1 | 3 / 2 / 2 / 2 | 3 / 2 |
-| Reliquary | Seer | Artillery and psychic | 2 | 16 | 2 | 6 | 1 / 2 / 3 / 1 | 5 / 2 / 2 / 3 | 4 / 3 |
-| Reliquary | Goliath | Heavy | 4 | 33 | 2 | 7 | 2 / 2 / 3 / 2 | 9 / 5 / 4 / 6 | 6 / 5 |
+| Covenant | Lancer | Assault | 2 | 16 | 3 | 5 | 2 / 2 / 1 / 1 | 6 / 3 / 3 / 3 | 4 / 3 |
+| Covenant | Sentinel | Defence and support | 3 | 19 | 2 | 6 | 1 / 1 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
+| Covenant | Paladin | Heavy melee | 4 | 22 | 2 | 6 | 2 / 2 / 2 / 1 | 10 / 5 / 5 / 6 | 6 / 5 |
+| Foundries | Scavenger | Utility and recon | 1 | 6 | 3 | 4 | 1 / 1 / 2 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
+| Foundries | Brute | Frontline | 3 | 15 | 2 | 6 | 2 / 2 / 2 / 1 | 9 / 4 / 5 / 5 | 5 / 4 |
+| Foundries | Artillery | Long range | 3 | 12 | 1 | 7 | 3 / 3 / 2 / 1 | 7 / 3 / 3 / 5 | 5 / 4 |
+| Reliquary | Wraith | Assassin | 1 | 5 | 4 | 5 | 1 / 1 / 1 / 1 | 3 / 2 / 2 / 2 | 3 / 2 |
+| Reliquary | Seer | Artillery and psychic | 2 | 10 | 2 | 6 | 1 / 2 / 3 / 1 | 5 / 2 / 2 / 3 | 4 / 3 |
+| Reliquary | Goliath | Heavy | 4 | 20 | 2 | 7 | 2 / 2 / 3 / 2 | 9 / 5 / 4 / 6 | 6 / 5 |
 
 ### 13.1 Signature weapons
 
 | Faction | Weapon | Mount | Slots | Pressure | Pts | Range | Dice | Damage | Rules |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Covenant | Lance | Arm | 1 | 1 | 9 | Melee | 2 | 3 | **Charge:** +1 die if this war-walker has moved 2 or more hexes this activation. |
-| Covenant | Melee Blade | Arm | 1 | 1 | 8 | Melee | 3 | 2 | Rolls of 5 or 6 are criticals. |
+| Covenant | Lance | Arm | 1 | 1 | 10 | Melee | 2 | 3 | **Charge:** +1 die if this war-walker has moved 2 or more hexes this activation. |
+| Covenant | Melee Blade | Arm | 1 | 1 | 9 | Melee | 3 | 2 | Rolls of 5 or 6 are criticals. |
 | Covenant | Carapace Gun | Core | 1 | 2 | 5 | Medium | 2 | 2 | Pierce 1. No ammo. |
 | Covenant | Missile Rack | Arm | 2 | 1 | 6 | Long | 5 | 1 | Indirect. Ammo 4. |
 | Foundries | Autocannon | Arm | 1 | 1 | 3 | Medium | 3 | 1 | Ammo 6. |
@@ -377,3 +377,21 @@ Balance pass, two 600-game simulator rounds (see [`balance.md`](balance.md)).
   and Kinetic Claws are new.
 - Scattergun and Thermal Projector are retired.
 - Tuned over 2,000 simulated Trials (see [`balance.md`](balance.md)).
+
+## 19. Changes in v0.6: lighter frames, more room for equipment
+
+Before this pass a class took a third to a half of a lance's budget before any equipment, so
+heavy lances had to leave their walkers nearly bare (a 3-Paladin lance cost 102 points with no
+weapons) and the Covenant could not field five walkers at all. Class costs fell by 35 to 55%
+and the budget stayed at 100 (see [`balance.md`](balance.md)).
+
+| Item | v0.5 | v0.6 |
+| --- | --- | --- |
+| Lancer / Sentinel / Paladin | 23 / 28 / 34 | 16 / 19 / 22 |
+| Scavenger / Brute / Artillery | 12 / 25 / 22 | 6 / 15 / 12 |
+| Wraith / Seer / Goliath | 11 / 16 / 33 | 5 / 10 / 20 |
+| Lance / Melee Blade | 9 / 8 | 10 / 9 |
+| Tactician | 4 | 3 |
+
+- Example lances were rebuilt with fuller loadouts, and a wide and a heavy example were added
+  per faction line-up (Vigil Host, Scrap Horde, Twin Colossi).

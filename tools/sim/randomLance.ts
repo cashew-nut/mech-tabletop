@@ -28,7 +28,7 @@ function randomWalker(rng: Rng, name: string, budget: number, faction: Faction):
   const w: WalkerInput = { name, chassis: c.id, driver: { command: 0, trait: null }, loadout: {} };
   const free = { ...c.slots };
   // Weapons first so most walkers can fight, then anything else.
-  for (let tries = 0; tries < 12; tries++) {
+  for (let tries = 0; tries < 30; tries++) {
     const loc = tries < 2 ? pick(rng, ['armLeft', 'armRight'] as Location[]) : pick(rng, LOCS);
     const options = mountableItems(loc, EQUIPMENT).filter(
       (e) => (!e.faction || e.faction === faction.id) && e.slots <= free[loc] && (tries >= 2 || e.weapon),
@@ -41,7 +41,7 @@ function randomWalker(rng: Rng, name: string, budget: number, faction: Faction):
     if (item.maxPerWalker && Object.values(trial.loadout).flat().filter((x) => x === item.id).length > item.maxPerWalker) continue;
     Object.assign(w, trial);
     free[loc] -= item.slots;
-    if (nextFloat(rng) < 0.25) break;
+    if (tries >= 2 && nextFloat(rng) < 0.08) break;
   }
   if (nextFloat(rng) < 0.3) {
     const trial = structuredClone(w);
@@ -60,13 +60,15 @@ export function randomLance(rng: Rng, name: string, factionId?: string): LanceIn
   const { budget, minWalkers, maxWalkers } = RULES.lance;
   for (;;) {
     const faction = factionId ? FACTIONS.find((f) => f.id === factionId)! : pick(rng, FACTIONS);
+    const minFrame = Math.min(...CHASSIS.filter((c) => c.faction === faction.id).map((c) => c.points));
     const count = minWalkers + Math.floor(nextFloat(rng) * (maxWalkers - minWalkers + 1));
     const walkers: WalkerInput[] = [];
     let left = budget;
     for (let i = 0; i < count; i++) {
       const share = Math.floor(left / (count - i));
-      // Allow lopsided lances: one walker may take up to 1.6x its share.
-      const w = randomWalker(rng, `${name}-${i}`, Math.min(left - (count - i - 1) * 12, Math.floor(share * (1 + nextFloat(rng) * 0.6))), faction);
+      // Allow lopsided lances: one walker may take up to 1.6x its share. Keep enough back for the
+      // cheapest class of this faction on each walker still to come.
+      const w = randomWalker(rng, `${name}-${i}`, Math.min(left - (count - i - 1) * minFrame, Math.floor(share * (1 + nextFloat(rng) * 0.6))), faction);
       if (!w) break;
       walkers.push(w);
       left -= walkerCost(w, faction);
