@@ -349,3 +349,203 @@ export function card(parent: THREE.Object3D, pos: Vec3, rotY = 0) {
   add(g, glow(0x7a1c1c), [0.52, 0.06, -0.3], [0.25, 0.01, 0.25]);
   parent.add(g);
 }
+
+// ---------------------------------------------------------------- wrecks, banners, tower footings
+
+const hexPrism = new THREE.CylinderGeometry(1, 1, 1, 6, 1);
+const rock = new THREE.IcosahedronGeometry(0.5, 0);
+const tube = new THREE.CylinderGeometry(0.5, 0.5, 1, 10, 1);
+const emberMat = new THREE.MeshBasicMaterial({ color: 0xff7a2a });
+const emberGlow = () => emberMat;
+function shape(parent: THREE.Object3D, geo: THREE.BufferGeometry, material: THREE.Material, pos: Vec3, scale: Vec3, rot: Vec3 = [0, 0, 0]) {
+  const m = new THREE.Mesh(geo, material);
+  m.position.set(...pos);
+  m.scale.set(...scale);
+  m.rotation.set(...rot);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+
+const wreckMats = new Map<string, THREE.MeshStandardMaterial>();
+/** Worn metal for the wreck: lit by the board's environment like the walkers, so the heap reads as armour and not as black boxes. */
+const metal = (color: number, roughness = 0.55, metalness = 0.7) => {
+  const key = `${color}|${roughness}|${metalness}`;
+  let m = wreckMats.get(key);
+  if (!m) wreckMats.set(key, (m = new THREE.MeshStandardMaterial({ color, roughness, metalness })));
+  return m;
+};
+const scorchGeo = new THREE.CircleGeometry(0.72, 24);
+const scorchMat = new THREE.MeshBasicMaterial({ color: 0x0d0c0b, transparent: true, opacity: 0.7, depthWrite: false });
+
+/** What a destroyed walker leaves in its hex: a scorched, heaped hulk about as big as a hex and a head shorter than the walker
+ * stood. `size` is the walker's chassis Size (1 to 4ish) and scales the heap; `sideColour` tints the surviving armour plates.
+ * The group's origin is the hex centre on the ground. Wrecks block movement and sight, so they need real height. */
+export function wreck(parent: THREE.Object3D, seed: number, size: number, sideColour: number) {
+  const rnd = rndFrom(seed * 3.7 + 11);
+  const g = new THREE.Group();
+  const k = 0.82 + 0.09 * Math.min(4, Math.max(1, size)); // 0.91 to 1.18
+  g.scale.setScalar(k);
+  g.rotation.y = rnd(1) * Math.PI * 2;
+  const iron = metal(0x44464b, 0.62, 0.65);
+  const dark = metal(0x1f2023, 0.75, 0.5);
+  const rust = metal(0x5a3a26, 0.85, 0.25);
+  const plate = metal(new THREE.Color(sideColour).multiplyScalar(0.75).getHex(), 0.55, 0.4);
+  const scorch = new THREE.Mesh(scorchGeo, scorchMat);
+  scorch.rotation.x = -Math.PI / 2;
+  scorch.position.y = 0.012;
+  g.add(scorch);
+  // Toppled torso with its furnace barrel torn out, resting on the heap.
+  shape(g, box, iron, [-0.06, 0.3, 0.02], [0.78, 0.48, 0.58], [0.32, 0.25, 0.5]);
+  shape(g, box, dark, [-0.16, 0.56, 0.0], [0.5, 0.14, 0.4], [0.32, 0.25, 0.5]); // shoulder yoke
+  shape(g, box, plate, [0.0, 0.36, 0.36], [0.5, 0.32, 0.05], [0.32, 0.25, 0.5]); // surviving chest plate in the faction's colour
+  shape(g, tube, rust, [0.34, 0.2, -0.28], [0.3, 0.72, 0.3], [0, 0, Math.PI / 2 - 0.2]); // furnace barrel on its side
+  // A leg thrust skyward and a snapped arm: they give the heap its silhouette from the camera.
+  shape(g, box, iron, [-0.38, 0.62, -0.14], [0.2, 0.95, 0.24], [0.15, 0.4, 0.5]);
+  shape(g, box, dark, [-0.55, 0.34, -0.12], [0.3, 0.14, 0.32], [0.1, 0.4, 0.5]); // foot
+  shape(g, tube, iron, [0.3, 0.52, 0.2], [0.17, 0.85, 0.17], [0.9, 0.2, -0.6]);
+  shape(g, box, plate, [0.12, 0.7, 0.4], [0.44, 0.1, 0.34], [0.5, 0.3, -0.5]); // pauldron half
+  for (let i = 0; i < 10; i++) { // scattered plates and chunks
+    const a = rnd(i + 5) * Math.PI * 2;
+    const r = 0.3 + rnd(i + 15) * 0.38;
+    const s = 0.12 + rnd(i + 25) * 0.16;
+    shape(g, i % 3 === 0 ? box : rock, i % 2 ? iron : i % 3 === 0 ? plate : rust, [Math.cos(a) * r, s * 0.4, Math.sin(a) * r], [s * 1.6, s * 0.7, s * 1.2], [rnd(i) * 2, rnd(i + 3) * 3, rnd(i + 8) * 2]);
+  }
+  for (let i = 0; i < 4; i++) shape(g, rock, emberGlow(), [(rnd(i + 40) - 0.5) * 0.7, 0.07 + rnd(i + 50) * 0.1, (rnd(i + 60) - 0.5) * 0.7], [0.06, 0.04, 0.06]); // glowing embers
+  const glowPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: bloomTexture(), color: 0xff6a1f, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false }));
+  glowPlane.rotation.x = -Math.PI / 2;
+  glowPlane.position.y = 0.05;
+  glowPlane.scale.setScalar(1.2);
+  g.add(glowPlane);
+  parent.add(g);
+  return g;
+}
+
+let bannerTex: THREE.Texture | null = null;
+/** The charter banner: a deep red swallow-tailed cloth with a gold gear-and-boiler seal, drawn once and alpha-cut. */
+function bannerTexture() {
+  if (bannerTex) return bannerTex;
+  const w = 64;
+  const h = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const g = canvas.getContext('2d')!;
+  g.clearRect(0, 0, w, h);
+  g.beginPath(); // swallow-tail outline
+  g.moveTo(2, 0); g.lineTo(w - 2, 0); g.lineTo(w - 2, h - 2); g.lineTo(w / 2, h - 34); g.lineTo(2, h - 2); g.closePath();
+  const cloth = g.createLinearGradient(0, 0, 0, h);
+  cloth.addColorStop(0, '#8c1e1c');
+  cloth.addColorStop(1, '#5a1010');
+  g.fillStyle = cloth;
+  g.fill();
+  g.lineWidth = 3;
+  g.strokeStyle = '#d4a956';
+  g.stroke();
+  g.strokeStyle = '#d4a956'; // inner border
+  g.lineWidth = 1;
+  g.strokeRect(8, 6, w - 16, 62);
+  g.fillStyle = '#d4a956'; // seal: a cogged ring around a boiler dome
+  g.beginPath(); g.arc(w / 2, 38, 15, 0, Math.PI * 2); g.fill();
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    g.fillRect(w / 2 + Math.cos(a) * 15 - 2.5, 38 + Math.sin(a) * 15 - 2.5, 5, 5);
+  }
+  g.fillStyle = '#6a1412';
+  g.beginPath(); g.arc(w / 2, 38, 10, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#d4a956';
+  g.beginPath(); g.arc(w / 2, 40, 6, Math.PI, 0); g.fill();
+  g.fillRect(w / 2 - 6, 40, 12, 4);
+  g.fillRect(w / 2 - 1, 28, 2, 6);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return (bannerTex = tex);
+}
+
+export const BANNER_CLOTH = 'bannerCloth';
+const bannerBrass = new THREE.MeshStandardMaterial({ color: 0xc9a04a, roughness: 0.35, metalness: 0.85 });
+/** An objective marker sized to stand with the walkers: a brass pole about two thirds of a Paladin's height on a stepped plinth,
+ * with a hanging charter banner that ripples (the board animates the cloth through its BANNER_CLOTH userData). */
+export function objectiveBanner(parent: THREE.Object3D, seed: number) {
+  const g = new THREE.Group();
+  g.rotation.y = Math.PI + (rndFrom(seed)(1) - 0.5) * 0.3; // the cloth faces the camera at the start
+  const height = 2.5;
+  shape(g, hexPrism, mat(0x3b3a37), [0, 0.04, 0], [0.34, 0.08, 0.34]); // plinth steps
+  shape(g, hexPrism, bannerBrass, [0, 0.11, 0], [0.22, 0.06, 0.22]);
+  shape(g, tube, bannerBrass, [0, height / 2 + 0.1, 0], [0.08, height, 0.08]); // pole
+  shape(g, rock, bannerBrass, [0, height + 0.18, 0], [0.22, 0.28, 0.22]); // finial
+  shape(g, tube, bannerBrass, [0.3, height - 0.12, 0], [0.05, 0.64, 0.05], [0, 0, Math.PI / 2]); // cross-bar
+  const geo = new THREE.PlaneGeometry(0.5, 1.15, 5, 10);
+  geo.translate(0, -0.575, 0);
+  const cloth = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: bannerTexture(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9, metalness: 0 }));
+  cloth.position.set(0.32, height - 0.17, 0);
+  cloth.castShadow = true;
+  cloth.userData[BANNER_CLOTH] = { base: Float32Array.from(geo.attributes.position.array), phase: rndFrom(seed)(2) * 6 };
+  g.add(cloth);
+  parent.add(g);
+  return g;
+}
+
+/** Ripple a banner's cloth: the free edge swings most, the hem lags, and the top edge stays on the bar. */
+export function rippleBanner(cloth: THREE.Mesh, t: number) {
+  const d = cloth.userData[BANNER_CLOTH] as { base: Float32Array; phase: number };
+  const pos = cloth.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const y = d.base[i * 3 + 1];
+    const hang = Math.min(1, -y / 1.15); // 0 at the bar, 1 at the hem
+    pos.setZ(i, Math.sin(t / 380 + d.phase + hang * 3.2 + d.base[i * 3] * 2.5) * 0.07 * hang);
+  }
+  pos.needsUpdate = true;
+}
+
+/** A buttress: sloped on its outer face, a stepped cap on top, `depth` out from the wall at its foot and `width` across. Built
+ * in a local frame where +X is outward from the wall and the wall face is at x = 0 (the block sinks 0.1 into the wall). */
+function buttressGeometry(depth: number, width: number, height: number) {
+  const s = new THREE.Shape();
+  s.moveTo(-0.1, 0);
+  s.lineTo(depth, 0);
+  s.lineTo(depth, height * 0.18); // vertical lower course
+  s.lineTo(depth * 0.7, height * 0.34); // set-off
+  s.lineTo(depth * 0.7, height * 0.5);
+  s.lineTo(depth * 0.4, height * 0.78); // second set-off, then a short slope to the cap
+  s.lineTo(depth * 0.4, height);
+  s.lineTo(-0.1, height);
+  s.closePath();
+  const geo = new THREE.ExtrudeGeometry(s, { depth: width, bevelEnabled: false });
+  geo.translate(0, 0, -width / 2);
+  return geo;
+}
+
+/** A battered stone footing, and optionally four chunky buttresses, to wrap the base of a Meshy tower whose own buttresses came
+ * out as ragged paper-thin fins. `apothem` is the half-width of the tower's footprint; `sides` is 8 for the octagonal tower, 16 for
+ * the square one (whose Meshy footprint is turned a few degrees, so a round footing hides it best). Everything stays inside the hex (flats at 0.84) and is symmetrical under 90 degree turns, so the board can
+ * spin the whole piece. */
+export function towerFooting(material: THREE.Material, apothem: number, sides: 8 | 16, buttresses = true) {
+  const g = new THREE.Group();
+  const flat = 0.78; // footing half-width at the ground, to the flats
+  const baseR = flat / Math.cos(Math.PI / sides);
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(baseR * 0.9, baseR, 0.34, sides, 1), material);
+  plinth.rotation.y = Math.PI / sides; // flats towards +X/+Z
+  plinth.position.y = 0.17;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(baseR * 0.84, baseR * 0.9, 0.1, sides, 1), material);
+  cap.rotation.y = Math.PI / sides;
+  cap.position.y = 0.39;
+  g.add(plinth, cap);
+  if (buttresses) {
+    const geo = buttressGeometry(0.83 - apothem, 0.4, 1.3);
+    for (let i = 0; i < 4; i++) {
+      const m = new THREE.Mesh(geo, material);
+      const a = (i * Math.PI) / 2;
+      m.rotation.y = a; // turns +X (outward) toward -Z for a quarter turn
+      m.position.set(Math.cos(a) * apothem, 0.34, -Math.sin(a) * apothem);
+      g.add(m);
+    }
+  }
+  g.traverse((o) => {
+    o.castShadow = true;
+    o.receiveShadow = true;
+  });
+  return g;
+}
