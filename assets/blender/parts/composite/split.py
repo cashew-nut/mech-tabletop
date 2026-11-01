@@ -12,6 +12,7 @@ neighbour, and keeps Meshy's UVs on the original surface (cap faces get UV (-1, 
 Then joints.py adds a keyed peg and magnet pockets at every joint. Output: WORK/parts/<part>.npz (mm, kit axes).
 """
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -41,6 +42,13 @@ PARTS = {
     "_pauldron_R": ["pauldron_R", "cloth_R"], "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"],
     "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"], "_blade_R": ["sword_R"], "_pod_R": ["pod_R"],
 }
+
+
+MODEL = None
+if os.environ.get("MODEL", "paladin") == "brute":
+    sys.path.insert(0, str(HERE))
+    import brute as MODEL  # noqa: E402
+    S, FOOT_Z, BASE, H, PARTS = MODEL.S, MODEL.FOOT_Z, MODEL.BASE, MODEL.H, MODEL.PARTS
 
 
 def to_mm(P):
@@ -120,17 +128,17 @@ def main(work):
     t0 = time.time()
     d = np.load(work / "mesh.npz")
     V, F, UV = d["V"].copy(), d["F"], d["UV"]
-    V[:, 0] -= cut.CX
-    tlab = np.load(work / "lab.npy")
-    tnames = json.loads((work / "names.json").read_text())
+    V[:, 0] -= MODEL.CX if MODEL else cut.CX
+    label = MODEL.label_points if MODEL else label_points
 
     # --- voxel labels -------------------------------------------------------------------------------------------
     lo, hi = V.min(0) - 4 * H, V.max(0) + 4 * H
     shape = np.ceil((hi - lo) / H).astype(int) + 1
     print("grid", shape, int(np.prod(shape)) / 1e6, "M voxels", flush=True)
-    C = V[F].mean(1)
-    cloth_tris = C[tlab == tnames.index("cloth")]
-    ctree = cKDTree(cloth_tris)
+    if not MODEL:           # the Paladin's cloth: voxels near the triangles cut.py labelled as cloth
+        tlab = np.load(work / "lab.npy")
+        tnames = json.loads((work / "names.json").read_text())
+        ctree = cKDTree(V[F].mean(1)[tlab == tnames.index("cloth")])
     labels = np.empty(tuple(shape), np.int16)
     names = None
     xs = lo[0] + H * np.arange(shape[0])
@@ -139,8 +147,11 @@ def main(work):
     for i0 in range(0, shape[0], 24):
         xi = xs[i0:i0 + 24]
         P = np.stack(np.meshgrid(xi, ys, zs, indexing="ij"), -1).reshape(-1, 3).astype(np.float32)
-        dc, _ = ctree.query(P, k=1, distance_upper_bound=CLOTH_T, workers=-1)
-        lab, names = label_points(P, np.isfinite(dc))
+        if MODEL:
+            lab, names = label(P)
+        else:
+            dc, _ = ctree.query(P, k=1, distance_upper_bound=CLOTH_T, workers=-1)
+            lab, names = label(P, np.isfinite(dc))
         labels[i0:i0 + len(xi)] = lab.reshape(len(xi), shape[1], shape[2])
     print("labelled", f"{time.time() - t0:.0f}s", flush=True)
 

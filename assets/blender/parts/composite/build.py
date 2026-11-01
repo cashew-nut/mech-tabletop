@@ -26,7 +26,7 @@ from mathutils import Matrix, Vector
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1]))           # assets/blender, for kit
-from layout import TREE, SIDED, joint  # noqa: E402
+from layout import TREE, SIDED, NAME, M, joint  # noqa: E402
 
 # part: (game triangles, texture size). Close to ../meshy/build.py's budget (cloth and collar now live in pelvis,
 # torso and pauldron).
@@ -35,6 +35,13 @@ BUDGET = {
     "pauldron": (7500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (2500, 512),
     "thigh": (3500, 768), "shin": (4200, 768), "foot": (2500, 512), "blade": (3000, 1024), "pod": (4000, 768),
 }
+GAME_SCALE = 1.0        # print size / kit size; the game GLBs are written at kit size
+LOADOUT = {}            # part: the side it is fitted on by default (the other side's copy is a hidden spare)
+RAY = 1.0               # bake ray reach, relative to the Paladin's (the decimated copy strays further on bigger parts)
+if M is not None:
+    BUDGET, GAME_SCALE = M.BUDGET, M.GAME_SCALE
+    RAY = 1.8
+    LOADOUT = M.LOADOUT
 PRINT_TOL = 0.015       # mm, manifold simplify tolerance for the print copies
 GUNMETAL = ((0.035, 0.035, 0.04), 0.42, 1.0)        # colour, roughness, metallic of cut faces, pegs and holes
 
@@ -82,7 +89,7 @@ def stl_bytes(V, F):
     n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
     rec = np.zeros(len(F), dtype=[("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")])
     rec["n"], rec["v"] = n, tri
-    return b"composite paladin part, mm".ljust(80, b" ") + np.uint32(len(F)).tobytes() + rec.tobytes()
+    return f"composite {NAME} part, mm".encode().ljust(80, b" ") + np.uint32(len(F)).tobytes() + rec.tobytes()
 
 
 def high_materials(imgs):
@@ -198,8 +205,8 @@ def bake(hi, lo, mats, mode, size, name):
     hi.select_set(True)
     lo.select_set(True)
     bpy.context.view_layer.objects.active = lo
-    kw = dict(type="NORMAL" if mode == "normal" else "EMIT", use_selected_to_active=True, cage_extrusion=0.5,
-              max_ray_distance=1.0, margin=6, use_clear=True)
+    kw = dict(type="NORMAL" if mode == "normal" else "EMIT", use_selected_to_active=True, cage_extrusion=0.5 * RAY,
+              max_ray_distance=1.0 * RAY, margin=6, use_clear=True)
     if mode == "normal":
         kw["normal_space"] = "TANGENT"
     bpy.ops.object.bake(**kw)
@@ -277,6 +284,12 @@ def assemble(objs):
             r.location = Vector(joint(TREE[k][1], "R"))
             r.scale = (-1, 1, 1)
             placed[(k, "L")], placed[(k, "R")] = ob, r
+            side = LOADOUT.get(k)
+            if side:        # the other side's copy is a spare: in the file, hidden, for swapping guns over
+                spare = r if side == "L" else ob
+                spare["spare"] = True
+                spare.hide_render = True
+                spare.hide_set(True)
         else:
             placed[(k, None)] = ob
     bpy.context.view_layer.update()
@@ -324,10 +337,12 @@ def main(a):
         sel.select_set(True)
         saved = sel.location.copy()
         sel.location = (0, 0, 0)
+        sel.data.transform(Matrix.Scale(1 / GAME_SCALE, 4))     # game copy at kit size (origin is the joint)
         (out / "glb").mkdir(exist_ok=True)
         bpy.ops.export_scene.gltf(filepath=str(out / "glb" / f"{k}.glb"), export_format="GLB", use_selection=True,
                                   export_yup=True, export_apply=True)
         sel.location = saved
+        sel.data.transform(Matrix.Scale(GAME_SCALE, 4))
     for m in [m for m in bpy.data.materials if m.name.startswith(("high_", "lo_"))]:
         bpy.data.materials.remove(m)
     if not only:
@@ -338,7 +353,7 @@ def main(a):
                     im.pack()
                 except RuntimeError:
                     pass
-        bpy.ops.wm.save_as_mainfile(filepath=str((out / "paladin_composite.blend").resolve()))
+        bpy.ops.wm.save_as_mainfile(filepath=str((out / f"{NAME}_composite.blend").resolve()))
     joints = json.loads((work / "joints.json").read_text())
     report = {"parts": info, "joints": joints}
     prev = out / "report.json"

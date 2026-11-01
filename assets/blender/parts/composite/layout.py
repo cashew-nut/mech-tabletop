@@ -1,5 +1,10 @@
-"""Shared names and joint positions for the composite Paladin (no Blender needed)."""
+"""Shared names and joint positions for the composite walkers (no Blender needed).
+
+MODEL=paladin (default) or MODEL=brute picks the walker; brute.py holds the Brute's settings.
+"""
 import json
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +30,15 @@ TREE = {
     "pod": (None, "chest", ("torso", "back")),   # equipment: item_carapace-gun@paladin (tries each parent in turn)
 }
 SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot", "blade", "pod"}
+RESEAT = {}
+LABEL = None
+NAME = "paladin"
+M = None
+if os.environ.get("MODEL", "paladin") == "brute":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import brute as M  # noqa: E402
+    NAME, TREE, SIDED, RESEAT, LABEL = "brute", M.TREE, M.SIDED, M.RESEAT, M.LABEL
+    TUNE = {k: [round(float(v), 3) for v in M.to_mm(p)] for k, p in M.JOINTS.items()}
 JOINT_OF = {k: v[1] for k, v in TREE.items()}
 
 

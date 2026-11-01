@@ -1,4 +1,4 @@
-# The Paladin as a composite of real parts
+# The Paladin and the Brute as composites of real parts
 
 The Iron Covenant Paladin rebuilt as 13 separate, closed parts that plug together with keyed pegs and magnets,
 then assembled in Blender into the full walker. It starts from Luke's Meshy Paladin (textured GLB in the project
@@ -92,3 +92,53 @@ node scripts/item-bounds.mjs      # item boxes for the equipment fit
 ```
 
 The 13 files come to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar).
+
+## The Ashen Foundries Brute (MODEL=brute)
+
+The same pipeline cuts Luke's Meshy Brute (`Meshy_AI_ashen_foundry_mech_..._image-to-3d-texture.glb`, 6.24M
+triangles, also one closed surface). Its settings and the reasons for each change live in `brute.py`; every script
+takes `MODEL=brute`, and the Paladin is the default, unchanged.
+
+```sh
+python3 -I ../meshy/cut.py extract Meshy_AI_ashen_foundry_..._texture.glb WORK    # no cut.py label needed
+MODEL=brute ~/bvenv/bin/python -I split.py WORK        # ~2 min
+MODEL=brute ~/bvenv/bin/python -I joints.py WORK       # ~1 min
+MODEL=brute ~/bvenv/bin/python -I build.py WORK OUT    # writes OUT/brute_composite.blend
+MODEL=brute ~/bvenv/bin/python -I render.py OUT        # adds swap.png: the guns swapped over
+```
+
+What the Paladin taught, and what the Brute does differently:
+
+- **Cut at print scale.** The Paladin's pegs were cut for 1x, so its thigh peg was 1.1 mm. The Brute is cut at Luke's
+  1.5x print scale (2.1x the bulwark kit, since the web grows bulwark parts by 1.4): about 75 mm to the helm top.
+  Pegs go up to 8 mm across and pockets take stock 5 x 2, 3 x 2 or 2 x 1 mm magnets. Game GLBs are scaled back to
+  kit size with origins on the `foundries/bulwark` joints, so they can replace the open-shell parts in place.
+- **Symmetric limbs, symmetric labels.** Every sided part is cut from the walker's left and mirrored, so one pauldron
+  card and one leg card fit either side, and the right half of the torso and pelvis is carved where the mirrored
+  parts will sit (the labels use |x|). Anything that would still overlap is trimmed off the centre parts, so the
+  assembled walker has no clashing volume. The torso, pelvis, helm and stacks keep Meshy's asymmetric detail.
+- **Parts follow the machine, not the human skeleton.** The Brute has no hands: below the elbow each forearm is a gun.
+  So each gun is a whole forearm, and the 3 mm upper-arm stub hidden under the pauldron joins the pauldron (the
+  shoulder unit). That replaces three thin joints (shoulder to arm, elbow, wrist) with one, at the elbow.
+- **Designed sockets where the sculpt gives none.** The Paladin's pod had no peg. The Brute's gatling, which Meshy
+  holds raised on the right arm, is mirrored, turned onto the cannon arm's barrel axis, moved onto its breech, trimmed
+  where it would clash with the pauldron, and given the cannon's exact peg plus a collar to carry it. Both guns use one
+  socket, so either fits either elbow (`render.py` shows the swap).
+- **Pegs both ways.** `joints.py` tries the peg on the child and on the parent and keeps the one that holds better
+  (bigger magnet, then girth times length), which turned the hip from a 3 mm peg into a 4.6 mm one with a 3 x 2 magnet.
+
+| Part | Plugs into | Notes |
+| --- | --- | --- |
+| pelvis | (root) | waist, hip armour, the hip pegs for both thighs |
+| torso | pelvis | the furnace box, the "07" plate, the big chimney behind the left shoulder |
+| helm | torso | with its crown tower |
+| back | torso | rear pack, the exhaust drum and the antennae |
+| pauldron | torso | shoulder plate, its stack and antennae, and the upper-arm stub; the elbow socket is underneath |
+| thigh | pelvis | |
+| shin | thigh | |
+| foot | shin | |
+| rockets | pauldron | weapon forearm: the cannon with its rocket box (`item_rocket-pod@brute`), left by default |
+| gatling | pauldron | weapon forearm (`item_autocannon@brute`), right by default, on the cannon's socket |
+
+`brute_composite.blend` holds every part with both guns on both arms; the default loadout (cannon left, gatling
+right) is shown and the other two are hidden spares (custom property `spare`).
