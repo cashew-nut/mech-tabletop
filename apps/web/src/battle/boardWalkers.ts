@@ -124,6 +124,7 @@ export class WalkerLibrary {
     const setProne = (prone: boolean) => {
       pose.rotation.x = prone ? -Math.PI / 2 : 0; // laid on its back
       pose.position.y = BASE_LIFT + (prone ? back * 1.05 : 0);
+      pose.position.z = prone ? height * 0.45 : 0; // centre the fallen figure on its base
     };
     return { group, pose, setProne, height, radius, back, proxy, setDim, key };
   }
