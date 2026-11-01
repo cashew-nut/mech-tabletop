@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chooseAction } from '@brass-charter/ai';
 import { applyAction, createGame, type GameState, type LanceInput } from '@brass-charter/rules';
 import examples from '../../../data/lances/examples.json';
-import { buildExchanges } from '../src/battle/combatReplay';
+import { buildExchanges } from '../src/battle/replayExchanges';
 
 const LANCES = examples.lances as LanceInput[];
 
