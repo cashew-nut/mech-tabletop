@@ -12,11 +12,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { LOCATIONS, getChassis, getEquipment, type Location, type WalkerInput } from '@brass-charter/rules';
 import { bake } from './kit';
+import { FIT, fitClass, hardpoint, planLocation, pivotOf, poseOf, type Placement } from './fit';
 import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
 /** Class items modelled on the right-hand side. */
-const NATIVE_RIGHT = new Set(['autocannon@brute', 'arc-cannon@seer']);
+const NATIVE_RIGHT = new Set(FIT.nativeRight);
 
 export interface PartLibrary {
   chassis: Map<string, THREE.Object3D>;
@@ -35,6 +36,12 @@ interface Manifest {
 }
 
 export type KitMode = 'auto' | 'force' | 'off';
+
+/** Turn the hardpoint fit off to see the numbered mounts (before and after comparisons). */
+let fitEnabled = true;
+export const setFitEnabled = (on: boolean) => {
+  fitEnabled = on;
+};
 
 export const emptyLibrary = (): PartLibrary => ({ chassis: new Map(), items: new Map(), kit: new Map(), kitFiles: new Map() });
 
@@ -152,7 +159,7 @@ function collectMounts(root: THREE.Object3D) {
 }
 
 /** The class's frame with kit parts hung on its joints, or null to fall back. */
-function kitBody(chassisId: string, lib: PartLibrary | null, palette: Palette, mode: KitMode): ChassisModel | null {
+function kitBody(chassisId: string, lib: PartLibrary | null, palette: Palette, mode: KitMode): (ChassisModel & { joints: Map<string, THREE.Object3D> }) | null {
   const c = getChassis(chassisId);
   if (mode === 'off' || !lib || !c.faction) return null;
   const plan = planKit(lib.kit, c.faction, c.id, c.frame);
@@ -177,7 +184,7 @@ function kitBody(chassisId: string, lib: PartLibrary | null, palette: Palette, m
     for (const s of standins) if (s.userData.standin === p.component && (s.userData.side ?? undefined) === p.side) s.visible = false;
   }
   for (const s of standins) if (!s.visible) s.removeFromParent();
-  return { root, mounts: collectMounts(root) };
+  return { root, mounts: collectMounts(root), joints };
 }
 
 function chassisFromLibrary(id: string, lib: PartLibrary | null, slots: Record<Location, number>, palette: Palette): ChassisModel {
@@ -195,24 +202,90 @@ export const FACTION_COLOURS: Record<string, string> = {
   reliquary: '#2f5a5a',
 };
 
+/** Hang one item on a named hardpoint, or return false when the body has no such joint. */
+function placeAtHardpoint(
+  chassisId: string, joints: Map<string, THREE.Object3D>, mounts: Record<Location, THREE.Object3D[]>, loc: Location,
+  id: string, libName: string | null, part: THREE.Object3D, place: Placement, scale: number, height: number,
+) {
+  const def = hardpoint(chassisId, place.hp);
+  if (!def) return false;
+  let anchor: THREE.Object3D;
+  const rot = new THREE.Euler(...(def.rot ?? [0, 0, 0]).map((d) => (d * Math.PI) / 180) as [number, number, number]);
+  if (def.mount) {
+    const m = mounts[loc][Number(def.mount.replace(/\D/g, ''))];
+    if (!m) return false;
+    anchor = new THREE.Object3D();
+    m.add(anchor);
+  } else {
+    const joint = joints.get(`joint_${def.joint}${place.side && ['shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle'].includes(def.joint!) ? `_${place.side}` : ''}`) ?? joints.get(`joint_${def.joint}`);
+    if (!joint || !def.offset) return false;
+    anchor = new THREE.Object3D();
+    const sign = place.side === 'R' ? -1 : 1;
+    anchor.position.set(def.offset[0] * sign * height, def.offset[1] * height, def.offset[2] * height);
+    // The right-hand anchor mirrors across the walker, so a pose written for the left works on both sides.
+    if (place.side === 'R') anchor.scale.x = -1;
+    joint.add(anchor);
+  }
+  anchor.name = `hp_${place.hp}`;
+  anchor.rotation.copy(rot);
+  const pose = poseOf(id, place.hp);
+  scale *= pose.scale;
+  // Class items are modelled for one hand; on the other side they are flipped (as the numbered mounts always did).
+  const nativeRight = libName ? NATIVE_RIGHT.has(libName) : false;
+  // A right-hand anchor is already mirrored, so only a numbered mount (not mirrored) needs the side in the decision.
+  const flip = def.mount && place.side === 'R' ? !nativeRight : nativeRight;
+  const pivot = new THREE.Vector3(...pivotOf(libName ?? id, pose.contact)).multiplyScalar(scale);
+  if (flip) pivot.x *= -1;
+  part.scale.set(flip ? -scale : scale, scale, scale);
+  const itemRot = new THREE.Euler(...((pose.rot ?? [0, 0, 0]).map((d) => (d * Math.PI) / 180) as [number, number, number]));
+  part.rotation.copy(itemRot);
+  part.position.copy(pivot.applyEuler(itemRot).negate());
+  anchor.add(part);
+  return true;
+}
+
 export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: PartLibrary | null = null, kit: KitMode = 'auto'): THREE.Group {
   const c = getChassis(walker.chassis);
   const palette = makePalette(hullColour);
-  const { root, mounts } = kitBody(c.id, lib, palette, kit) ?? chassisFromLibrary(c.id, lib, c.slots, palette);
+  const body = kitBody(c.id, lib, palette, kit);
+  const { root, mounts } = body ?? chassisFromLibrary(c.id, lib, c.slots, palette);
   const scale = partScale(c.id);
+  const fit = fitEnabled ? fitClass(c.id) : null;
+  let height = 0;
+  if (fit) {
+    root.updateMatrixWorld(true);
+    const head = body?.joints.get('joint_head');
+    height = head ? head.getWorldPosition(new THREE.Vector3()).y : 0;
+  }
 
+  const libName_ = (id: string) => (lib ? itemPartName(lib.items, id, c.faction, c.id) : null);
   for (const loc of LOCATIONS) {
     let slot = 0;
-    for (const id of walker.loadout[loc] ?? []) {
+    const ids = walker.loadout[loc] ?? [];
+    const native = ids.map((id) => !!libName_(id)?.endsWith(`@${c.id}`));
+    const plan = fit && height > 0 ? planLocation(c.id, loc, ids, native) : null;
+    ids.forEach((id, index) => {
       const def = getEquipment(id);
-      const anchor = mounts[loc][slot];
-      slot += def.slots;
-      if (!anchor) continue; // over-full location: nothing left to attach to
       const libName = lib ? itemPartName(lib.items, id, c.faction, c.id) : null;
       const fromLib = libName ? lib!.items.get(libName) : undefined;
-      const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());
-      if (fromLib) repaint(part, palette);
-      part.name = `part_${id}`;
+      const make = () => {
+        const part = fromLib ? fromLib.clone(true) : bake(PARTS[id]?.(palette) ?? new THREE.Group());
+        if (fromLib) repaint(part, palette);
+        part.name = `part_${id}`;
+        return part;
+      };
+      const places = plan ? plan[index] : null;
+      if (places && body && fit) {
+        const placed = places.map((p) => placeAtHardpoint(c.id, body.joints, mounts, loc, id, libName, make(), p, scale * fit.scale, height));
+        if (placed.every(Boolean)) {
+          slot += def.slots;
+          return;
+        }
+      }
+      const anchor = mounts[loc][slot];
+      slot += def.slots;
+      if (!anchor) return; // over-full location: nothing left to attach to
+      const part = make();
       part.scale.setScalar(scale);
       // A class's own item (lance@paladin) is modelled for the left; flip it for the right arm and the second core mount.
       // Items cut from a right-hand weapon (autocannon@brute) are the other way round.
@@ -221,7 +294,7 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
         if (right !== NATIVE_RIGHT.has(libName)) part.scale.x *= -1;
       }
       anchor.add(part);
-    }
+    });
   }
   root.name = walker.name;
   return root;
