@@ -6,6 +6,9 @@
 // lo={"core":["coolant-loop"]} (JSON) sets the loadout; dump=1 puts item and joint positions in data-dump (see scripts/fit-check.mjs).
 // fit=off shows the old numbered mounts instead of the hardpoints.
 // zoom=2 moves in, fy=0.7 aims at 70% of the height (for close-ups of a hardpoint).
+// show=helm,collar keeps only those kit components (the body part of a card); plain=1 drops the floor and skyline
+// so only the sky is left behind it; side=R keeps only that side's sided parts; see scripts/render-card-art.mjs.
+// dim=0.07 sets how dark the rest of the body goes; roll=-55 tilts the model about the view axis.
 // lineup=8 stands that many walkers in a row; bench=120 then times that many frames into data-bench.
 import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
@@ -63,11 +66,58 @@ for (let i = 0; i < (partName ? 0 : lineup); i++) {
   m.position.z = -Math.abs(i - (lineup - 1) / 2) * 10;
   model.add(m);
 }
+// Card art: the named kit components (kit_<component>[_side] nodes) stay lit and the rest of the body is dimmed, so
+// the part shows where it sits. The framing below then fits only the lit part.
+const show = q.get('show')?.split(',');
+const lit = new THREE.Box3();
+if (show) {
+  const isKit = (o: THREE.Object3D) => {
+    for (let n: THREE.Object3D | null = o; n; n = n.parent) if (n.name.startsWith('kit_')) return true;
+    return false;
+  };
+  const keep = (o: THREE.Object3D) => {
+    for (let n: THREE.Object3D | null = o; n; n = n.parent) {
+      const m = /^kit_([a-z]+)(?:_[LR])?$/.exec(n.name);
+      if (m) return show.includes(m[1]);
+    }
+    return false;
+  };
+  const dim = Number(q.get('dim') ?? 0.07);
+  model.updateMatrixWorld(true);
+  const gone: THREE.Object3D[] = [];
+  model.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    if (!isKit(mesh)) {
+      // Items and the stand-in plinth would only clutter the card.
+      gone.push(mesh);
+      return;
+    }
+    if (keep(mesh)) {
+      lit.union(new THREE.Box3().setFromObject(mesh));
+      return;
+    }
+    const fade = (m: THREE.Material) => {
+      const c = m.clone() as THREE.MeshStandardMaterial;
+      c.color?.multiplyScalar(dim);
+      if (c.emissive) c.emissiveIntensity *= dim;
+      c.envMapIntensity = dim;
+      return c;
+    };
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(fade) : fade(mesh.material);
+  });
+  for (const o of gone) o.removeFromParent();
+}
+const roll = Number(q.get('roll') ?? 0);
+if (roll) model.rotation.z = (roll * Math.PI) / 180;
+if (q.get('plain')) {
+  for (const o of [...scene.children]) if (o.name === 'stage_floor' || o.name.startsWith('stage_backdrop')) o.removeFromParent();
+}
 scene.add(model);
 fit(model);
 
 // Frame the model: fit its bounding box to the view.
-const box = new THREE.Box3().setFromObject(model);
+const box = lit.isEmpty() ? new THREE.Box3().setFromObject(model) : lit;
 const centre = box.getCenter(new THREE.Vector3());
 const size = box.getSize(new THREE.Vector3()).length();
 const camera = new THREE.PerspectiveCamera(30, w / h, 1, 4000);

@@ -17,6 +17,8 @@
     "build": "npm run build -w apps/web",
     "sim": "vite-node tools/sim/sim.ts --",
     "render": "node scripts/render-walkers.mjs",
+    "cards:art": "node scripts/render-card-art.mjs",
+    "cards:sheet": "node scripts/build-card-sheet.mjs",
     "fit": "node scripts/fit-check.mjs",
     "fit:sheets": "node scripts/fit-sheets.mjs",
     "place": "npm run dev -w apps/web -- --open /place.html"
