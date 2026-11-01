@@ -136,7 +136,7 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron.",
     "paladin": [
       "cloth",
       "collar"
@@ -328,6 +328,84 @@
             0.0,
             -0.199,
             -0.992
+          ]
+        ]
+      }
+    },
+    "foundries/brute": {
+      "$comment": "The composite Brute's own skeleton (mm, left side): the joints assets/blender/parts/composite/brute.py cut its parts on (shoulder, elbow, wrist and ankle were re-measured; the rest match foundries/bulwark). scripts/publish-composite.mjs writes it as foundries_frame_brute so the Brute's parts meet at their pegs; Artillery keeps foundries_frame_bulwark. The arm mounts sit where the gun forearms' origins are (their elbow lands on the pauldron's socket).",
+      "joints": {
+        "pelvis": [
+          0.0,
+          1.983,
+          21.445
+        ],
+        "spine": [
+          0.0,
+          1.983,
+          24.618
+        ],
+        "chest": [
+          0.0,
+          1.983,
+          27.792
+        ],
+        "neck": [
+          0.0,
+          2.38,
+          32.75
+        ],
+        "head": [
+          0.0,
+          2.975,
+          34.932
+        ],
+        "shoulder": [
+          5.95,
+          -1.388,
+          27.99
+        ],
+        "elbow": [
+          7.041,
+          -0.992,
+          25.213
+        ],
+        "wrist": [
+          8.727,
+          -3.967,
+          20.85
+        ],
+        "hip": [
+          4.363,
+          1.587,
+          20.255
+        ],
+        "knee": [
+          6.347,
+          0.992,
+          13.908
+        ],
+        "ankle": [
+          8.33,
+          -1.983,
+          5.975
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            0.298,
+            0.396,
+            -0.397
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            -0.298,
+            0.396,
+            -0.397
           ]
         ]
       }
@@ -665,10 +743,23 @@
       },
       "brute": {
         "grip": {
+          "joint": "elbow",
           "offset": [
             0.0,
-            -0.03,
-            0.0
+            -0.01,
+            0.01
+          ],
+          "rot": [
+            45,
+            0,
+            0
+          ],
+          "contact": [
+            "back"
+          ],
+          "blocks": [
+            "grip-native",
+            "forearm-top"
           ]
         },
         "chest-front": {
@@ -690,6 +781,12 @@
             -0.17,
             0.0,
             0.08
+          ]
+        },
+        "grip-native": {
+          "blocks": [
+            "grip",
+            "forearm-top"
           ]
         }
       },
@@ -830,7 +927,18 @@
     "placements": {
       "$comment": "Hand adjustments from the sliders (apps/web/place.html): class, then hardpoint, then an item id or * for every item there. offset is in fractions of body height in the hardpoint's axes, rot in degrees, scale multiplies the item. Missing rows change nothing. Merge a copy from the tool with: node scripts/merge-placements.mjs placements.json",
       "paladin": {},
-      "brute": {},
+      "brute": {
+        "grip": {
+          "*": {
+            "scale": 0.75
+          }
+        },
+        "shoulder-top": {
+          "*": {
+            "scale": 0.7
+          }
+        }
+      },
       "seer": {}
     }
   }

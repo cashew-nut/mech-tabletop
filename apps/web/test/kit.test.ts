@@ -97,6 +97,15 @@ describe('kit part resolution', () => {
     expect(plan.parts.map((p) => p.component)).not.toContain('forearm');
     expect(plan.parts.map((p) => p.component)).not.toContain('hand');
     expect(plan.parts.map((p) => p.component)).not.toContain('collar');
+    // The frame's stand-ins for these go too, or its placeholder cylinders hang under the pauldrons.
+    expect(plan.omitted).toEqual(expect.arrayContaining(['arm', 'forearm', 'hand']));
+  });
+
+  it("uses a class's own frame over the shared one, so its parts hang on the joints they were cut on", () => {
+    const names = new Set(['foundries_frame_bulwark', 'foundries_frame_brute', 'foundries_pelvis_brute']);
+    expect(planKit(names, 'foundries', 'brute', 'bulwark')!.frame).toBe('foundries_frame_brute');
+    expect(planKit(names, 'foundries', 'artillery', 'bulwark')!.frame).toBe('foundries_frame_bulwark');
+    expect(kitCandidates('foundries', 'brute', 'bulwark')).toContain('foundries_frame_brute');
   });
 
   it('plans the composite Seer with its own right arm and no collar', () => {
@@ -136,6 +145,9 @@ describe('kit walker assembly', () => {
     // Optional components with no part keep their stand-ins; covered ones go.
     expect(standins).not.toContain('helm');
     expect(standins).toContain('pauldron');
+    // Components the class omits (the Paladin's torso has its own collar and tabard) lose their stand-ins too.
+    expect(standins).not.toContain('collar');
+    expect(standins).not.toContain('cloth');
     // Equipment still snaps to the frame's mounts.
     expect(model.getObjectByName('part_lance')!.parent!.userData.mount).toBe('mount_armRight_0');
     // Livery is multiplied into the baked hull texture.

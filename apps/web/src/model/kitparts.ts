@@ -1,6 +1,7 @@
 // Which Blender kit parts make up a walker. Each class (data/chassis.json)
 // names its faction and frame. Its body is the faction's skeleton,
-// `<faction>_frame_<frame>`, with one part per component joint, looked up
+// `<faction>_frame_<frame>` (or the class's own `<faction>_frame_<class>`, built on
+// the joints its parts were cut on), with one part per component joint, looked up
 // class first and then frame:
 //   covenant_helm_paladin  ->  covenant_helm_titan  ->  the frame's stand-in
 // Sided components (arms, legs, pauldrons) are modelled for the left (+X) and
@@ -46,6 +47,8 @@ export interface KitPlan {
   parts: PlannedPart[];
   /** Required components with no part yet: the stand-ins show instead. */
   missing: string[];
+  /** Components the class never shows: their stand-ins go too (the composite Brute's arms are its guns). */
+  omitted: string[];
 }
 
 interface Names {
@@ -64,13 +67,22 @@ export function resolvePart(names: Names, faction: string, component: string, cl
   return null;
 }
 
+/** The class's own frame (foundries_frame_brute, on the joints its parts were cut on) if there is one, else the frame's. */
+export const classFrame = (names: Names, faction: string, cls: string, frame: string) =>
+  names.has(frameName(faction, cls)) ? frameName(faction, cls) : names.has(frameName(faction, frame)) ? frameName(faction, frame) : null;
+
 /** Plan a class's kit body from the names available, or null without a frame. */
 export function planKit(names: Names, faction: string, cls: string, frame: string): KitPlan | null {
-  if (!names.has(frameName(faction, frame))) return null;
+  const skeleton = classFrame(names, faction, cls, frame);
+  if (!skeleton) return null;
   const parts: PlannedPart[] = [];
   const missing = new Set<string>();
+  const omitted: string[] = [];
   for (const c of COMPONENTS) {
-    if (OMIT[cls]?.includes(c.id)) continue;
+    if (OMIT[cls]?.includes(c.id)) {
+      omitted.push(c.id);
+      continue;
+    }
     for (const side of c.sided ? (['L', 'R'] as Side[]) : [undefined]) {
       const found = resolvePart(names, faction, c.id, cls, frame, side);
       if (!found) {
@@ -80,12 +92,12 @@ export function planKit(names: Names, faction: string, cls: string, frame: strin
       parts.push({ component: c.id, side, joint: jointName(c.joint, side), name: found.name, mirror: side === 'R' && !found.ownRight });
     }
   }
-  return { frame: frameName(faction, frame), parts, missing: [...missing] };
+  return { frame: skeleton, parts, missing: [...missing], omitted };
 }
 
 /** Every kit name a class could use, for loading only what it needs. */
 export function kitCandidates(faction: string, cls: string, frame: string): string[] {
-  const out = [frameName(faction, frame)];
+  const out = [frameName(faction, cls), frameName(faction, frame)];
   for (const c of COMPONENTS) {
     if (OMIT[cls]?.includes(c.id)) continue;
     for (const comp of c.sided ? [c.id, `${c.id}-right`] : [c.id]) {

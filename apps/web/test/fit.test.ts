@@ -12,8 +12,18 @@ describe('equipment fit', () => {
   });
 
   it('puts a second weapon after a two-slot weapon on the forearm, not the shoulder', () => {
+    expect(names(planLocation('paladin', 'armRight', ['rail-cannon', 'autocannon']))).toEqual(['grip:R', 'forearm-top:R']);
     expect(names(planLocation('brute', 'armLeft', ['rocket-pod', 'kinetic-shield']))).toEqual(['grip:L', 'bracer:L']);
-    expect(names(planLocation('brute', 'armRight', ['rail-cannon', 'autocannon']))).toEqual(['grip:R', 'forearm-top:R']);
+  });
+
+  it('gives the Brute one forearm per elbow socket: a gun forearm or a held item, and the next weapon on the pauldron', () => {
+    // Its guns are whole forearms (grip-native) and a claw or rail cannon takes the same socket (grip), so neither
+    // doubles up there, and the forearm-top beside a forearm the Brute does not have is skipped too.
+    expect(names(planLocation('brute', 'armLeft', ['autocannon', 'autocannon'], [true, false]))).toEqual(['grip-native:L', 'shoulder-top:L']);
+    expect(names(planLocation('brute', 'armRight', ['industrial-claw', 'autocannon'], [false, true]))).toEqual(['grip:R', 'shoulder-top:R']);
+    expect(names(planLocation('brute', 'armRight', ['rail-cannon', 'autocannon']))).toEqual(['grip:R', 'shoulder-top:R']);
+    const socket = hardpoint('brute', 'grip')!;
+    expect([socket.joint, socket.contact]).toEqual(['elbow', ['back']]);
   });
 
   it('fills the arm ladder in order and uses the right side', () => {
@@ -90,7 +100,7 @@ describe('equipment fit', () => {
       table.paladin = { grip: { '*': { offset: [0, 0.01, 0], scale: 1.2 }, lance: { scale: 0.8 } } };
       expect(nudgeOf('paladin', 'grip', 'kinetic-claws')).toEqual({ offset: [0, 0.01, 0], rot: [0, 0, 0], scale: 1.2 });
       expect(nudgeOf('paladin', 'grip', 'lance')).toEqual({ offset: [0, 0.01, 0], rot: [0, 0, 0], scale: 0.8 });
-      expect(nudgeOf('brute', 'grip', 'lance')).toBeNull();
+      expect(nudgeOf('seer', 'grip', 'lance')).toBeNull();
       reset();
     });
 
