@@ -22,6 +22,7 @@ python3 -I ../meshy/cut.py extract Meshy_..._texture.glb WORK   # mesh.npz and M
 ~/bvenv/bin/python -I joints.py WORK         # keyed peg + hole and magnet pockets at every joint          (~15 s)
 ~/bvenv/bin/python -I build.py WORK OUT      # bake, game GLB, print STL, assembled .blend                 (~2 min)
 ~/bvenv/bin/python -I render.py OUT          # parts sheet, assembled, exploded and posed renders          (~5 min)
+node ../../../../scripts/publish-composite.mjs OUT/glb       # into apps/web/public/parts (no Blender), then compress, see below
 ~/bvenv/bin/python -I peek.py WORK OUT.png --explode 1 [--dir kit]   # quick flat-shaded check, a colour per piece
 ```
 
@@ -72,8 +73,25 @@ counts and every joint's peg, axis and magnet.
 - The pod has no peg (its only contact with the torso and spire is a few struts). Pin or glue it for now.
 - The surface is still Meshy's sculpt; only the cuts, joints and symmetry are new. Torso, pelvis, helm and spire are
   not yet symmetrised. Cut faces are plain gunmetal, not designed sockets with detail.
-- The game still loads the old open-shell parts. Publishing these as `covenant_<component>_paladin` (and retiring
-  the separate `cloth` and `collar` parts) is the next step, then re-rendering the card art from them.
+- The Paladin's game parts are these now (see below). The old open-shell cut in `../meshy/` is kept for reference
+  and for the other two Meshy models, but it no longer builds the Paladin.
+
+## In the game
+
+`scripts/publish-composite.mjs` copies OUT/glb into `apps/web/public/parts`: the 11 body parts as
+`kit/covenant_<part>_paladin.glb` (left side only, the web mirrors the right), `blade` as `item_lance@paladin.glb` and
+`pod` as `item_carapace-gun@paladin.glb`. Items are stored at scout scale with their origin on the grip or pod mount
+(the web grows them by 1.7), so the script moves and scales their vertices; every other part keeps its joint origin.
+It deletes the old `-right`, `cloth` and `collar` Paladin parts and edits the manifest. `data/model-kit.json`
+`omit.paladin` stops the Titan collar and cloth filling in for the retired ones (the torso carries its own collar and
+the pelvis its tabard). Then:
+
+```sh
+node scripts/compress-parts.mjs   # KTX2_NORMAL=etc1s KTX2_BASE_Q=150, on the 13 files (needs `npm i --no-save basisu`)
+node scripts/item-bounds.mjs      # item boxes for the equipment fit
+```
+
+The 13 files come to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar).
 
 ## The Ashen Foundries Brute (MODEL=brute)
 

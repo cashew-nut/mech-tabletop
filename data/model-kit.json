@@ -135,6 +135,13 @@
       "required": true
     }
   ],
+  "omit": {
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard.",
+    "paladin": [
+      "cloth",
+      "collar"
+    ]
+  },
   "spareMounts": {
     "armLeft": 3,
     "armRight": 3,

@@ -21,6 +21,8 @@ export type Side = 'L' | 'R';
 export const COMPONENTS = kitData.components as KitComponent[];
 export const KIT_FACTIONS = Object.keys(kitData.factions);
 export const SPARE_MOUNTS = kitData.spareMounts as Record<string, number>;
+/** Components a class never shows, so the frame's part does not fill in for them (the composite Paladin's torso has its own collar). */
+const OMIT = kitData.omit as unknown as Record<string, string[] | string>;
 
 const SIDED_JOINTS = new Set(['shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle']);
 
@@ -68,6 +70,7 @@ export function planKit(names: Names, faction: string, cls: string, frame: strin
   const parts: PlannedPart[] = [];
   const missing = new Set<string>();
   for (const c of COMPONENTS) {
+    if (OMIT[cls]?.includes(c.id)) continue;
     for (const side of c.sided ? (['L', 'R'] as Side[]) : [undefined]) {
       const found = resolvePart(names, faction, c.id, cls, frame, side);
       if (!found) {
@@ -84,6 +87,7 @@ export function planKit(names: Names, faction: string, cls: string, frame: strin
 export function kitCandidates(faction: string, cls: string, frame: string): string[] {
   const out = [frameName(faction, frame)];
   for (const c of COMPONENTS) {
+    if (OMIT[cls]?.includes(c.id)) continue;
     for (const comp of c.sided ? [c.id, `${c.id}-right`] : [c.id]) {
       for (const variant of [cls, frame]) out.push(`${faction}_${comp}_${variant}`);
     }
