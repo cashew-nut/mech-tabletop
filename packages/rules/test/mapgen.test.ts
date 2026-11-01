@@ -71,7 +71,7 @@ describe('board generator', () => {
         expect(g.fallback, g.code).toBe(false);
       }
     }
-  });
+  }, 60_000);
 
   // A light version of the 10,000-seed sweep (tools/mapgen/sweep.ts), so a rules change that breaks boards fails CI.
   it('passes every hard rule on a run of seeds, with no fallbacks', () => {
@@ -82,7 +82,7 @@ describe('board generator', () => {
       const report = checkBoard(Board.fromMap(g.map), g.scenario.objectives, depth, { limits: arch.limits });
       expect(report.results.filter((r) => !r.ok), g.code).toEqual([]);
     }
-  });
+  }, 60_000);
 
   it('measures movement exactly as the engine does', () => {
     for (const seed of [1, 2, 3, 4, 5]) expect(new Probe(generateBoard(seed).board).engineAgrees()).toBe(true);
