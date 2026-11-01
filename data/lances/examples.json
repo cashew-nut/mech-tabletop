@@ -30,28 +30,29 @@
               "lance"
             ],
             "armRight": [
-              "melee-blade"
+              "kinetic-shield"
             ],
             "legs": [
               "sprint-servos"
+            ],
+            "core": [
+              "reactive-shell"
             ]
           }
         },
         {
           "name": "Censer",
-          "chassis": "lancer",
+          "chassis": "sentinel",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armLeft": [
-              "missile-rack"
-            ],
             "armRight": [
               "kinetic-shield"
             ],
             "core": [
+              "missile-rack",
               "targeting-array"
             ]
           }
@@ -107,7 +108,7 @@
               "coolant-loop"
             ],
             "legs": [
-              "anchor-spikes"
+              "gyro-stabilisers"
             ]
           }
         },
@@ -173,7 +174,7 @@
               "kinetic-shield"
             ],
             "armRight": [
-              "hellfire-missiles"
+              "arc-cannon"
             ],
             "core": [
               "spotter-drone",
@@ -240,13 +241,13 @@
         },
         {
           "name": "Psalm",
-          "chassis": "lancer",
+          "chassis": "sentinel",
           "driver": {
             "command": 0,
             "trait": null
           },
           "loadout": {
-            "armLeft": [
+            "core": [
               "missile-rack"
             ]
           }
@@ -414,7 +415,7 @@
           },
           "loadout": {
             "armLeft": [
-              "hellfire-missiles"
+              "kinetic-claws"
             ],
             "armRight": [
               "arc-cannon"

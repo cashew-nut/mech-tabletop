@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import examples from '../../../data/lances/examples.json';
-import { getFaction, validateLance, walkerCost, type LanceInput } from '../src';
+import { getEquipment, getFaction, hasEquipment, validateLance, walkerCost, type LanceInput } from '../src';
 import { lance, walker } from './helpers';
 
 describe('lance building', () => {
@@ -11,6 +11,25 @@ describe('lance building', () => {
       expect(report.total).toBeGreaterThanOrEqual(95);
       expect(report.total).toBeLessThanOrEqual(100);
     }
+  });
+
+  it('has cut the six items that had no model to fit', () => {
+    for (const id of ['melee-blade', 'hellfire-missiles', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']) {
+      expect(hasEquipment(id), id).toBe(false);
+    }
+  });
+
+  it('shows the Siege Blade and Arc Spear names, with the old ids', () => {
+    expect(getEquipment('lance').name).toBe('Siege Blade');
+    expect(getEquipment('arc-cannon').name).toBe('Arc Spear');
+  });
+
+  it('mounts the Missile Rack on the core, so a Lancer (one core slot) cannot carry it', () => {
+    expect(getEquipment('missile-rack').mount).toEqual(['core']);
+    expect(validateLance(lance('Rack', [walker('A', 'sentinel', { core: ['missile-rack'] }), walker('B', 'sentinel'), walker('C', 'sentinel')])).errors.join('\n')).not.toMatch(/Missile Rack/);
+    const bad = validateLance(lance('Rack', [walker('A', 'lancer', { core: ['missile-rack'] }), walker('B', 'lancer', { armLeft: ['missile-rack'] }), walker('C', 'lancer')]));
+    expect(bad.errors.join('\n')).toMatch(/core uses 2 slots/);
+    expect(bad.errors.join('\n')).toMatch(/cannot be mounted in armLeft/);
   });
 
   it('applies faction discounts', () => {

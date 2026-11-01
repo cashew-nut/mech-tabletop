@@ -12,11 +12,12 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 const root = new URL('..', import.meta.url);
 const equipment = JSON.parse(readFileSync(new URL('data/equipment.json', root), 'utf8')).equipment;
 const chassis = JSON.parse(readFileSync(new URL('data/chassis.json', root), 'utf8')).chassis;
-const fitClasses = Object.keys(JSON.parse(readFileSync(new URL('data/model-kit.json', root), 'utf8')).fit.classes);
+const kit = JSON.parse(readFileSync(new URL('data/model-kit.json', root), 'utf8'));
+const fitClasses = Object.keys(kit.fit.classes);
 const picked = process.argv.slice(2);
 const classes = (picked.length ? picked : fitClasses).filter((c) => fitClasses.includes(c));
 const fitOff = process.env.FIT === 'off' ? '&fit=off' : '';
-const FILL = { armLeft: 'lance', armRight: 'lance', core: 'smoke-launcher', legs: 'jump-jets' };
+const FILL = { armLeft: 'lance', armRight: 'lance' };
 
 const server = spawn('npx', ['vite', '--port', '5195', '--strictPort'], { cwd: resolve('apps/web'), stdio: 'ignore', detached: true });
 for (let i = 0; ; i++) {
@@ -39,6 +40,7 @@ try {
     console.log(`\n${cls} (${c.frame})`);
     for (const e of equipment) {
       if (e.faction && e.faction !== c.faction) continue;
+      if (kit.fit.cardOnly.includes(e.id)) continue; // no model, nothing to place
       const kinds = e.mount.includes('any') ? ['armLeft', 'core', 'legs'] : e.mount.flatMap((m) => (m === 'arm' ? ['armLeft', 'armRight'] : [m]));
       for (const loc of kinds) {
         // Arms: the item first, then second and third behind a filler, to check the whole ladder.

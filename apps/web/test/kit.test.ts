@@ -166,10 +166,10 @@ describe('kit walker assembly', () => {
 
   it('prefers a faction variant of an item', () => {
     const lib = kitLibrary('covenant', () => 'titan');
-    lib.items.set('jump-jets', fakePart('shared_jets'));
-    lib.items.set('jump-jets@covenant', fakePart('covenant_jets'));
-    const model = buildWalkerModel(paladin({ legs: ['jump-jets'] }), '#123456', lib);
-    expect(model.getObjectByName('covenant_jets')).toBeTruthy();
+    lib.items.set('kinetic-shield', fakePart('shared_shield'));
+    lib.items.set('kinetic-shield@covenant', fakePart('covenant_shield'));
+    const model = buildWalkerModel(paladin({ armLeft: ['kinetic-shield'] }), '#123456', lib);
+    expect(model.getObjectByName('covenant_shield')).toBeTruthy();
   });
 
   it('exports mirrored parts right side out', () => {

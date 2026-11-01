@@ -224,9 +224,14 @@ console.log(summary.join('\n'));
       for (const hp of Object.keys(hps)) if (!fit.hardpoints[hp]) fail(`model-kit.json fit.overrides.${cls}`, `unknown hardpoint "${hp}"`);
     }
     const kindOf = { arm: 'arm', core: 'core', legs: 'legs' };
+    for (const id of fit.cardOnly ?? []) {
+      if (!equipmentById.has(id)) fail('model-kit.json fit.cardOnly', `unknown item "${id}"`);
+      if (fit.items[id]) fail('model-kit.json fit.cardOnly', `"${id}" is card-only but has a fit entry`);
+    }
     for (const e of equipment) {
       const item = fit.items[e.id];
-      if (!item) { fail('model-kit.json fit.items', `no fit for "${e.id}"`); continue; }
+      if ((fit.cardOnly ?? []).includes(e.id)) continue;
+      if (!item) { fail('model-kit.json fit.items', `no fit for "${e.id}" (give it hardpoints, or list it in fit.cardOnly)`); continue; }
       for (const m of e.mount.includes('any') ? ['arm', 'core', 'legs'] : e.mount) {
         if (!item[kindOf[m]]?.length) fail(`model-kit.json fit.items.${e.id}`, `no hardpoints for ${m}`);
       }

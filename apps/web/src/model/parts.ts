@@ -3,7 +3,7 @@
 // and +Z is forward. Chassis live in chassis.ts; this file holds the items,
 // each built at Scout scale with its origin where it attaches.
 import * as THREE from 'three';
-import { archWindow, at, barrel, blade, box, cyl, dome, gauge, gear, group, lancet, lathe, piston, pipe, plate, rivetRow, sphere, spire, sunburst, torus, trimmed, type Palette } from './kit';
+import { at, barrel, blade, box, cyl, dome, group, lancet, lathe, piston, pipe, plate, rivetRow, sphere, spire, sunburst, torus, trimmed, type Palette } from './kit';
 
 export { makePalette, type Palette } from './kit';
 export { BASE_MM, baseMm, buildChassis, frameOf, type ChassisModel } from './chassis';
@@ -96,12 +96,6 @@ export const PARTS: Record<string, PartBuilder> = {
       rivetRow([1.8, 1.75, 6.4], [1.8, 1.75, 7.6], 2, 0.22, p.trim, [0, 1, 0]),
       at(cyl(0.6, 0.6, 2.4, p.copper, 10), 0, 1.4, 1.8, Math.PI / 2),
     ),
-  'melee-blade': (p) =>
-    group(
-      plate(2, 2.2, 2.4, p.iron, 0.4),
-      at(plate(3.4, 0.8, 0.8, p.trim, 0.25), 0, 0, 1.4),
-      at(blade(9, 2.2, p), 0, -0.4, 1.6),
-    ),
   lance: (p) =>
     group(
       plate(2, 2.2, 2.4, p.iron, 0.4),
@@ -110,11 +104,6 @@ export const PARTS: Record<string, PartBuilder> = {
       at(spire(0.55, 3, p), 0, 0, 12.4, Math.PI / 2),
       at(plate(0.2, 2.4, 3, p.hull, 0.05), 0, -1.6, 4.4),
     ),
-  'hellfire-missiles': (p) => {
-    const g = PARTS['missile-rack'](p) as THREE.Group;
-    g.add(at(sphere(0.6, p.glow, 12), 0, 1.6, 0), at(sunburst(1.2, p), 0, 0, -1.6));
-    return g;
-  },
   'kinetic-claws': (p) =>
     group(
       plate(2, 2.2, 2.4, p.iron, 0.4),
@@ -122,20 +111,6 @@ export const PARTS: Record<string, PartBuilder> = {
       at(torus(0.9, 0.18, p.glow, 12), 0, 0, 1.2),
     ),
   // ------------------------------------------------ armour
-  'ablative-plating': (p) =>
-    group(
-      at(plate(5.2, 4.2, 1.2, p.iron, 0.3), 0, 0, 0.6),
-      at(trimmed(4.8, 2.1, 0.9, p), 0, 1.05, 1.5, -0.12),
-      at(trimmed(4.8, 2.1, 0.9, p), 0, -1, 1.5, -0.12),
-      at(sunburst(0.9, p), 0, 1.05, 2.05, -0.12),
-    ),
-  'reactive-shell': (p) =>
-    group(
-      at(plate(5, 3.8, 0.8, p.iron, 0.2), 0, 0, 0.4),
-      ...[-1.6, 0, 1.6].flatMap((x) =>
-        [-0.9, 0.9].flatMap((y) => [at(plate(1.4, 1.6, 1.2, p.armour, 0.25), x, y, 1.3), at(dome(0.25, p.trim, 8), x, y, 1.9, Math.PI / 2)]),
-      ),
-    ),
   'kinetic-shield': (p) => {
     // A heater shield: flat top, curving to a point below.
     const s = new THREE.Shape();
@@ -156,88 +131,7 @@ export const PARTS: Record<string, PartBuilder> = {
       at(plate(2, 2, 1.4, p.iron, 0.3), 0, 0, 0.3),
     );
   },
-  'smoke-launcher': (p) =>
-    group(
-      plate(3.4, 1.6, 2.4, p.iron, 0.3),
-      at(plate(3.6, 0.4, 2.6, p.trim, 0.15), 0, 0.8, 0),
-      ...[-1, 0, 1].flatMap((i) => [
-        at(cyl(0.55, 0.55, 2.6, p.iron, 12), i * 1.1, 1.8, 0.4, -0.45),
-        at(cyl(0.65, 0.65, 0.4, p.trim, 12), i * 1.1, 3, 0.95, -0.45),
-      ]),
-    ),
-  // ------------------------------------------------ mobility
-  'jump-jets': (p) =>
-    group(
-      at(plate(4.6, 2.4, 2.2, p.iron, 0.4), 0, 0.6, 0),
-      at(cyl(0.9, 0.9, 3.4, p.copper, 14), 0, 2.4, 0),
-      at(dome(0.9, p.copper, 12), 0, 4.1, 0),
-      ...[-1.4, 1.4].flatMap((x) => [
-        at(lathe([[1.5, -2.4], [1.1, -0.4], [0.9, 0]], p.iron, 16), x, 0, 0),
-        at(torus(1.45, 0.16, p.trim, 16), x, -2.3, 0, Math.PI / 2),
-        at(cyl(1.3, 1.3, 0.2, p.fire, 16), x, -2.45, 0),
-      ]),
-    ),
-  'sprint-servos': (p) =>
-    group(
-      at(gear(1.6, 0.6, 12, p.trim), 0, 1.2, 0, 0, 0, Math.PI / 2),
-      at(gear(1, 0.5, 9, p.copper), 0.1, -0.6, 1.4, 0, 0, Math.PI / 2),
-      at(cyl(0.6, 0.6, 1.6, p.iron, 12), 0, 1.2, 0, 0, 0, Math.PI / 2),
-      piston([0, -2.8, -0.4], [0, 0.6, -0.8], 0.45, p),
-    ),
-  'gyro-stabilisers': (p) =>
-    group(
-      sphere(1.2, p.iron, 16),
-      at(sphere(0.6, p.glow, 12), 0, 0, 1.05),
-      at(torus(2.2, 0.28, p.trim, 24), 0, 0, 0, Math.PI / 2),
-      at(torus(1.8, 0.24, p.copper, 24), 0, 0, 0, 0, Math.PI / 2),
-      at(torus(2.2, 0.16, p.trim, 24), 0, 0, 0),
-      at(cyl(0.4, 0.4, 5, p.iron, 10), 0, 0, 0),
-    ),
-  'anchor-spikes': (p) =>
-    group(
-      at(plate(4, 1.2, 2, p.iron, 0.3), 0, -0.4, 0),
-      ...[-1.2, 1.2].flatMap((x) => [
-        at(cyl(0.95, 0.95, 0.8, p.trim, 12), x, -1.2, 0),
-        at(lathe([[0.8, 0], [0.8, 0.6], [0.05, 4]], p.iron, 12), x, -1.4, 0, Math.PI),
-      ]),
-    ),
   // ------------------------------------------------ systems
-  'targeting-array': (p) => {
-    const dish = new THREE.Mesh(new THREE.SphereGeometry(1.8, 18, 6, 0, Math.PI * 2, 0, Math.PI / 3), p.trim);
-    return group(
-      at(cyl(0.9, 1.1, 0.8, p.iron, 14), 0, 0.4, 0),
-      at(cyl(0.3, 0.3, 2.6, p.iron, 10), 0, 2, 0),
-      at(lathe([[0.7, 0], [0.7, 3.4], [0.9, 3.6], [0.9, 4.4], [0.6, 4.4]], p.trim, 16), 0, 3.4, -2, Math.PI / 2),
-      at(cyl(0.6, 0.6, 0.2, p.glow, 14), 0, 3.4, 2.45, Math.PI / 2),
-      ...[-0.6, 1.2].map((z) => at(torus(0.75, 0.14, p.iron, 14), 0, 3.4, z)),
-      at(dish, 0, 2.2, -1.2, -Math.PI / 2.2),
-      at(sphere(0.25, p.glow, 8), 0, 2.4, -0.5),
-    );
-  },
-  'coolant-loop': (p) => {
-    const coil: Array<[number, number, number]> = [];
-    for (let i = 0; i <= 28; i++) {
-      const a = (i / 28) * Math.PI * 6;
-      coil.push([Math.cos(a) * 1.7, 0.6 + (i / 28) * 3.4, Math.sin(a) * 1.7]);
-    }
-    return group(
-      at(cyl(1.1, 1.1, 4.4, p.iron, 16), 0, 2.4, 0),
-      at(dome(1.1, p.trim, 14), 0, 4.6, 0),
-      at(plate(3.8, 0.6, 3.8, p.iron, 0.25), 0, 0.3, 0),
-      pipe(coil, 0.26, p.copper),
-      at(gauge(0.5, p, 0.2), 0, 3.2, 1.15),
-    );
-  },
-  'overcharged-boiler': (p) => {
-    // A reliquary furnace: an octagonal lantern tower with lit windows and a spire.
-    const g = group(at(cyl(1.9, 2.1, 0.6, p.trim, 8), 0, 0.3, 0), at(cyl(1.7, 1.7, 4.4, p.armour, 8), 0, 2.8, 0), at(cyl(1.95, 1.95, 0.4, p.trim, 8), 0, 5.1, 0));
-    for (let i = 0; i < 4; i++) {
-      const a = (i * Math.PI) / 2;
-      g.add(at(archWindow(1, 2.4, p), Math.sin(a) * 1.62, 2.8, Math.cos(a) * 1.62, 0, a));
-    }
-    g.add(at(spire(1.2, 4.6, p), 0, 5.3, 0));
-    return g;
-  },
   'soul-lantern': (p) => {
     // A belfry: four posts round a gold bell, under a spire.
     const g = group(at(plate(3.6, 0.8, 3.6, p.armour, 0.25), 0, 0.4, 0));
@@ -254,28 +148,6 @@ export const PARTS: Record<string, PartBuilder> = {
     g.add(at(spire(1.3, 5, p), 0, 4.9, 0));
     return g;
   },
-  'spotter-drone': (p) =>
-    group(
-      at(cyl(1, 1.2, 0.8, p.iron, 14), 0, 0.4, 0),
-      at(cyl(0.25, 0.25, 2.2, p.iron, 8), 0, 1.8, 0),
-      at(lathe([[0.5, 0], [1.6, 0.4], [1.8, 0.9], [1.3, 1.4], [0, 1.6]], p.armour, 20), 0, 2.8, 0),
-      at(torus(1.8, 0.16, p.trim, 20), 0, 3.7, 0, Math.PI / 2),
-      at(sphere(0.45, p.glow, 12), 0, 3.6, 1.5),
-      at(torus(0.5, 0.12, p.trim, 12), 0, 3.6, 1.7),
-      at(cyl(0.15, 0.15, 0.8, p.trim, 6), 0, 4.7, 0),
-      ...[0, Math.PI / 2].map((ry) => at(box(4.4, 0.1, 0.5, p.trim), 0, 5.1, 0, 0, ry + 0.4, 0.08)),
-    ),
-  'field-repair-rig': (p) =>
-    group(
-      at(cyl(1, 1.2, 0.8, p.iron, 14), 0, 0.4, 0),
-      at(gear(1.1, 0.4, 10, p.trim), 0, 1.1, 0),
-      at(cyl(0.45, 0.45, 3.6, p.iron, 10), 0, 2.8, 0),
-      at(sphere(0.6, p.trim, 10), 0, 4.6, 0),
-      at(group(at(plate(0.8, 0.8, 5, p.trim, 0.2), 0, 0, 2.4), piston([0, -1.6, -0.2], [0, -0.3, 2.2], 0.3, p)), 0, 4.6, 0, -0.3),
-      at(cyl(0.08, 0.08, 1.8, p.iron, 6), 0, 5.2, 4.8),
-      at(torus(0.4, 0.12, p.trim, 10), 0, 4.1, 4.8, 0, Math.PI / 2),
-      at(plate(1.8, 1.2, 1.4, p.copper, 0.25), -1.4, 0.9, -0.6),
-    ),
 };
 
 /** Scale for equipment on a chassis, so parts grow with the walker's frame. */

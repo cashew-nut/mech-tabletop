@@ -37,7 +37,6 @@ export interface WalkerState {
   overpressure: number;
   reserve: number;
   prone: boolean;
-  anchored: boolean;
   braced: boolean;
   activated: boolean;
   destroyed: boolean;

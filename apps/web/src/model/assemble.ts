@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { LOCATIONS, getChassis, getEquipment, type Location, type WalkerInput } from '@brass-charter/rules';
 import { bake } from './kit';
-import { FIT, fitClass, hardpoint, nudgeOf, planLocation, pivotOf, poseOf, type Placement } from './fit';
+import { FIT, fitClass, hardpoint, isCardOnly, nudgeOf, planLocation, pivotOf, poseOf, type Placement } from './fit';
 import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
@@ -287,7 +287,8 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
   const libName_ = (id: string) => (lib ? itemPartName(lib.items, id, c.faction, c.id) : null);
   for (const loc of LOCATIONS) {
     let slot = 0;
-    const ids = walker.loadout[loc] ?? [];
+    // Card-only items (internal systems and effects) have no model: they take no mount and no hardpoint.
+    const ids = (walker.loadout[loc] ?? []).filter((id) => !isCardOnly(id));
     const native = ids.map((id) => !!libName_(id)?.endsWith(`@${c.id}`));
     const plan = fit && height > 0 ? planLocation(c.id, loc, ids, native) : null;
     ids.forEach((id, index) => {

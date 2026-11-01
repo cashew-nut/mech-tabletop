@@ -81,13 +81,13 @@ export function walkerStats(input: WalkerInput): WalkerStats {
   if (gunner && pressures.length) pressures[0] = Math.max(0, pressures[0] - 1);
   const alphaPressure = pressures.reduce((a, b) => a + b, 0);
 
-  let threshold = has('overcharged-boiler') ? 2 : 3;
+  let threshold = 3;
   if (input.driver.trait === 'iron-nerve') threshold += 1;
 
   return {
     stride,
     sprintStride: stride + (has('sprint-servos') ? 1 : 0),
-    boiler: c.boiler + (has('overcharged-boiler') ? 1 : 0),
+    boiler: c.boiler,
     armour,
     structure: { core: c.structure.core, armLeft: c.structure.other, armRight: c.structure.other, legs: c.structure.other },
     slotsUsed,

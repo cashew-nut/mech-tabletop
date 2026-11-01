@@ -39,8 +39,20 @@ const RENAMED_ITEMS: Record<string, string> = {
   'static-choir': 'soul-lantern',
 };
 
+// Items cut from the game (docs/rules.md, v0.6). A saved lance that still carries one loses it rather than failing to load.
+const CUT_ITEMS = new Set(['melee-blade', 'hellfire-missiles', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']);
+
+const withoutCutItems = <T extends { walkers: LanceInput['walkers'] }>(lance: T): T => ({
+  ...lance,
+  walkers: lance.walkers.map((w) => ({
+    ...w,
+    loadout: Object.fromEntries(Object.entries(w.loadout).map(([loc, ids]) => [loc, (ids ?? []).filter((id) => !CUT_ITEMS.has(id))])),
+  })),
+});
+
 /** Bring an old Company lance up to the faction rules. Gear from another faction stays and shows as an error to fix. */
-export function migrateLance(lance: LanceInput & { company?: string }): LanceInput {
+export function migrateLance(saved: LanceInput & { company?: string }): LanceInput {
+  const lance = withoutCutItems(saved);
   if (lance.faction) return lance;
   const faction = FACTION_OF_COMPANY[lance.company ?? ''] ?? 'foundries';
   const { company: _, ...rest } = lance;

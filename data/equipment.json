@@ -16,7 +16,7 @@
   "equipment": [
     {
       "id": "lance",
-      "name": "Lance",
+      "name": "Siege Blade",
       "faction": "covenant",
       "category": "weapon",
       "mount": [
@@ -34,26 +34,6 @@
         "charge"
       ],
       "rules": "Charge: +1 die if this war-walker has moved 2 or more hexes this activation."
-    },
-    {
-      "id": "melee-blade",
-      "name": "Melee Blade",
-      "faction": "covenant",
-      "category": "weapon",
-      "mount": [
-        "arm"
-      ],
-      "slots": 1,
-      "pressure": 1,
-      "points": 9,
-      "weapon": {
-        "dice": 3,
-        "damage": 2,
-        "range": "melee",
-        "critOn": 5
-      },
-      "tags": [],
-      "rules": "Rolls of 5 or 6 are criticals."
     },
     {
       "id": "carapace-gun",
@@ -83,7 +63,7 @@
       "faction": "covenant",
       "category": "weapon",
       "mount": [
-        "arm"
+        "core"
       ],
       "slots": 2,
       "pressure": 1,
@@ -97,7 +77,7 @@
       "tags": [
         "indirect"
       ],
-      "rules": "Indirect."
+      "rules": "Indirect. Mounts on the core, not an arm."
     },
     {
       "id": "autocannon",
@@ -187,7 +167,7 @@
     },
     {
       "id": "arc-cannon",
-      "name": "Arc Cannon",
+      "name": "Arc Spear",
       "faction": "reliquary",
       "category": "weapon",
       "mount": [
@@ -205,29 +185,6 @@
         "drain"
       ],
       "rules": "No ammo. Each hit also drains 1 Pressure from the target's next activation."
-    },
-    {
-      "id": "hellfire-missiles",
-      "name": "Hellfire Missiles",
-      "faction": "reliquary",
-      "category": "weapon",
-      "mount": [
-        "arm"
-      ],
-      "slots": 2,
-      "pressure": 1,
-      "points": 5,
-      "weapon": {
-        "dice": 3,
-        "damage": 1,
-        "range": "long",
-        "ammo": 3
-      },
-      "tags": [
-        "indirect",
-        "overpressure"
-      ],
-      "rules": "Indirect. Each hit adds 1 Overpressure to the target."
     },
     {
       "id": "kinetic-claws",
@@ -300,18 +257,6 @@
       "rules": "Place smoke in this or an adjacent hex until the end phase."
     },
     {
-      "id": "jump-jets",
-      "name": "Jump Jets",
-      "category": "mobility",
-      "mount": [
-        "legs"
-      ],
-      "slots": 1,
-      "pressure": 2,
-      "points": 5,
-      "rules": "Jump up to 3 hexes ignoring terrain, elevation and war-walkers in between. +1 Overpressure. Counts as moving."
-    },
-    {
       "id": "sprint-servos",
       "name": "Sprint Servos",
       "category": "mobility",
@@ -334,18 +279,6 @@
       "pressure": 0,
       "points": 3,
       "rules": "Ignore the attacker-moved TN penalty, including the Rail Lance's extra +1."
-    },
-    {
-      "id": "anchor-spikes",
-      "name": "Anchor Spikes",
-      "category": "mobility",
-      "mount": [
-        "legs"
-      ],
-      "slots": 1,
-      "pressure": 1,
-      "points": 3,
-      "rules": "Anchor: cannot be pushed or knocked down and gets Brace's +1 TN until it next moves. +1 die on long-range attacks while anchored."
     },
     {
       "id": "targeting-array",
@@ -373,18 +306,6 @@
       "rules": "Remove 2 Overpressure."
     },
     {
-      "id": "overcharged-boiler",
-      "name": "Overcharged Boiler",
-      "category": "system",
-      "mount": [
-        "core"
-      ],
-      "slots": 1,
-      "pressure": 0,
-      "points": 2,
-      "rules": "+1 Boiler rating. Faults are rolled from 2 Overpressure instead of 3."
-    },
-    {
       "id": "soul-lantern",
       "name": "Soul Lantern",
       "faction": "reliquary",
@@ -408,19 +329,6 @@
       "pressure": 1,
       "points": 4,
       "rules": "Mark an enemy within 8 hexes (no line of sight needed within 4). Friendly attacks against it get -1 TN until the end phase, and it counts as seen for Indirect fire."
-    },
-    {
-      "id": "field-repair-rig",
-      "name": "Field Repair Rig",
-      "category": "system",
-      "mount": [
-        "core"
-      ],
-      "slots": 1,
-      "pressure": 2,
-      "points": 5,
-      "uses": 2,
-      "rules": "Restore 2 Armour to one location on this or an adjacent friendly war-walker."
     }
   ]
 }

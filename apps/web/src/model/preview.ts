@@ -16,20 +16,20 @@ import { buildWalkerModel, ensureKitParts, loadPartLibrary, setFitEnabled, type 
 import { createStage, type Backdrop } from './stage';
 
 const SHOWCASE: Record<string, WalkerInput['loadout']> = {
-  lancer: { armRight: ['lance'], armLeft: ['melee-blade'], core: ['carapace-gun'], legs: ['sprint-servos'] },
-  sentinel: { armRight: ['kinetic-shield'], armLeft: ['lance'], core: ['carapace-gun', 'reactive-shell', 'field-repair-rig', 'smoke-launcher'], legs: ['anchor-spikes'] },
-  paladin: { armRight: ['lance', 'melee-blade'], armLeft: ['missile-rack'], core: ['carapace-gun', 'ablative-plating'], legs: ['jump-jets'] },
-  scavenger: { armRight: ['autocannon'], armLeft: ['industrial-claw'], core: ['spotter-drone', 'smoke-launcher'], legs: ['sprint-servos'] },
-  brute: { armRight: ['autocannon', 'autocannon'], armLeft: ['industrial-claw', 'kinetic-shield'], core: ['ablative-plating', 'coolant-loop'], legs: ['gyro-stabilisers'] },
-  artillery: { armRight: ['rail-cannon', 'autocannon'], armLeft: ['rocket-pod', 'autocannon'], core: ['targeting-array', 'overcharged-boiler'], legs: ['anchor-spikes'] },
-  wraith: { armRight: ['kinetic-claws'], armLeft: ['kinetic-claws'], core: ['smoke-launcher'], legs: ['jump-jets'] },
-  seer: { armRight: ['hellfire-missiles'], armLeft: ['arc-cannon'], core: ['soul-lantern', 'spotter-drone', 'coolant-loop'], legs: ['gyro-stabilisers'] },
-  goliath: { armRight: ['arc-cannon', 'kinetic-claws'], armLeft: ['hellfire-missiles'], core: ['soul-lantern', 'reactive-shell', 'overcharged-boiler'], legs: ['anchor-spikes', 'gyro-stabilisers'] },
+  lancer: { armRight: ['lance'], armLeft: ['kinetic-shield'], core: ['carapace-gun'] },
+  sentinel: { armRight: ['kinetic-shield'], armLeft: ['lance'], core: ['carapace-gun', 'missile-rack'] },
+  paladin: { armRight: ['lance'], armLeft: ['kinetic-shield'], core: ['carapace-gun'] },
+  scavenger: { armRight: ['autocannon'], armLeft: ['industrial-claw'] },
+  brute: { armRight: ['autocannon', 'autocannon'], armLeft: ['industrial-claw'] },
+  artillery: { armRight: ['rail-cannon', 'autocannon'], armLeft: ['rocket-pod', 'autocannon'] },
+  wraith: { armRight: ['kinetic-claws'], armLeft: ['kinetic-claws'] },
+  seer: { armRight: ['kinetic-claws'], armLeft: ['arc-cannon'], core: ['soul-lantern'] },
+  goliath: { armRight: ['arc-cannon', 'kinetic-claws'], armLeft: ['kinetic-claws'], core: ['soul-lantern'] },
 };
 
 // A second set covers the parts the first leaves out.
 const SHOWCASE_B: Record<string, WalkerInput['loadout']> = {
-  brute: { armRight: ['rail-cannon'], armLeft: ['rocket-pod'], core: ['reactive-shell', 'targeting-array'], legs: ['jump-jets'] },
+  brute: { armRight: ['rail-cannon'], armLeft: ['rocket-pod'] },
 };
 
 const q = new URLSearchParams(location.search);
