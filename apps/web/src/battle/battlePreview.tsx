@@ -1,7 +1,7 @@
 // Review render of the real 3D board with real walkers, for headless screenshots.
 //   render-battle.html?f0=covenant&f1=foundries&map=chapel-ruins&scale=0.07&select=s0w0&pixel=1
 import { createRoot } from 'react-dom/client';
-import { createGame, type LanceInput } from '@brass-charter/rules';
+import { createGame, distance, hexKey, type Hex, type LanceInput } from '@brass-charter/rules';
 import { Board3D } from './Board3D';
 import '../styles.css';
 
@@ -34,6 +34,15 @@ if (params.get('close')) {
   const [a, b] = [state.walkers.find((w) => w.side === 0)!, state.walkers.find((w) => w.side === 1)!];
   b.pos = { q: a.pos.q + 2, r: a.pos.r - 1 };
   b.facing = ((a.facing + 3) % 6) as typeof b.facing;
+}
+const parseKey = (k: string): Hex => { const [q, r] = k.split(',').map(Number); return { q, r }; };
+// Optional: lay wrecks on the open hexes beside the first walker (wrecks=2), to review their scale.
+const wreckCount = Number(params.get('wrecks') ?? 0);
+if (wreckCount) {
+  const at = state.walkers[0].pos;
+  const free = Object.keys(state.map.hexes).filter((k) => state.map.hexes[k].terrain === 'open' && !state.walkers.some((w) => hexKey(w.pos) === k));
+  free.sort((a, b) => distance(at, parseKey(a)) - distance(at, parseKey(b)));
+  state.wrecks.push(...free.slice(1, 1 + wreckCount));
 }
 const select = params.get('select');
 if (params.get('prone')) state.walkers[Number(params.get('prone'))].prone = true;

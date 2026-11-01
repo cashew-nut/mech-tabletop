@@ -61,7 +61,7 @@ if (!only) {
 const span = only ? 1 : pieces.length * spacing;
 const dist = Number(params.get('dist') ?? (only ? 6 : span * 0.75));
 const camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 200);
-const target = new THREE.Vector3(0, only ? 1.2 : 0.8, only ? 0 : 1.0);
+const target = new THREE.Vector3(0, Number(params.get('ty') ?? (only ? 1.2 : 0.8)), only ? 0 : 1.0);
 camera.position.set(target.x + Math.sin(angle) * dist, target.y + dist * 0.45, target.z - Math.cos(angle) * dist);
 camera.lookAt(target);
 renderer.render(scene, camera);

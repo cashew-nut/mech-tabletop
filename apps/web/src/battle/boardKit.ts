@@ -2,6 +2,7 @@
 // Each piece has baked vertex colours, so one shared Lambert material draws them all.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { towerFooting } from './boardArt';
 
 export const KIT_PIECES = [
   'tile_plain_1', 'tile_plain_2', 'tile_cracked_3', 'tile_slab_4', 'tile_moss_5', 'tile_rough_6', 'tile_rubble_7', 'tile_plate_8', 'tile_scorched_9',
@@ -10,6 +11,13 @@ export const KIT_PIECES = [
 /** Meshy-made hero scenery (textured, with its own material). Optional: the procedural pieces stand in when a file is missing. */
 export const HERO_PIECES = ['hero_tower', 'hero_chimney', 'hero_wall'] as const;
 export type KitPiece = (typeof KIT_PIECES)[number] | (typeof HERO_PIECES)[number];
+
+/** Pieces with simplified copies (<piece>_lod1.glb, _lod2.glb; made by scripts/board-lod.mjs). The loader swaps them in by distance
+ * from the camera; the board camera sits 20 or so units from the action, so the near half of the board keeps full detail. */
+export const LOD_PIECES: readonly KitPiece[] = ['hero_tower', 'hero_chimney', 'hero_wall', 'tower_spire', 'tower_chimney', 'tower_ruined', 'wall_arched', 'wall_long'];
+/** Camera distances at which each lower level takes over. `?lod=off` shows only full detail, `?lod=1` or `?lod=2` forces a level (for review renders). */
+const LOD_AT = [24, 36];
+const LOD_MODE = new URLSearchParams(location.search).get('lod');
 
 export interface Kit {
   /** A fresh instance of the piece; geometry and material are shared, so instances are cheap. */
@@ -44,6 +52,13 @@ function addStoneDetail(material: THREE.Material, detail: THREE.Texture) {
   material.customProgramCacheKey = () => 'board-stone-detail';
 }
 
+/** Plain stone for footings: the board's grey with the same world-space grain and cracks as the kit. */
+function footingMaterial(detail: THREE.Texture, colour: number) {
+  const m = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.95, metalness: 0 });
+  addStoneDetail(m, detail);
+  return m;
+}
+
 let loading: Promise<Kit | null> | null = null;
 
 export function loadBoardKit(): Promise<Kit | null> {
@@ -56,11 +71,12 @@ export function loadBoardKit(): Promise<Kit | null> {
       addStoneDetail(material, detail);
       const loaded = await Promise.all(KIT_PIECES.map((name) => loader.loadAsync(`${base}${name}.glb`)));
       const pieces = new Map<string, THREE.Object3D>();
-      loaded.forEach((gltf, i) => {
-        gltf.scene.traverse((o) => {
+      /** Give every mesh of a loaded kit piece the shared material and its baked colours. */
+      const dress = (scene: THREE.Object3D, m: THREE.Material) =>
+        scene.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (mesh.isMesh) {
-            mesh.material = material;
+            mesh.material = m;
             // Blender exports our baked colours as the second colour set (COLOR_1) and a blank white one as COLOR_0; use the baked set.
             const baked = mesh.geometry.getAttribute('color_1');
             if (baked) {
@@ -71,6 +87,8 @@ export function loadBoardKit(): Promise<Kit | null> {
             mesh.receiveShadow = true;
           }
         });
+      loaded.forEach((gltf, i) => {
+        dress(gltf.scene, material);
         pieces.set(KIT_PIECES[i], gltf.scene);
       });
       const heroes = await Promise.allSettled(HERO_PIECES.map((name) => loader.loadAsync(`${base}${name}.glb`)));
@@ -91,6 +109,47 @@ export function loadBoardKit(): Promise<Kit | null> {
         });
         pieces.set(HERO_PIECES[i], r.value.scene);
       });
+      // Chunky footings for the Meshy towers, whose own buttresses are ragged fins.
+      const footings: Partial<Record<KitPiece, THREE.Group>> = {};
+      if (pieces.has('hero_tower')) footings.hero_tower = towerFooting(footingMaterial(detail, 0x625f5a), 0.645, 8);
+      if (pieces.has('hero_chimney')) footings.hero_chimney = towerFooting(footingMaterial(detail, 0x3d302c), 0.7, 16, false);
+      // Distance LODs. Kit LODs share the piece's material; hero LODs are vertex-coloured copies (their texture atlas cannot be simplified).
+      const lods = LOD_MODE === 'off' ? [] : LOD_PIECES;
+      await Promise.all(
+        lods.map(async (name) => {
+          const high = pieces.get(name);
+          if (!high) return;
+          const levels = await Promise.allSettled([1, 2].map((n) => loader.loadAsync(`${base}${name}_lod${n}.glb`)));
+          const hero = (HERO_PIECES as readonly string[]).includes(name);
+          const lod = new THREE.LOD();
+          const forced = LOD_MODE === '1' ? 1 : LOD_MODE === '2' ? 2 : 0;
+          if (!forced) lod.addLevel(high, 0);
+          levels.forEach((r, n) => {
+            if (r.status !== 'fulfilled' || (forced && forced !== n + 1)) return;
+            let m: THREE.Material = material;
+            if (hero) {
+              const original = (high.getObjectByProperty('isMesh', true) as THREE.Mesh).material as THREE.MeshStandardMaterial;
+              const vm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: original.roughness, metalness: 0, color: original.color });
+              if (name === 'hero_tower') addStoneDetail(vm, detail);
+              m = vm;
+            }
+            dress(r.value.scene, m);
+            lod.addLevel(r.value.scene, forced ? 0 : LOD_AT[n]);
+          });
+          if (lod.levels.length === 0) return;
+          const wrapper = new THREE.Group();
+          wrapper.add(lod);
+          wrapper.userData.isWrapper = true;
+          pieces.set(name, wrapper);
+        }),
+      );
+      for (const [name, footing] of Object.entries(footings)) {
+        const piece = pieces.get(name as KitPiece)!;
+        const wrapper = piece.userData.isWrapper ? piece : new THREE.Group().add(piece);
+        wrapper.userData.isWrapper = true;
+        wrapper.add(footing!);
+        pieces.set(name as KitPiece, wrapper as THREE.Group);
+      }
       return { make: (piece: KitPiece) => pieces.get(piece)!.clone(true) as THREE.Group, has: (piece: KitPiece) => pieces.has(piece) };
     } catch (e) {
       console.warn('Board kit unavailable, using the procedural board', e);

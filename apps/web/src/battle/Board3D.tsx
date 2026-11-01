@@ -12,7 +12,7 @@ import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/ru
 import { hexCentre, type Highlight } from './HexMap';
 import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
 import { WalkerLibrary } from './boardWalkers';
-import { PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, rubble, ruinWall, stoneTexture, tower, type MarkerKind } from './boardArt';
+import { BANNER_CLOTH, PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, objectiveBanner, rippleBanner, rubble, ruinWall, stoneTexture, tower, wreck, type MarkerKind } from './boardArt';
 
 // Render scale: 1 draws at full resolution so the walker textures stay crisp (?pixel=2 gives the old half-resolution look).
 const PIXEL = Number(new URLSearchParams(location.search).get('pixel') ?? 1);
@@ -231,6 +231,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const mapCentre = new THREE.Vector3();
     const focus = new THREE.Vector3();
     const puffs: THREE.Mesh[] = [];
+    const cloths: THREE.Mesh[] = []; // objective banners, rippled every frame
     let builtMap = '';
     const buildTerrain = () => {
       const { state } = live.current;
@@ -356,9 +357,11 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       }
       for (const o of state.objectives) {
         const p = world(o.hex, heightOf(state, o.hex) + 0.04);
-        add(dynamic, hexShape, new THREE.MeshBasicMaterial({ color: 0xd4a956, transparent: true, opacity: 0.45 }), [p.x, p.y, p.z], [0.62, 0.03, 0.62]);
-        add(dynamic, box, mat(0xd4a956), [p.x, p.y + 0.4, p.z], [0.08, 0.8, 0.08]);
-        add(dynamic, box, mat(0xb8893b), [p.x + 0.17, p.y + 0.68, p.z], [0.3, 0.2, 0.04]);
+        add(dynamic, hexShape, new THREE.MeshBasicMaterial({ color: 0xd4a956, transparent: true, opacity: 0.4 }), [p.x, p.y, p.z], [0.74, 0.03, 0.74]);
+        const banner = new THREE.Group();
+        banner.position.copy(p);
+        objectiveBanner(banner, o.hex.q * 31 + o.hex.r * 17);
+        dynamic.add(banner);
       }
       for (const key of state.smoke) {
         const [q, r] = key.split(',').map(Number);
@@ -368,8 +371,12 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       state.wrecks.forEach((key, idx) => {
         const [q, r] = key.split(',').map(Number);
         const p = world({ q, r }, heightOf(state, { q, r }));
-        add(dynamic, box, mat(0x2b2118), [p.x - 0.15, p.y + 0.12, p.z + 0.05 * idx], [0.5, 0.24, 0.4]).rotation.y = idx;
-        add(dynamic, box, mat(0x4a3a2a), [p.x + 0.2, p.y + 0.2, p.z - 0.1], [0.2, 0.4, 0.2]).rotation.z = 0.4;
+        // The hulk of whichever walker fell here, in its side's colour and scaled by its Size.
+        const fallen = state.walkers.find((w) => w.destroyed && hexKey(w.pos) === key);
+        const holder = new THREE.Group();
+        holder.position.copy(p);
+        wreck(holder, idx + q * 7 + r * 13, fallen?.size ?? 2, fallen ? SIDE_COLOUR[fallen.side] : 0x6b5a45);
+        dynamic.add(holder);
       });
       const sv = state.surveyor;
       if (sv?.status === 'active') {
@@ -382,6 +389,8 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         pickables.push(g);
         if (targetId === SURVEYOR_ID) pulsing.push(add(dynamic, hexShape, new THREE.MeshBasicMaterial({ color: 0xffd34d }), [p.x, p.y - 0.45, p.z], [0.8, 0.03, 0.8]));
       }
+      cloths.length = 0;
+      dynamic.traverse((o) => o.userData[BANNER_CLOTH] && cloths.push(o as THREE.Mesh));
       const activeId = state.active?.walkerId ?? null;
       for (const w of state.walkers) {
         if (w.destroyed) continue;
@@ -470,6 +479,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     let raf = 0;
     const loop = (t: number) => {
       raf = requestAnimationFrame(loop);
+      for (const m of cloths) rippleBanner(m, t);
       for (const m of puffs) {
         const d = m.userData[PUFF] as { baseY: number; phase: number; drift: number };
         const f = (t / 4200 + d.phase) % 1;
