@@ -47,7 +47,7 @@ def main(a):
                 v[:, 0] *= -1
                 tt = tt[:, ::-1]
             j = Vector(joint(JOINT_OF.get(k, "chest"), side))
-            c = Vector((0, 0, 36))
+            c = Vector((0, 0, joint("chest")[2] - 6))
             # one object per loose piece, so each gets its own colour
             for pc, tp in enumerate(pieces(len(v), tt)):
                 me = bpy.data.meshes.new(k)

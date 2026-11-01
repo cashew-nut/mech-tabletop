@@ -1,6 +1,8 @@
-"""Cut the Meshy Paladin into closed, separate solid parts (step 1 of 2; numpy, scipy, scikit-image, manifold3d).
+"""Cut a Meshy figure into closed, separate solid parts (step 1 of 3; numpy, scipy, scikit-image, manifold3d).
 
-    ~/bvenv/bin/python -I split.py WORK            # WORK holds mesh.npz, lab.npy, names.json from ../meshy/cut.py
+    [MODEL=brute|seer] ~/bvenv/bin/python split.py WORK   # WORK holds mesh.npz (+ lab.npy, names.json for the Paladin)
+
+The model's own rules (labels, parts, designed additions) are in paladin.py, brute.py or seer.py; see layout.py.
 
 The Meshy figure is one closed (watertight) surface, so it can be treated as a solid. The old route (../meshy/build.py)
 gave each part the triangles labelled for it, which leaves open, ragged shells that only look right in place. Here the
@@ -9,10 +11,9 @@ boxes for helm, collar, back, pods and blades, the red-cloth triangles for cloth
 closed mesh, and the figure is intersected with it. Each part comes out closed, with a flat-ish cap where it met its
 neighbour, and keeps Meshy's UVs on the original surface (cap faces get UV (-1, -1) so the bake can tell them apart).
 
-Then joints.py adds a keyed peg and magnet pockets at every joint. Output: WORK/parts/<part>.npz (mm, kit axes).
+Then joints.py adds a keyed peg and magnet pockets at every joint. Output: WORK/parts/<part>.npz (print mm, kit axes).
 """
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -20,100 +21,10 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "meshy"))
-import cut  # noqa: E402  (joint and bone positions, Meshy units)
+sys.path.insert(0, str(HERE))
+from layout import M, PS, MM, to_mm, from_mm  # noqa: E402  (labelling rules live in paladin.py, brute.py, seer.py)
 
-S, FOOT_Z, BASE = 50 / 1.5, -0.90, 3.0      # mm per Meshy unit, foot level, base thickness (as ../meshy/build.py)
-H = 0.0075                                   # voxel size in Meshy units (0.25 mm)
-CLOTH_T = 0.02                               # cloth is a thin sheet: only voxels this close to a cloth triangle are cloth
-
-# Physical parts and the cut labels each is made of. Sided parts are built for the walker's left (+X) only and mirrored
-# for the right, so the right side's labels exist only to carve the torso and pelvis.
-PARTS = {
-    "torso": ["torso", "collar", "cloth_upper"],
-    "pelvis": ["pelvis", "cloth_lower"],
-    "helm": ["helm"],
-    "back": ["back"],
-    "pauldron": ["pauldron_L", "cloth_L"],
-    "arm": ["arm_L"], "forearm": ["forearm_L"], "hand": ["hand_L"],
-    "thigh": ["thigh_L"], "shin": ["shin_L"], "foot": ["foot_L"],
-    "blade": ["sword_L"], "pod": ["pod_L"],
-    # right side, used only to know where the torso and pelvis end
-    "_pauldron_R": ["pauldron_R", "cloth_R"], "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"],
-    "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"], "_blade_R": ["sword_R"], "_pod_R": ["pod_R"],
-}
-
-
-MODEL = None
-if os.environ.get("MODEL", "paladin") == "brute":
-    sys.path.insert(0, str(HERE))
-    import brute as MODEL  # noqa: E402
-    S, FOOT_Z, BASE, H, PARTS = MODEL.S, MODEL.FOOT_Z, MODEL.BASE, MODEL.H, MODEL.PARTS
-
-
-def to_mm(P):
-    return np.stack([P[..., 0] * S, P[..., 1] * S, (P[..., 2] - FOOT_Z) * S + BASE], -1)
-
-
-def from_mm(P):
-    return np.stack([P[..., 0] / S, P[..., 1] / S, (P[..., 2] - BASE) / S + FOOT_Z], -1)
-
-
-def label_points(P, cloth_near):
-    """cut.label's rules applied to arbitrary points P (Meshy units, x centred). cloth_near: bool per point."""
-    x, y, z = P[:, 0], P[:, 1], P[:, 2]
-    a = np.abs(x)
-    names, D = [], []
-    mir = lambda p: (-p[0], p[1], p[2])
-    for k, (p, q, r) in cut.BONES_C.items():
-        names.append(k)
-        D.append(cut.seg_d(P, p, q) - r)
-    for k, (p, q, r) in cut.BONES_S.items():
-        names.append(k + "_L")
-        D.append(cut.seg_d(P, p, q) - r)
-        # the figure's own right side (its right arm hangs closer in), so the torso is cut where that arm really is
-        p2, q2, r2 = cut.BONES_R.get(k, (mir(p), mir(q), r))
-        names.append(k + "_R")
-        D.append(cut.seg_d(P, p2, q2) - r2)
-    lab = np.stack(D, 1).argmin(1).astype(np.int16)
-    del D
-
-    def setl(mask, name):
-        if name not in names:
-            names.append(name)
-        lab[mask] = names.index(name)
-
-    L = x >= 0
-    for s, sg in (("L", L), ("R", ~L)):
-        setl(sg & (z < -0.805) & (a < 0.5), f"foot_{s}")
-
-    def sword(s, A, B, w):
-        sg = L if s == "L" else ~L
-        Q = np.stack([x, z], 1).astype(np.float32)
-        A, B = np.array(A, np.float32), np.array(B, np.float32)
-        AB = B - A
-        t = np.clip(((Q - A) @ AB) / (AB @ AB), 0, 1)
-        dd = np.linalg.norm(Q - (A + t[:, None] * AB), axis=1)
-        setl(sg & (dd < w) & (z < -0.33) & (np.abs(y + 0.31) < 0.16) & (a > 0.38), f"sword_{s}")
-    sword("L", (0.61, -0.35), (0.92, -0.95), 0.055)
-    sword("R", (-0.45, -0.36), (-0.94, -0.95), 0.055)
-    spire = (z > 0.56) & (x > -0.015) & (x < 0.07) & (y > -0.12)
-    pod = (z > 0.56) & (a < 0.33) & (y > -0.12) & ~spire
-    setl(pod & L, "pod_L")
-    setl(pod & ~L, "pod_R")
-    setl(spire, "back")
-    setl((y > 0.12) & (z > 0.2) & (z <= 0.56) & (a < 0.32), "back")
-    helm = (x ** 2 / 0.10 ** 2 + (y + 0.10) ** 2 / 0.13 ** 2 + (z - 0.52) ** 2 / 0.11 ** 2 < 1) & (z > 0.44)
-    setl(helm & (lab != names.index("back")), "helm")
-    setl((z > 0.455) & (a < 0.17) & (y < 0.06) & (z < 0.57) & ~helm
-         & np.isin(lab, [names.index("torso"), names.index("helm")]), "collar")
-    # Cloth: capes on the arms go with the pauldrons, the tabard with the pelvis, the banner on the back with the torso.
-    cl = cloth_near & (lab != names.index("back")) & (z < 0.46)
-    setl(cl & (a >= 0.30) & L, "cloth_L")
-    setl(cl & (a >= 0.30) & ~L, "cloth_R")
-    setl(cl & (a < 0.30) & (z < 0.05), "cloth_lower")
-    setl(cl & (a < 0.30) & (z >= 0.05), "cloth_upper")
-    return lab, names
+CHIP = getattr(M, "CHIP_SCALE", PS ** 3)    # sliver and crumb sizes scale with the print volume
 
 
 def main(work):
@@ -128,17 +39,18 @@ def main(work):
     t0 = time.time()
     d = np.load(work / "mesh.npz")
     V, F, UV = d["V"].copy(), d["F"], d["UV"]
-    V[:, 0] -= MODEL.CX if MODEL else cut.CX
-    label = MODEL.label_points if MODEL else label_points
+    V[:, 0] -= M.CX
+    H, PARTS = M.H, M.PARTS
+    if hasattr(M, "prepare"):
+        M.prepare(work, V, F, UV)
 
     # --- voxel labels -------------------------------------------------------------------------------------------
     lo, hi = V.min(0) - 4 * H, V.max(0) + 4 * H
     shape = np.ceil((hi - lo) / H).astype(int) + 1
     print("grid", shape, int(np.prod(shape)) / 1e6, "M voxels", flush=True)
-    if not MODEL:           # the Paladin's cloth: voxels near the triangles cut.py labelled as cloth
-        tlab = np.load(work / "lab.npy")
-        tnames = json.loads((work / "names.json").read_text())
-        ctree = cKDTree(V[F].mean(1)[tlab == tnames.index("cloth")])
+    ctree = None
+    if hasattr(M, "cloth_tris"):    # cloth is a thin sheet: voxels close to a cloth triangle are cloth
+        ctree = cKDTree(V[F].mean(1)[M.cloth_tris(work, V, F, UV)])
     labels = np.empty(tuple(shape), np.int16)
     names = None
     xs = lo[0] + H * np.arange(shape[0])
@@ -147,11 +59,11 @@ def main(work):
     for i0 in range(0, shape[0], 24):
         xi = xs[i0:i0 + 24]
         P = np.stack(np.meshgrid(xi, ys, zs, indexing="ij"), -1).reshape(-1, 3).astype(np.float32)
-        if MODEL:
-            lab, names = label(P)
+        if ctree is None:
+            lab, names = M.label_points(P, None)
         else:
-            dc, _ = ctree.query(P, k=1, distance_upper_bound=CLOTH_T, workers=-1)
-            lab, names = label(P, np.isfinite(dc))
+            dc, _ = ctree.query(P, k=1, distance_upper_bound=M.CLOTH_T, workers=-1)
+            lab, names = M.label_points(P, np.isfinite(dc))
         labels[i0:i0 + len(xi)] = lab.reshape(len(xi), shape[1], shape[2])
     print("labelled", f"{time.time() - t0:.0f}s", flush=True)
 
@@ -161,6 +73,9 @@ def main(work):
     mesh = mf.Mesh(vert_properties=props, tri_verts=F.astype(np.uint32))
     mesh.merge()            # Meshy splits vertices along its UV seams: tell manifold which ones are the same point
     fig = mf.Manifold(mesh)
+    if hasattr(M, "extra_solids"):
+        # designed additions (the Seer's ball knuckles); they become part of the figure before it is cut
+        fig = fig + M.extra_solids(mf, to_mm)
     print("figure", fig.status(), fig.num_tri(), "tris", f"{time.time() - t0:.0f}s", flush=True)
 
     # --- one region mesh per part, intersected with the figure --------------------------------------------------
@@ -179,7 +94,7 @@ def main(work):
     for kz in range(shape[2]):
         layer = np.zeros((shape[0], shape[1]), bool)
         for poly in fig.slice(float(to_mm(np.array([0, 0, zs[kz]]))[2])).to_polygons():
-            q = np.asarray(poly) / S
+            q = np.asarray(poly) / MM
             rr, cc = fillpoly((q[:, 0] - lo[0]) / H, (q[:, 1] - lo[1]) / H, layer.shape)
             layer[rr, cc] ^= True
         occ[:, :, kz] = layer
@@ -254,7 +169,7 @@ def main(work):
         final[k].append(ps[0])
         for p in ps[1:]:
             v = p.volume()
-            if v < 0.02:
+            if v < 0.02 * CHIP:
                 continue
             if v > 0.25 * main_v:
                 final[k].append(p)
@@ -265,13 +180,18 @@ def main(work):
                 moved.append((k, to, round(v, 2)))
     for k, to, v in moved:
         print(f"  piece {v} mm3: {k} -> {to}")
+    solid = {}
     for k, ps in final.items():
         if k.startswith("_") or not ps:
             continue
         part = mf.Manifold.batch_boolean(ps, mf.OpType.Add) if len(ps) > 1 else ps[0]
-        keep = [p for p in part.decompose() if p.volume() > 0.05]      # zero-volume slivers from the cut
-        part = mf.Manifold.batch_boolean(keep, mf.OpType.Add) if len(keep) > 1 else keep[0]
-        n = len(keep)
+        keep = [p for p in part.decompose() if p.volume() > 0.05 * CHIP]      # zero-volume slivers from the cut
+        solid[k] = mf.Manifold.batch_boolean(keep, mf.OpType.Add) if len(keep) > 1 else keep[0]
+    if hasattr(M, "design"):
+        # the model's own structural changes: struts, mounts, pieces moved between parts (see seer.py)
+        solid = M.design(solid, mf)
+    for k, part in solid.items():
+        n = len(part.decompose())
         m = part.to_mesh()
         P, T = np.asarray(m.vert_properties), np.asarray(m.tri_verts)
         np.savez(out / f"{k}.npz", P=P, T=T, mf=np.asarray(m.merge_from_vert), mt=np.asarray(m.merge_to_vert))

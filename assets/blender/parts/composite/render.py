@@ -1,4 +1,4 @@
-"""Review renders of the composite Paladin from OUT/paladin_composite.blend (needs bpy; Cycles on the CPU).
+"""Review renders of a composite model from OUT/<model>_composite.blend (needs bpy; Cycles on the CPU).
 
     ~/bvenv/bin/python -I render.py OUT [--samples 32] [--only parts|assembled|exploded|pose]
 
@@ -21,14 +21,9 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1]))
 import kit  # noqa: E402
 from kit.render import studio, shot, post  # noqa: E402
-from layout import TREE, SIDED, NAME, joint  # noqa: E402
-import layout  # noqa: E402
+from layout import M, NAME, PS, TREE, SIDED, joint  # noqa: E402
 
-LABEL = layout.LABEL or {
-    "pelvis": "Pelvis + tabard", "torso": "Torso + collar + back banner", "helm": "Helm", "back": "Reliquary spire",
-    "pauldron": "Pauldron + cape", "arm": "Upper arm", "forearm": "Forearm", "hand": "Gauntlet", "thigh": "Thigh",
-    "shin": "Greave", "foot": "Sabaton", "blade": "Siege blade (equipment)", "pod": "Shoulder pod (equipment)",
-}
+LABEL = M.LABEL
 
 
 def meshes(spares=False):
@@ -58,19 +53,6 @@ def sheet(paths, out, cols, labels=None, cell=None):
     for p in paths:
         Path(p).unlink()
     return out
-
-
-def brute_pose(o):
-    """The Meshy Brute's own stance, rebuilt from symmetric parts: gatling raised to fire, left leg striding."""
-    o["gatling_R"].rotation_euler = Euler((math.radians(-55), 0, 0))
-    o["rockets_L"].rotation_euler = Euler((math.radians(-10), 0, 0))
-    o["helm"].rotation_euler = Euler((0, 0, math.radians(15)))
-    o["thigh_L"].rotation_euler = Euler((math.radians(-14), 0, 0))
-    o["shin_L"].rotation_euler = Euler((math.radians(10), 0, 0))
-    o["foot_L"].rotation_euler = Euler((math.radians(4), 0, 0))
-    o["thigh_R"].rotation_euler = Euler((math.radians(12), 0, 0))
-    o["shin_R"].rotation_euler = Euler((math.radians(6), 0, 0))
-    o["foot_R"].rotation_euler = Euler((math.radians(-18), 0, 0))
 
 
 def main(a):
@@ -110,8 +92,9 @@ def main(a):
     if only in (None, "exploded"):
         hide_all_but(meshes())
         # pull each part away from its parent along the line between their joints (world space)
-        saved = {o: o.matrix_world.copy() for o in meshes()}
-        centre = Vector(joint("chest")) if NAME == "brute" else Vector((0, 0, 36))
+        saved = {o: o.matrix_basis.copy() for o in meshes()}   # local, so restoring is order-free
+        centre = Vector((0, 0, joint("chest")[2] - getattr(M, "EXPLODE_DROP", 6.0) * PS))
+        reach = getattr(M, "EXPLODE", 7.0)     # print mm
         for o in meshes():
             if o.parent is None:
                 continue
@@ -121,17 +104,17 @@ def main(a):
             d.z *= 0.5
             if d.length < 1:
                 d = Vector((0, 0, 1))
-            o.matrix_world.translation += d.normalized() * (14.0 if NAME == "brute" else 7.0)
+            o.matrix_world.translation += d.normalized() * reach
         bpy.context.view_layer.update()
         paths = []
         for az in (20, 160):
             p = rd / f"_exp_{az}.png"
-            shot(meshes(), p, az=az, el=10, samples=samples, res=(900, 1000), margin=0.75)
+            shot(meshes(), p, az=az, el=10, samples=samples, res=(900, 1000), margin=getattr(M, "EXPLODE_MARGIN", 0.75))
             post(p)
             paths.append(p)
         sheet(paths, rd / "exploded.png", 2, ["exploded, front", "exploded, back"])
         for o, m in saved.items():
-            o.matrix_world = m
+            o.matrix_basis = m
         bpy.context.view_layer.update()
 
     if NAME == "brute" and only in (None, "swap"):
@@ -148,22 +131,14 @@ def main(a):
 
     if only in (None, "pose"):
         hide_all_but(meshes())
-        o = obs
-        if NAME == "brute":
-            brute_pose(o)
-        else:   # rotations about each part's own origin (its joint)
-            o["arm_L"].rotation_euler = Euler((math.radians(-30), 0, 0))
-            o["forearm_L"].rotation_euler = Euler((math.radians(-45), 0, 0))
-            o["arm_R"].rotation_euler = Euler((math.radians(20), 0, 0))
-            o["helm"].rotation_euler = Euler((0, 0, math.radians(-25)))
-            o["thigh_L"].rotation_euler = Euler((math.radians(-20), 0, 0))
-            o["shin_L"].rotation_euler = Euler((math.radians(25), 0, 0))
-            o["foot_L"].rotation_euler = Euler((math.radians(-5), 0, 0))
+        for name, rot in M.POSE.items():      # rotations about each part's own origin (its joint)
+            if name in obs:
+                obs[name].rotation_euler = Euler([math.radians(v) for v in rot])
         bpy.context.view_layer.update()
         paths = []
         for az in (30, 300):
             p = rd / f"_pose_{az}.png"
-            shot(meshes(), p, az=az, el=8, samples=samples, res=(800, 1000), margin=0.9 if NAME == "brute" else 0.75)
+            shot(meshes(), p, az=az, el=8, samples=samples, res=(800, 1000), margin=getattr(M, "POSE_MARGIN", 0.75))
             post(p)
             paths.append(p)
         sheet(paths, rd / "pose.png", 2, ["posed by rotating joints", "posed, other side"])
