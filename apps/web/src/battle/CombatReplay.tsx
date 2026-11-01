@@ -3,7 +3,7 @@
 // animate: the board, the walkers and the rules are untouched.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getChassis, getEquipment, type GameState, type WalkerState, type Zone } from '@brass-charter/rules';
-import { buildExchanges, type Die, type Exchange } from './combatReplay';
+import { buildExchanges, type Die, type Exchange } from './replayExchanges';
 import './combatReplay.css';
 
 const STORAGE_KEY = 'diceAnimations';
