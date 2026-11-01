@@ -880,10 +880,25 @@ h3 {
   align-self: flex-start;
 }
 
-button.secondary {
+button.secondary,
+a.button.secondary {
   background: var(--iron-2);
   color: var(--parchment);
   border-color: #4a4036;
+}
+
+/* A link that looks like a button (opens the walker viewer). */
+a.button {
+  display: inline-block;
+  border: 1px solid var(--brass-dark);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.button:hover {
+  filter: brightness(1.08);
 }
 
 button.on {

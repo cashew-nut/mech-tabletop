@@ -8,6 +8,9 @@ import { exportGlb, exportStl } from './exporters';
 import { baseMm } from './parts';
 import { createStage, type Stage } from './stage';
 
+/** The classes apps/web/viewer.html can show (its WALKERS list). */
+const VIEWER_CHASSIS = ['paladin', 'brute', 'seer'];
+
 interface Props {
   walker: WalkerInput;
   faction: string;
@@ -113,6 +116,15 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
           {walker.paint && (
             <button className="secondary" onClick={() => onPaint(undefined)}>
               Faction livery
+            </button>
+          )}
+          {VIEWER_CHASSIS.includes(walker.chassis) ? (
+            <a className="button secondary" href={`viewer.html?chassis=${walker.chassis}`} target="_blank" rel="noopener" title="Open this class in the walker viewer: turntable, part toggles and an Explode button">
+              Part viewer ↗
+            </a>
+          ) : (
+            <button className="secondary" disabled title="The walker viewer covers the Paladin, Brute and Seer so far">
+              Part viewer
             </button>
           )}
           <button disabled={failed} onClick={() => model() && exportStl(model()!, walker.name)} title="For 3D printing, in millimetres">
