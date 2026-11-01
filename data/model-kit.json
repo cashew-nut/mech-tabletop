@@ -136,7 +136,7 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar.",
     "paladin": [
       "cloth",
       "collar"
@@ -147,6 +147,10 @@
       "arm",
       "forearm",
       "hand"
+    ],
+    "seer": [
+      "cloth",
+      "collar"
     ]
   },
   "spareMounts": {
@@ -329,79 +333,96 @@
       }
     },
     "reliquary/striker": {
-      "$comment": "Joints (mm, left side) measured from the Meshy seer; see assets/blender/parts/meshy.",
+      "$comment": "Joints (mm, left side) measured from the composite Seer (assets/blender/parts/composite/seer.py, MODEL=seer). The Seer's right arm is its own part, so jointsRight gives the right shoulder, elbow and wrist (x as is, not mirrored). mount_armRight_0 is the spear's grip; the left one is its mirror. scripts/publish-composite.mjs seer writes these onto the frame.",
       "joints": {
         "pelvis": [
           0.0,
           1.646,
-          21.72
+          22.131
         ],
         "spine": [
           0.0,
-          2.057,
-          25.011
+          1.646,
+          23.777
         ],
         "chest": [
           0.0,
-          2.469,
+          2.057,
           28.714
         ],
         "neck": [
           0.0,
-          2.88,
-          32.417
+          1.029,
+          34.166
         ],
         "head": [
           0.0,
-          3.497,
-          34.474
+          0.617,
+          35.297
         ],
         "shoulder": [
-          6.171,
-          2.469,
-          32.006
+          4.937,
+          3.291,
+          32.623
         ],
         "elbow": [
-          9.051,
-          1.646,
-          22.954
+          7.611,
+          3.909,
+          24.189
         ],
         "wrist": [
-          10.08,
+          9.874,
           1.646,
-          14.314
+          15.549
         ],
         "hip": [
-          4.937,
-          1.44,
+          2.983,
+          1.646,
           21.926
         ],
         "knee": [
-          4.526,
-          1.029,
-          13.903
+          4.731,
+          1.337,
+          14.314
         ],
         "ankle": [
-          5.143,
-          0.411,
+          6.891,
+          0.617,
           6.086
+        ]
+      },
+      "jointsRight": {
+        "shoulder": [
+          -4.937,
+          2.88,
+          32.211
+        ],
+        "elbow": [
+          -6.377,
+          -0.823,
+          26.246
+        ],
+        "wrist": [
+          -6.48,
+          -5.349,
+          22.337
         ]
       },
       "mounts": {
         "mount_armLeft_0": [
           "wrist",
           [
-            -2.263,
-            -7.406,
-            7.406
+            0.123,
+            -0.905,
+            -1.337
           ]
         ],
         "mount_armRight_0": [
           "wrist",
           [
-            2.263,
-            -7.406,
-            7.406
+            -0.123,
+            -0.905,
+            -1.337
           ]
         ]
       }

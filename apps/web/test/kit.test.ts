@@ -99,6 +99,18 @@ describe('kit part resolution', () => {
     expect(plan.parts.map((p) => p.component)).not.toContain('collar');
   });
 
+  it('plans the composite Seer with its own right arm and no collar', () => {
+    const names = new Set(['reliquary_frame_striker', 'reliquary_collar_striker']);
+    for (const c of ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot']) names.add(`reliquary_${c}_seer`);
+    for (const c of ['pauldron', 'arm', 'forearm', 'hand']) names.add(`reliquary_${c}-right_seer`);
+    const plan = planKit(names, 'reliquary', 'seer', 'striker')!;
+    expect(plan.missing).toEqual([]);
+    expect(plan.parts.map((p) => p.component)).not.toContain('collar');
+    const right = plan.parts.filter((p) => p.side === 'R');
+    for (const c of ['pauldron', 'arm', 'forearm', 'hand']) expect(right.find((p) => p.component === c)).toMatchObject({ name: `reliquary_${c}-right_seer`, mirror: false });
+    for (const c of ['thigh', 'shin', 'foot']) expect(right.find((p) => p.component === c)).toMatchObject({ name: `reliquary_${c}_seer`, mirror: true });
+  });
+
   it('needs the frame skeleton', () => {
     expect(planKit(new Set(['covenant_helm_titan']), 'covenant', 'paladin', 'titan')).toBeNull();
   });

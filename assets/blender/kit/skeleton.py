@@ -90,6 +90,9 @@ class Skeleton:
         """World position of a joint; side "R" mirrors X."""
         v = self._j[name].copy()
         if name in SIDED and side == "R":
+            own = self.tune.get("jointsRight", {}).get(name)    # an asymmetric model's own right-hand joint
+            if own:
+                return Vector(own)
             v.x = -v.x
         return v
 
