@@ -28,6 +28,12 @@
           "loadout": {
             "armLeft": [
               "lance"
+            ],
+            "armRight": [
+              "melee-blade"
+            ],
+            "legs": [
+              "sprint-servos"
             ]
           }
         },
@@ -39,8 +45,14 @@
             "trait": null
           },
           "loadout": {
-            "armRight": [
+            "armLeft": [
               "missile-rack"
+            ],
+            "armRight": [
+              "kinetic-shield"
+            ],
+            "core": [
+              "targeting-array"
             ]
           }
         }
@@ -54,7 +66,7 @@
           "name": "Anvil",
           "chassis": "brute",
           "driver": {
-            "command": 0,
+            "command": 1,
             "trait": null
           },
           "loadout": {
@@ -66,7 +78,11 @@
               "industrial-claw"
             ],
             "core": [
-              "ablative-plating"
+              "ablative-plating",
+              "coolant-loop"
+            ],
+            "legs": [
+              "gyro-stabilisers"
             ]
           }
         },
@@ -79,10 +95,16 @@
           },
           "loadout": {
             "armLeft": [
-              "rail-cannon"
+              "rail-cannon",
+              "autocannon"
             ],
             "armRight": [
-              "rocket-pod"
+              "rocket-pod",
+              "autocannon"
+            ],
+            "core": [
+              "targeting-array",
+              "coolant-loop"
             ],
             "legs": [
               "anchor-spikes"
@@ -93,15 +115,19 @@
           "name": "Rook",
           "chassis": "scavenger",
           "driver": {
-            "command": 0,
+            "command": 1,
             "trait": null
           },
           "loadout": {
+            "armLeft": [
+              "autocannon"
+            ],
             "armRight": [
               "autocannon"
             ],
             "core": [
-              "spotter-drone"
+              "spotter-drone",
+              "smoke-launcher"
             ],
             "legs": [
               "sprint-servos"
@@ -129,7 +155,9 @@
               "arc-cannon"
             ],
             "core": [
-              "soul-lantern"
+              "soul-lantern",
+              "reactive-shell",
+              "targeting-array"
             ]
           }
         },
@@ -141,11 +169,18 @@
             "trait": null
           },
           "loadout": {
+            "armLeft": [
+              "kinetic-shield"
+            ],
             "armRight": [
               "hellfire-missiles"
             ],
             "core": [
-              "spotter-drone"
+              "spotter-drone",
+              "coolant-loop"
+            ],
+            "legs": [
+              "sprint-servos"
             ]
           }
         },
@@ -157,11 +192,255 @@
             "trait": null
           },
           "loadout": {
+            "armLeft": [
+              "kinetic-claws"
+            ],
             "armRight": [
               "kinetic-claws"
             ],
             "core": [
               "smoke-launcher"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vigil Host",
+      "faction": "covenant",
+      "walkers": [
+        {
+          "name": "Candle",
+          "chassis": "lancer",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "lance"
+            ]
+          }
+        },
+        {
+          "name": "Taper",
+          "chassis": "lancer",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "lance"
+            ]
+          }
+        },
+        {
+          "name": "Psalm",
+          "chassis": "lancer",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "missile-rack"
+            ]
+          }
+        },
+        {
+          "name": "Verse",
+          "chassis": "lancer",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "kinetic-shield"
+            ],
+            "legs": [
+              "gyro-stabilisers"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scrap Horde",
+      "faction": "foundries",
+      "walkers": [
+        {
+          "name": "Rivet",
+          "chassis": "scavenger",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "autocannon"
+            ],
+            "armRight": [
+              "autocannon"
+            ],
+            "core": [
+              "smoke-launcher"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Slag",
+          "chassis": "scavenger",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "autocannon"
+            ],
+            "armRight": [
+              "autocannon"
+            ],
+            "core": [
+              "smoke-launcher"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        },
+        {
+          "name": "Cinder",
+          "chassis": "scavenger",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "autocannon"
+            ],
+            "armRight": [
+              "industrial-claw"
+            ],
+            "core": [
+              "targeting-array"
+            ],
+            "legs": [
+              "gyro-stabilisers"
+            ]
+          }
+        },
+        {
+          "name": "Clinker",
+          "chassis": "scavenger",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "autocannon"
+            ],
+            "armRight": [
+              "industrial-claw"
+            ],
+            "core": [
+              "targeting-array"
+            ]
+          }
+        },
+        {
+          "name": "Ember",
+          "chassis": "scavenger",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "autocannon"
+            ],
+            "armRight": [
+              "autocannon"
+            ],
+            "core": [
+              "spotter-drone"
+            ],
+            "legs": [
+              "sprint-servos"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Twin Colossi",
+      "faction": "reliquary",
+      "walkers": [
+        {
+          "name": "Ancient One",
+          "chassis": "goliath",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "arc-cannon"
+            ],
+            "armRight": [
+              "arc-cannon"
+            ],
+            "core": [
+              "soul-lantern"
+            ]
+          }
+        },
+        {
+          "name": "Eternal",
+          "chassis": "goliath",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "hellfire-missiles"
+            ],
+            "armRight": [
+              "arc-cannon"
+            ],
+            "core": [
+              "reactive-shell",
+              "targeting-array"
+            ]
+          }
+        },
+        {
+          "name": "Shade",
+          "chassis": "wraith",
+          "driver": {
+            "command": 0,
+            "trait": null
+          },
+          "loadout": {
+            "armLeft": [
+              "kinetic-claws"
+            ],
+            "armRight": [
+              "kinetic-claws"
+            ],
+            "legs": [
+              "sprint-servos"
             ]
           }
         }

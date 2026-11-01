@@ -149,3 +149,36 @@ Watch list for v0.6:
   strongest of them.
 - Spotter Drone, Jump Jets and Field Repair Rig (38–40%) are still limited by the AI.
 
+## v0.6: build flexibility
+
+The v0.5 classes cost 11 to 34 points against equipment at 2 to 10, and a lance had 3 to 5
+walkers within 100 points. A Paladin lance left nothing for equipment (3 Paladins cost 102
+before a single weapon), five Covenant Lancers cost 115, and the example lances had walkers with
+a single weapon. Win rates by build type were not the problem, the range of builds was.
+
+Class costs were cut so that frames are roughly 40 to 60% of a lance's cost, and the 100-point
+budget stays. Four sim rounds of 2,000 games each:
+
+| Round | Change | Iron Covenant | Foundries | Reliquary |
+| --- | --- | --- | --- | --- |
+| 1 | Frames about 0.6x, gear unchanged | 59% | 46% | 46% |
+| 2 | Covenant frames +3, Lance 11, Melee Blade 10, Missile Rack 7, Carapace Gun 6; others frames -1, Rail Cannon 6, Soul Lantern 4 | 40% | 56% | 55% |
+| 3 (final) | Halfway between the two, Missile Rack 6, Carapace Gun 5, Rail Cannon 7, Soul Lantern 5, Tactician 3 | 49% | 50% | 51% |
+
+Round 3 results (2,000 games, about +-2 points of noise per row):
+
+- Factions 49 to 51%. Matchups 48 to 52%. Classes 47 to 52%.
+- Lance size 54 / 49 / 48% for 3 / 4 / 5 walkers.
+- Gear-heavy lances (frames under 40% of cost) win 44%, balanced ones 54%, frame-heavy 50%.
+- Every item is between 45 and 58%. Lance (58%) and Melee Blade (56%) are the outliers, as before.
+
+Known weak spots to watch:
+- **Covenant 5-walker lances (34%):** Lancers cost 16, so five of them leave 20 points of
+  equipment. Covenant 3-walker lances win 64%. Either is the faction's "few and elite" identity
+  or a sign Lancer should drop to 14. A try at Lancer 14, Sentinel 20, Paladin 23 with Lance 11
+  and Melee Blade 10 overcorrected the whole faction to 46%.
+- **Gear-heavy lances (44%):** equipment has diminishing returns once a walker is full, so spending
+  everything on gear does not beat a balanced build. Cheap 5-walker lances of Scavengers are fine
+  in the Foundries (56%).
+- **Example lances:** Twin Colossi (78%) and Vigil Host (27%) are far apart. Examples play 48
+  games each, so they move by about 7 points from noise, but they should be revisited.

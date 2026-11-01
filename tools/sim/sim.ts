@@ -4,7 +4,7 @@
 //   npm run sim -- [randomGames=400] [seed=1]
 import examples from '../../data/lances/examples.json';
 import { playOut } from '@brass-charter/ai';
-import { CHASSIS, EQUIPMENT, FACTIONS, MAPS, SCENARIOS, TRAITS, createGame, type GameState, type LanceInput } from '@brass-charter/rules';
+import { CHASSIS, EQUIPMENT, FACTIONS, MAPS, SCENARIOS, TRAITS, createGame, validateLance, type GameState, type LanceInput } from '@brass-charter/rules';
 import { randomLance } from './randomLance';
 
 const randomGames = Number(process.argv[2] ?? 400);
@@ -56,6 +56,8 @@ const byChassis = tally();
 const byTrait = tally();
 const bySize = tally();
 const byFaction = tally();
+const byFrameShare = tally();
+const byFactionSize = tally();
 const byMatchup = tally();
 let firstPlayerScore = 0;
 const lengths: number[] = [];
@@ -72,6 +74,11 @@ for (let g = 0; g < randomGames; g++) {
     const score = scoreFor(s, side as 0 | 1);
     add(bySize, `${l.walkers.length} walkers`, score);
     add(byFaction, l.faction, score);
+    add(byFactionSize, `${l.faction} ${l.walkers.length} walkers`, score);
+    const frames = l.walkers.reduce((a, w) => a + CHASSIS.find((c) => c.id === w.chassis)!.points, 0);
+    const total = validateLance(l).total;
+    const share = frames / total;
+    add(byFrameShare, share < 0.4 ? 'frames under 40% of cost (gear-heavy)' : share < 0.55 ? 'frames 40-55% of cost (balanced)' : 'frames over 55% of cost (frame-heavy)', score);
     const foe = lances[1 - side].faction;
     if (foe !== l.faction) add(byMatchup, `${l.faction} vs ${foe}`, score);
     for (const id of new Set(l.walkers.flatMap((w) => Object.values(w.loadout).flat() as string[]))) add(byItem, id, score);
@@ -93,3 +100,5 @@ report('Items', byItem, new Map(EQUIPMENT.map((e) => [e.id, e.name])));
 report('Driver traits', byTrait, new Map(TRAITS.map((t) => [t.id, t.name])));
 report('Factions', byFaction, new Map(FACTIONS.map((f) => [f.id, f.name])));
 report('Faction matchups', byMatchup);
+report('Faction and lance size', byFactionSize);
+report('Light or heavy build (share of the lance cost spent on frames)', byFrameShare);
