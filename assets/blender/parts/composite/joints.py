@@ -33,6 +33,11 @@ CRUMB = getattr(M, "CRUMB", 0.2)                    # mm3: loose bits smaller th
 PREFER_MAGNET = getattr(M, "PREFER_MAGNET", False)  # the biggest peg that takes a magnet, rather than the biggest peg
 BOTH_WAYS = getattr(M, "BOTH_WAYS", False)          # always try the peg on the parent too; keep whichever holds better
 CLEAR_MIRRORED = getattr(M, "CLEAR_MIRRORED", False)  # trim centre parts where mirrored right-hand parts would sit
+# STRICT: check joints against the real solids, not only the voxel grid. Each hole and its wall are reserved so later
+# holes keep clear of them, a left part's hole in a centre part stays clear of its mirror image, and a SKIN mm skin
+# round each hole (below its mouth) must lie inside the part, so no hole breaks out of its side.
+STRICT = getattr(M, "STRICT", False)
+SKIN, SKIN_FROM, SKIN_OUT = 0.2, 1.5, 0.10     # skin mm, checked from this depth, largest share of a layer outside
 
 
 def load(path):
@@ -132,6 +137,19 @@ class Grid:
     def __init__(self, plabel, occ, keys, lo, h):
         self.lab, self.occ, self.keys, self.lo, self.h = plabel, occ, keys, lo, h
         self.shape = np.array(plabel.shape)
+        self.mirror_guard = False
+        self.solids, self.rot = {}, {}
+
+    def reserve(self, centre, axis, R, rad, z0, z1, mirror_x=False):
+        """Mark a cylinder (mm) as taken: who() reports it as nobody's."""
+        pts = disc_pts(rad, max(2, int(rad / 0.1)), 64) @ R[:, :2].T
+        zs = np.arange(z0, z1 + 1e-6, 0.1)
+        P = (centre + zs[:, None, None] * axis + pts[None]).reshape(-1, 3)
+        for Q in ([P, P * np.array([-1.0, 1, 1])] if mirror_x else [P]):
+            g = np.round((from_mm(Q) - self.lo) / self.h).astype(int)
+            ok = (g >= 0).all(1) & (g < self.shape).all(1)
+            g = g[ok]
+            self.lab[g[:, 0], g[:, 1], g[:, 2]] = -2
 
     def who(self, P):
         g = np.round((from_mm(P) - self.lo) / self.h).astype(int)
@@ -139,6 +157,8 @@ class Grid:
         g = np.clip(g, 0, self.shape - 1)
         lab = self.lab[g[:, 0], g[:, 1], g[:, 2]].astype(int)
         lab[~(inside & self.occ[g[:, 0], g[:, 1], g[:, 2]])] = -1
+        if self.mirror_guard:       # a left part's hole in a centre part must stay clear of the right side's mirror
+            lab[P[:, 0] < WALL / 2] = -2
         return lab
 
 
@@ -170,10 +190,34 @@ def try_peg(grid, ci, pi, centre, axis, r):
         ring = disc_pts(r + CLEAR + WALL, 5, 24)
         zs = np.arange(0.5, bottom + WALL + 0.01, 0.2)
         P = (centre + (t0 + zs)[:, None, None] * axis + (ring @ R2.T)[None]).reshape(-1, 3)
-        if (grid.who(P) == pi).mean() >= 0.93:
+        if (grid.who(P) == pi).mean() >= 0.93 and (not STRICT or skin_ok(grid, pi, centre + t0 * axis, R, r, L, mag)):
             best = (t0, L, mag)
             break
     return best
+
+
+def skin_ok(grid, pi, origin, R, r, L, mag):
+    """True when a thin skin round the hole (and its magnet pocket) lies in the solid it is cut into: slices of the
+    solid across the peg's axis, point-in-polygon on a ring of points at each depth."""
+    from skimage.measure import points_in_poly
+    key = (pi, R.tobytes())
+    if key not in grid.rot:
+        grid.rot = {key: grid.solids[grid.keys[pi]].transform(np.concatenate([R.T, np.zeros((3, 1))], 1).tolist())}
+    solid, o = grid.rot[key], R.T @ origin
+    bottom = L + 0.15 + (mag[1] + 0.1 if mag else 0)
+    ang = np.linspace(0, 2 * np.pi, 48, endpoint=False)
+    ring = np.stack([np.cos(ang), np.sin(ang)], 1)
+    for z in np.arange(SKIN_FROM, bottom + SKIN + 1e-6, 0.1):
+        rad = r + CLEAR if z <= L + 0.15 or not mag else mag[0] + 0.05
+        # beside the hole a ring just outside it; under its floor the whole disc
+        pts = o[:2] + ((rad + SKIN) * ring if z <= bottom else rad * disc_pts(1.0, 3, 16))
+        inside = np.zeros(len(pts), bool)
+        for poly in solid.slice(float(o[2] + z)).to_polygons():
+            if len(poly) > 2:
+                inside ^= points_in_poly(pts, np.asarray(poly))
+        if (~inside).mean() > SKIN_OUT:
+            return False
+    return True
 
 
 def candidates(parts, grid, child, parent):
@@ -311,6 +355,8 @@ def fit(parts, grid, child, parent):
     keys = grid.keys
     ci, pi = keys.index(child), keys.index(parent)
     axes, centres, rho = candidates(parts, grid, child, parent)
+    grid.mirror_guard = STRICT and child in SIDED and parent not in SIDED
+    grid.solids, grid.rot = parts, {}
     # the peg grows from the child into the parent; if there is no room, from the parent into the child
     found, flipped = search(grid, ci, pi, axes, centres, 1.0), False
     if BOTH_WAYS:     # try the other way round too and keep the one that holds better
@@ -338,6 +384,12 @@ def fit(parts, grid, child, parent):
         else:
             newf = newf - mirror(sub)
     parts[male], parts[female] = newm, newf
+    if STRICT:
+        # reserve this hole and its wall in the grid so a later joint's hole cannot run into it (the Paladin's torso
+        # and thigh holes all sit in the pelvis)
+        bottom = L + 0.15 + (mag[1] + 0.1 if mag else 0)
+        grid.reserve(centre, axis, R, r + CLEAR + WALL, -0.6, bottom + WALL,
+                     mirror_x=child in SIDED and parent not in SIDED)
     # The peg's root can pass through a third part on its way (a pauldron between arm and torso, a tabard over the
     # hip): clear the peg's whole length, with clearance, out of every other part it touches.
     full = d_shape(r + CLEAR, -1.25, L + 0.15, R, centre, flat=0.6 + CLEAR / r)

@@ -10,7 +10,8 @@ Solids, pegs, STLs and the .blend are in print mm; build.py writes the game GLBs
 The Iron Covenant Paladin rebuilt as 13 separate, closed parts that plug together with keyed pegs and magnets,
 then assembled in Blender into the full walker. It starts from Luke's Meshy Paladin (textured GLB in the project
 folder), but every part is now a solid of its own that makes sense when you pick it up: a card can show it alone,
-a printer can print it, and the game can swap it.
+a printer can print it, and the game can swap it. It is cut at Luke's 1.5x collector scale (`PRINT_SCALE = 1.5`):
+about 76 mm to the helm top and 94 mm to the spire tip, and the game GLBs are scaled back to kit mm.
 
 ## Why this replaces the earlier cut
 
@@ -25,8 +26,8 @@ surface, so it can be treated as a solid and cut like one.
 python3 -I ../meshy/cut.py extract Meshy_..._texture.glb WORK   # mesh.npz and Meshy's textures
 ~/bvenv/bin/python -I ../meshy/cut.py label WORK                 # triangle labels (only the cloth labels are used here)
 ~/bvenv/bin/pip install scikit-image manifold3d xatlas scipy pillow
-~/bvenv/bin/python -I split.py WORK          # voxel labels, one closed region per part, figure x region   (~3 min)
-~/bvenv/bin/python -I joints.py WORK         # keyed peg + hole and magnet pockets at every joint          (~15 s)
+~/bvenv/bin/python -I split.py WORK          # voxel labels, one closed region per part, figure x region   (~5 min)
+~/bvenv/bin/python -I joints.py WORK         # keyed peg + hole and magnet pockets at every joint          (~50 s)
 ~/bvenv/bin/python -I build.py WORK OUT      # bake, game GLB, print STL, assembled .blend                 (~2 min)
 ~/bvenv/bin/python -I render.py OUT          # parts sheet, assembled, exploded and posed renders          (~5 min)
 node ../../../../scripts/publish-composite.mjs OUT/glb       # into apps/web/public/parts (no Blender), then compress, see below
@@ -41,10 +42,15 @@ All of it runs headless in the cloud container (4 CPU cores, no GPU). Nothing ne
    smooth closed region, and intersects the figure with it (manifold3d). Meshy's UVs ride along as vertex
    properties; cut faces are marked with UV (-1, -1).
 2. **joints.py** fits a D-section peg at each joint (`layout.TREE`). It searches axes (the cut face's normal, the
-   bone, blends), centres and radii (2.0 down to 0.55 mm) on the voxel grid, and takes the biggest peg whose root
-   sits inside one part and whose hole, with a 0.4 mm wall, sits inside the other. The hole is 0.1 mm looser. The
-   flat on the D keys the part. Where the peg is thick and long enough there is a pocket for a 2 x 1 mm disc magnet
-   (or 1 x 1 mm) flush in the peg tip and another at the bottom of the hole.
+   bone, blends), centres and radii (3.0 down to 0.55 mm for the Paladin) on the voxel grid, and takes the biggest
+   peg that takes a magnet whose root sits inside one part and whose hole, with a 0.4 mm wall, sits inside the other.
+   The hole is 0.1 mm looser. The flat on the D keys the part. Where the peg is thick and long enough there is a
+   pocket for a 3 x 2, 2 x 1 or 1 x 1 mm disc magnet flush in the peg tip and another at the bottom of the hole.
+   With `STRICT = True` (the Paladin) each joint is also checked against the real solids, not only the voxel grid:
+   each hole and its wall are reserved so a later hole keeps clear of them, a left part's hole in a centre part stays
+   clear of its mirror image, and a 0.2 mm skin round each hole (from 1.5 mm below its mouth) must lie in the part,
+   so no hole breaks out of its side. `CLEAR_MIRRORED` trims the pelvis and torso where the mirrored right thigh and
+   pauldron would sink in (the figure is not symmetric).
 3. **build.py** writes, per part: a print STL (the full-detail solid simplified to 0.015 mm, still closed), a game
    GLB (decimated to the old budget, xatlas UVs, Cycles bake of colour, roughness, metallic and normals from the
    solid; cut faces, pegs and holes bake as gunmetal), origin at its kit joint. `paladin_composite.blend` holds all
@@ -66,7 +72,7 @@ All of it runs headless in the cloud container (4 CPU cores, no GPU). Nothing ne
 | shin | thigh | |
 | foot | shin | |
 | blade | hand | equipment: the siege blade (`item_lance@paladin`) |
-| pod | torso or back | equipment: the shoulder pod (`item_carapace-gun@paladin`); no room for a peg yet |
+| pod | torso or back | equipment: the shoulder pod (`item_carapace-gun@paladin`); a 2 mm peg, no magnet |
 
 Sided parts are modelled once, for the walker's left, and mirrored for the right, so the right side now matches the
 left (the Meshy figure's right arm hung differently). OUT/report.json lists each part's size, volume and triangle
@@ -74,10 +80,30 @@ counts and every joint's peg, axis and magnet.
 
 ## Known limits
 
-- At today's titan scale (about 62 mm to the spire tip) the thin joints are small: the thigh's peg is 1.1 mm across
-  and four joints have no room for a magnet. Printing at 1.5x or 2x would give more joints a magnet, but
-  the pegs are cut for 1x: a print-scale option (scale the solids before `joints.py`) is not built yet.
-- The pod has no peg (its only contact with the torso and spire is a few struts). Pin or glue it for now.
+- Joints at 1.5x (OUT/report.json has every axis and centre). Peg across, then magnet:
+
+  | Joint | 1x (before) | 1.5x |
+  | --- | --- | --- |
+  | thigh into pelvis | 1.1 mm, none | 6.0 mm, 2 x 1 |
+  | torso / pelvis | 4.0 mm, 2 x 1 | 6.0 mm, 3 x 2 (peg now on the pelvis) |
+  | helm into torso | 4.0 mm, 2 x 1 | 6.0 mm, 3 x 2 |
+  | pauldron into torso | 4.0 mm, 2 x 1 | 6.0 mm, 3 x 2 |
+  | spire (back) into torso | 3.0 mm, 2 x 1 | 3.0 mm, 2 x 1 |
+  | arm / pauldron | 2.3 mm, none | 2.3 mm, 1 x 1 (peg now on the pauldron) |
+  | forearm / arm | 2.3 mm, 1 x 1 | 3.5 mm, 2 x 1 |
+  | hand into forearm | 2.6 mm, none | 4.4 mm, 2 x 1 |
+  | shin into thigh | 3.0 mm, 2 x 1 | 2.3 mm, 1 x 1 |
+  | foot / shin | 4.0 mm, none | 6.0 mm, 2 x 1 |
+  | blade into hand | 1.7 mm, none | 2.6 mm, 2 x 1 |
+  | pod into torso | no peg | 2.0 mm, none |
+
+  The 1x knee and spire pegs were bigger only because the 1x check was voxel-only: at 1.5x the strict check finds a
+  crease in the thigh just above the knee and a sloped face under the spire, and the bigger pegs would break out.
+- Two Paladin-only changes to the cut (in `paladin.py`): the hips are fitted before the torso, so they get first pick
+  of the pelvis (otherwise the torso's hole takes the room and the hips get a 2 mm peg); and Meshy sculpted a thin
+  lip over a 0.5 mm slot at the top of the forearm, so the arm now takes the lip, the slot and the top 2 mm of the
+  forearm and the elbow seam is a flat face through solid metal.
+- Not test-printed. Magnet pockets are 0.1 mm over the stock size; check the fit on a test print first.
 - The surface is still Meshy's sculpt; only the cuts, joints and symmetry are new. Torso, pelvis, helm and spire are
   not yet symmetrised. Cut faces are plain gunmetal, not designed sockets with detail.
 - The Paladin's game parts are these now (see below). The old open-shell cut in `../meshy/` is kept for reference
@@ -188,7 +214,7 @@ What the Paladin taught, and what changed for the Seer:
 
 - **Print scale.** Like the Brute, the Seer is cut at Luke's 1.5x collector scale (`PRINT_SCALE`; print mm = kit mm x
   scale), about 56 mm to the helm top and 68 mm to the crown spire, and build.py scales the game GLBs back to kit mm.
-  The Paladin is still 1x; set `PRINT_SCALE = 1.5` in `paladin.py` and rerun to match.
+  The Paladin is now cut at 1.5x too.
 - **Designed joints.** The Seer's limbs are rods about 1.2 mm thick even at 1.5x, so no peg fits where Meshy joins them.
   Every limb joint (neck, shoulders, elbows, wrists, hips, knees, ankles) now has a gilded ball knuckle with a sleeve
   that runs deep into the parent part, and the cut between the parts is the plane through the ball's centre, square to
