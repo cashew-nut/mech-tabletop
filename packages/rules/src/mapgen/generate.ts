@@ -112,7 +112,8 @@ export function generateBoard(seed: number, options: GenerateOptions = {}): Gene
   let passed = 0;
   const enough = options.enough ?? 24;
   let tried = 0;
-  for (let i = 0; i < candidates && passed < enough; i++) {
+  // A hard seed (rare, mostly canal boards) keeps going, up to three times the usual budget, until one board passes.
+  for (let i = 0; i < candidates * 3 && passed < enough && !(i >= candidates && passed > 0); i++) {
     tried++;
     const cand = buildCandidate(arch, template, rng, depth);
     if (!cand) continue;
@@ -139,7 +140,7 @@ export function generateBoard(seed: number, options: GenerateOptions = {}): Gene
       objectives: scenario.objectives,
       report: checkBoard(board, scenario.objectives, depth, { limits: arch.limits }),
       scores: null,
-      tried: candidates,
+      tried,
       passed: 0,
       fallback: true,
     };
