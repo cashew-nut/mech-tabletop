@@ -195,30 +195,41 @@ old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. 
 now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
 An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.
 
-### The Brute's designed items: Industrial Claw and Rail Cannon
+### The Brute's sculpted items: Industrial Claw and Rail Cannon
 
-The Meshy Brute has no claw and no rail gun, so these two are modelled in Blender-quality hard-surface geometry instead of
-being cut: `brute_items.py` builds them as manifold solids (boxes, chamfers, hulled tines, rivets, vents) in print mm, and
-`brute_items_build.py` finishes them. No Meshy credits and no paid service are used.
+The Meshy Brute has no claw and no rail gun, so each item is its own Meshy generation, then cut onto the Brute's elbow socket
+by the same closed-solid pipeline as the guns. (A first attempt modelled them from boxes and hulls in Blender; it was
+nowhere near the fidelity of the sculpted parts and was dropped. Items for the other walkers should follow this route:
+sculpt first, then fit.)
 
-```sh
-MODEL=brute ~/bvenv/bin/python -I brute_items.py PARTS ITEMS   # solids, print STLs, fit.json (exits 1 if a check fails)
-MODEL=brute ~/bvenv/bin/python -I brute_items_build.py PARTS ITEMS   # game GLBs, brute_items.blend, renders
-node scripts/publish-composite.mjs ITEMS/glb brute --items       # only the two items; then compress-parts and item-bounds as above
-```
+1. **Reference.** `python3 tools/meshy/meshy.py text-to-image "PROMPT" --out ref.png` (3 credits): an isolated prop on a flat
+   grey background, side-on, no hands or body, a flat round mounting boss on top, red riveted plate with black iron and brass
+   (so it reads as the Brute), thick chunky shapes, nothing thin or dangling.
+2. **Sculpt.** `python3 tools/meshy/meshy.py image-to-3d ref.png --out DIR` (30 credits), then `python3 -I ../meshy/cut.py extract DIR/*.glb WORK`.
+3. **Cut onto the socket.** `MODEL=brute ~/bvenv/bin/python -I item_cut.py WORK claw PARTS --length 28` (PARTS is the
+   Brute build with `stl/` and `report.json`). It orients the prop (up is +z, the muzzle is the end away from the housing),
+   scales it to `--length` mm, turns its top boss onto the cannon arm's peg axis and rolls it until its barrel points where the
+   cannon arm's does, subtracts every other part of the walker, adds the gatling's collar and the cannon arm's exact peg
+   (`brute_socket.py`: 3 mm D-section, 3.5 mm long, 2 x 1 mm magnet pocket), keeps the one closed piece and writes
+   `WORK/kit/claw.npz` and `WORK/item.json` (trimmed volume, swing clash, size). Tuning flags: `--flip-side` mirrors a prop whose
+   drum sits on the inboard side (the rail cannon needed it to clear the thigh), `--roll`, `--pitch`, `--sink`, `--muzzle +|-`.
+   Check `item.json`: `trimmed_mm3` and `swing_clash_mm3` should be empty (the arm swung 15 degrees either way touches nothing).
+4. **Bake.** `echo '{}' > WORK/joints.json; MODEL=brute ~/bvenv/bin/python -I build.py WORK OUT claw` (22 s): print STL, game GLB (9000
+   triangles, 1024 px baked colour, roughness, metal and normals) and `OUT/claw_part.blend`.
+5. **See it.** `MODEL=brute ~/bvenv/bin/python -I brute_items_build.py PARTS REVIEW claw=OUT_CLAW rail=OUT_RAIL` puts both on the walker in
+   a copy of `brute_composite.blend` (hidden spares on both elbows) and renders items, loadouts and the elbow close up.
+6. **Publish.** `node scripts/publish-composite.mjs DIR_WITH_claw.glb_AND_rail.glb brute --items`, then `compress-parts` and
+   `item-bounds` as above. Only the two items are replaced.
 
-Both are whole forearms with their origin on the elbow and the cannon arm's exact peg (centre and axis from the build's
-`report.json`: a 3 mm D-section peg, 3.5 mm long, flat keyed, with a 2 x 1 mm magnet pocket in its tip, and the same collar the
-gatling carries), so a claw, a rail cannon, the cannon arm and the gatling all fit either elbow. `fit.json` records the checks:
-one closed piece, no contact with any other part of the walker at rest or with the arm swung 15 degrees either way, nothing of
-the part inside the pauldron's solid, and the peg filling the same volume as the cannon arm's. The items are modelled for the left;
-the web mirrors them for the right. Paints are four swatches (livery red, iron, steel, brass) in a 128 px atlas, so the web
-tints the red like the rest of the Brute. `brute_items.blend` holds the Brute with both items as hidden spares on each elbow.
+Both are whole forearms with their origin on the elbow, so a claw, a rail cannon, the cannon arm and the gatling all fit either
+elbow; modelled for the left, the web mirrors them for the right.
 
-| Item | Size (print mm) | Parts | Notes |
-| --- | --- | --- | --- |
-| Industrial Claw (`item_industrial-claw@brute`) | 16 x 29 x 28 | wrist block, ram, pivot, steel pincer, jaws open about 30 degrees | one broad lower hook, two upper tines |
-| Rail Cannon (`item_rail-cannon@brute`) | 18 x 30 x 30 | breech block, capacitor drum, twin rails, three coil clamps, muzzle brace | 33 mm rails |
+| Item | Length | Size (print mm) | Credits | Notes |
+| --- | --- | --- | --- | --- |
+| Industrial Claw (`item_industrial-claw@brute`) | 28 | 10 x 28 x 19 | 33 | red riveted housing, copper ram, brass bands, pincer jaws |
+| Rail Cannon (`item_rail-cannon@brute`) | 33 | 14 x 33 x 18 | 33 | red breech block, brass-banded drum (mirrored to the outboard side), four rails, three coil rings |
+
+The Meshy sources (GLB), references and per-item cut reports are in the project folder under `models/brute-items/`.
 
 ## The Reliquary Seer (MODEL=seer)
 

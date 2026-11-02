@@ -85,7 +85,10 @@ TREE = {
     "rockets": ("forearm", "elbow", "pauldron"),    # weapon forearm: item_rocket-pod@brute
     "gatling": ("forearm", "elbow", "pauldron"),    # weapon forearm: item_autocannon@brute, re-seated on the same socket
 }
-SIDED = {"pauldron", "thigh", "shin", "foot", "rockets", "gatling"}
+# Sculpted props that take the same elbow socket (item_cut.py cuts each from its own Meshy generation, not from the figure)
+TREE["claw"] = ("forearm", "elbow", "pauldron")    # weapon forearm: item_industrial-claw@brute
+TREE["rail"] = ("forearm", "elbow", "pauldron")    # weapon forearm: item_rail-cannon@brute
+SIDED = {"pauldron", "thigh", "shin", "foot", "rockets", "gatling", "claw", "rail"}
 RESEAT = {"gatling": "rockets"}            # part: the part whose socket (frame and peg) it takes over
 LOADOUT = {"rockets": "L", "gatling": "R"} # default arms, as Meshy had them; the other copies are hidden spares
 
@@ -111,12 +114,13 @@ POSE = {
 BUDGET = {
     "torso": (14000, 1024), "pelvis": (6000, 1024), "helm": (4000, 1024), "back": (8000, 1024),
     "pauldron": (6000, 1024), "thigh": (4000, 768), "shin": (5000, 768), "foot": (4500, 768),
-    "rockets": (8000, 1024), "gatling": (9000, 1024),
+    "rockets": (8000, 1024), "gatling": (9000, 1024), "claw": (9000, 1024), "rail": (9000, 1024),
 }
 LABEL = {
     "pelvis": "Pelvis", "torso": "Furnace torso", "helm": "Helm", "back": "Stacks + rear pack",
     "pauldron": "Pauldron + shoulder", "thigh": "Thigh", "shin": "Shin", "foot": "Foot",
     "rockets": "Cannon arm (weapon)", "gatling": "Gatling arm (weapon)",
+    "claw": "Industrial claw (weapon)", "rail": "Rail cannon (weapon)",
 }
 
 

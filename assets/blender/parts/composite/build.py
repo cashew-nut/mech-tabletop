@@ -319,8 +319,8 @@ def main(a):
     mats = high_materials(imgs)
     objs, info = {}, {}
     for k in TREE:
-        if only and k not in only:
-            continue
+        if (only and k not in only) or not (work / "kit" / f"{k}.npz").exists():
+            continue        # (the Brute's claw and rail come from their own builds, item_cut.py)
         objs[k], info[k] = build_part(k, work, out, mats, size_override, do_bake)
         # the game copy, alone, origin at its joint
         sel = objs[k]
@@ -345,6 +345,14 @@ def main(a):
                 except RuntimeError:
                     pass
         bpy.ops.wm.save_as_mainfile(filepath=str((out / f"{NAME}_composite.blend").resolve()))
+    elif only:      # a part built on its own (the Brute's claw and rail): keep it as a .blend to put on the walker
+        for im in bpy.data.images:
+            if im.filepath and not im.packed_file and im.source == "FILE":
+                try:
+                    im.pack()
+                except RuntimeError:
+                    pass
+        bpy.ops.wm.save_as_mainfile(filepath=str((out / f"{'_'.join(only)}_part.blend").resolve()))
     joints = json.loads((work / "joints.json").read_text())
     report = {"parts": info, "joints": joints}
     prev = out / "report.json"
