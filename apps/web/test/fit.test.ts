@@ -26,6 +26,14 @@ describe('equipment fit', () => {
     expect([socket.joint, socket.contact]).toEqual(['elbow', ['back']]);
   });
 
+  it("hangs the Brute's own claw and rail cannon on the elbow socket like its gun forearms", () => {
+    // item_industrial-claw@brute and item_rail-cannon@brute are whole forearms on the same peg as the cannon arm and the gatling.
+    expect(names(planLocation('brute', 'armLeft', ['industrial-claw'], [true]))).toEqual(['grip-native:L']);
+    expect(names(planLocation('brute', 'armRight', ['rail-cannon'], [true]))).toEqual(['grip-native:R']);
+    expect(FIT.nativeRight).not.toContain('industrial-claw@brute');
+    expect(FIT.nativeRight).not.toContain('rail-cannon@brute');
+  });
+
   it('fills the arm ladder in order and uses the right side', () => {
     expect(names(planLocation('paladin', 'armRight', ['lance', 'lance', 'lance']))).toEqual(['grip:R', 'forearm-top:R', 'shoulder-top:R']);
     expect(names(planLocation('paladin', 'armRight', ['lance', 'lance', 'lance', 'lance']))[3]).toBeNull();

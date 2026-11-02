@@ -1,5 +1,6 @@
 // Publish a composite walker (assets/blender/parts/composite) into the game, without Blender.
 //   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer]   (DIR is the build.py output, e.g. models/paladin-composite)
+//   node scripts/publish-composite.mjs DIR/glb brute --items   (only the items present in DIR/glb: the Brute's claw and rail cannon)
 //   node scripts/compress-parts.mjs <the files this prints>   (KTX2 and quantisation; see assets/blender/parts/meshy/README.md)
 //
 // build.py writes one GLB per part with its origin on its joint, in millimetres. The game wants the same parts under
@@ -35,7 +36,11 @@ const MODELS = {
     // Its own frame: a copy of the bulwark frame (Artillery keeps that one) with the joints the parts were cut on.
     faction: 'foundries', cls: 'brute', tunes: 'foundries/brute', itemScale: 1.4, frame: 'foundries_frame_brute', frameFrom: 'foundries_frame_bulwark',
     kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'thigh', 'shin', 'foot'],
-    items: { rockets: ['rocket-pod@brute', 'mount_armLeft_0', 'elbow'], gatling: ['autocannon@brute', 'mount_armLeft_0', 'elbow'] },
+    items: {
+      rockets: ['rocket-pod@brute', 'mount_armLeft_0', 'elbow'], gatling: ['autocannon@brute', 'mount_armLeft_0', 'elbow'],
+      // Designed in Blender (brute_items.py, not cut from the Meshy figure): whole forearms on the same elbow peg.
+      claw: ['industrial-claw@brute', 'mount_armLeft_0', 'elbow'], rail: ['rail-cannon@brute', 'mount_armLeft_0', 'elbow'],
+    },
   },
   seer: {
     faction: 'reliquary', cls: 'seer', tunes: 'reliquary/striker', itemScale: 1.2, frame: 'reliquary_frame_striker',
@@ -48,6 +53,7 @@ const MODELS = {
 };
 
 const src = process.argv[2];
+const itemsOnly = process.argv.includes('--items');
 const model = MODELS[process.argv[3] ?? 'paladin'];
 if (!src || !existsSync(src) || !model) {
   console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer]');
@@ -83,7 +89,7 @@ async function convert(file, name, out, fix) {
 
 const written = [];
 const toGltf = ([x, y, z]) => [x, z, -y]; // Blender (z up) to glTF (y up)
-for (const k of KIT) {
+for (const k of itemsOnly ? [] : KIT) {
   const name = kitName(k);
   // A part built on one joint but hung on another (the Seer's helm) is moved by the difference.
   const [from, to] = ORIGIN[k] ?? [];
@@ -91,6 +97,7 @@ for (const k of KIT) {
   written.push(await convert(join(src, `${k}.glb`), name, join(PARTS, 'kit', `${name}.glb`), delta && ((p) => p.map((c, i) => c + delta[i]))));
 }
 for (const [k, [id, mount, originJoint]] of Object.entries(ITEMS)) {
+  if (itemsOnly && !existsSync(join(src, `${k}.glb`))) continue;
   const [mountJoint, [dx, dy, dz]] = tunes.mounts[mount]; // Blender axes, mm, relative to the mount's joint
   // Where the mount is relative to the joint the part's origin sits on (nowhere if the origin is the mount).
   const from = tunes.joints[originJoint ?? mountJoint];
@@ -105,7 +112,7 @@ for (const [k, [id, mount, originJoint]] of Object.entries(ITEMS)) {
 // the right arm's shoulder, elbow and wrist to "jointsRight". Nodes hang from their parent joint, so each is placed by the
 // difference. The Brute's frame is a class frame (foundries_frame_brute, which the web prefers over the bulwark frame),
 // copied from the frame it shares with Artillery.
-if (model.frame) {
+if (model.frame && !itemsOnly) {
   const framePath = join(PARTS, 'kit', `${model.frame}.glb`);
   const doc = await io.read(model.frameFrom ? join(PARTS, 'kit', `${model.frameFrom}.glb`) : framePath);
   if (model.frameFrom) {
@@ -138,16 +145,16 @@ const manifestPath = join(PARTS, 'manifest.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const keep = new Set([...KIT.map(kitName), ...(model.frameFrom ? [model.frame] : [])]);
 const old = new RegExp(`^${faction}_.+_${cls}$`);
-for (const key of Object.keys(manifest.kit)) {
+for (const key of itemsOnly ? [] : Object.keys(manifest.kit)) {
   if (!old.test(key)) continue;
   if (!keep.has(key)) {
     rmSync(join(PARTS, manifest.kit[key]), { force: true });
     delete manifest.kit[key];
   }
 }
-for (const k of KIT) manifest.kit[kitName(k)] = `kit/${kitName(k)}.glb`;
-if (model.frameFrom) manifest.kit[model.frame] = `kit/${model.frame}.glb`;
-for (const [, [id]] of Object.entries(ITEMS)) manifest.items[id] = `item_${id}.glb`;
+if (!itemsOnly) for (const k of KIT) manifest.kit[kitName(k)] = `kit/${kitName(k)}.glb`;
+if (model.frameFrom && !itemsOnly) manifest.kit[model.frame] = `kit/${model.frame}.glb`;
+for (const [k, [id]] of Object.entries(ITEMS)) if (!itemsOnly || existsSync(join(src, `${k}.glb`))) manifest.items[id] = `item_${id}.glb`;
 for (const kind of ['items', 'kit']) manifest[kind] = Object.fromEntries(Object.entries(manifest[kind]).sort(([a], [b]) => (a < b ? -1 : 1)));
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
