@@ -82,7 +82,7 @@ export interface Placement {
 }
 
 /** The kind of location a loadout slot belongs to. */
-export const kindOf = (loc: string): Kind => (loc === 'armLeft' || loc === 'armRight' ? 'arm' : (loc as Kind));
+const kindOf = (loc: string): Kind => (loc === 'armLeft' || loc === 'armRight' ? 'arm' : (loc as Kind));
 
 /** Place a location's items in order. An entry is null where the item has no preference (fall back to numbered mounts). */
 export function planLocation(chassisId: string, loc: string, ids: string[], native: boolean[] = []): Array<Placement[] | null> {

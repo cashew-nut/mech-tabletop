@@ -55,7 +55,6 @@ const ZONE_NAMES: Record<Zone, string> = {
   armRight: 'Right arm',
   legs: 'Legs',
 };
-const PLAYABLE_SCENARIOS = SCENARIOS;
 
 interface Choice {
   label: string;
@@ -80,7 +79,7 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
   const choices = useMemo(lanceChoices, []);
   const [mine, setMine] = useState(0);
   const [theirs, setTheirs] = useState(Math.max(0, choices.findIndex((c) => c.lance.name === EXAMPLES[2].name)));
-  const [scenario, setScenario] = useState(PLAYABLE_SCENARIOS[0].id);
+  const [scenario, setScenario] = useState(SCENARIOS[0].id);
   const [map, setMap] = useState('chapel-ruins');
   const [deploy, setDeploy] = useState<'alternate' | 'auto'>('alternate');
   const myErrors = validateLance(choices[mine].lance).errors;
@@ -121,7 +120,7 @@ function Setup({ onStart }: { onStart: (g: GameState) => void }) {
         <label className="field">
           <span>Scenario</span>
           <select value={scenario} onChange={(e) => setScenario(e.target.value)}>
-            {PLAYABLE_SCENARIOS.map((s) => (
+            {SCENARIOS.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>

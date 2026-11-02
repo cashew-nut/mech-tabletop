@@ -38,7 +38,7 @@ function itemName(id: string) {
 }
 
 /** The nodes that make up the walker: kit parts first, then the equipment hung on it. */
-export function collectParts(root: THREE.Object3D, chassis: string): PartInfo[] {
+function collectParts(root: THREE.Object3D, chassis: string): PartInfo[] {
   root.updateMatrixWorld(true);
   const out: PartInfo[] = [];
   const centreOf = (n: THREE.Object3D) => new THREE.Box3().setFromObject(n).getCenter(new THREE.Vector3());

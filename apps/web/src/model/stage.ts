@@ -16,7 +16,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export type Backdrop = 'covenant' | 'foundries' | 'reliquary';
-export const BACKDROPS: Backdrop[] = ['covenant', 'foundries', 'reliquary'];
+const BACKDROPS: Backdrop[] = ['covenant', 'foundries', 'reliquary'];
 
 export interface Stage {
   scene: THREE.Scene;

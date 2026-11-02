@@ -20,14 +20,13 @@ export interface KitComponent {
 export type Side = 'L' | 'R';
 
 export const COMPONENTS = kitData.components as KitComponent[];
-export const KIT_FACTIONS = Object.keys(kitData.factions);
 export const SPARE_MOUNTS = kitData.spareMounts as Record<string, number>;
 /** Components a class never shows, so the frame's part does not fill in for them (the composite Paladin's torso has its own collar). */
 const OMIT = kitData.omit as unknown as Record<string, string[] | string>;
 
 const SIDED_JOINTS = new Set(['shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle']);
 
-export const frameName = (faction: string, frame: string) => `${faction}_frame_${frame}`;
+const frameName = (faction: string, frame: string) => `${faction}_frame_${frame}`;
 
 export const jointName = (joint: string, side?: Side) => (SIDED_JOINTS.has(joint) && side ? `joint_${joint}_${side}` : `joint_${joint}`);
 
@@ -68,7 +67,7 @@ export function resolvePart(names: Names, faction: string, component: string, cl
 }
 
 /** The class's own frame (foundries_frame_brute, on the joints its parts were cut on) if there is one, else the frame's. */
-export const classFrame = (names: Names, faction: string, cls: string, frame: string) =>
+const classFrame = (names: Names, faction: string, cls: string, frame: string) =>
   names.has(frameName(faction, cls)) ? frameName(faction, cls) : names.has(frameName(faction, frame)) ? frameName(faction, frame) : null;
 
 /** Plan a class's kit body from the names available, or null without a frame. */

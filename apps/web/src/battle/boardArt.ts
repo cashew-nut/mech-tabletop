@@ -218,7 +218,7 @@ export interface Puff {
 }
 export const PUFF = 'puff';
 
-export function smokeStack(parent: THREE.Object3D, x: number, y: number, z: number, seed: number) {
+function smokeStack(parent: THREE.Object3D, x: number, y: number, z: number, seed: number) {
   const rnd = rndFrom(seed);
   for (let i = 0; i < 6; i++) {
     const material = new THREE.MeshLambertMaterial({ color: i % 2 ? 0x8a8d92 : 0xb4b7bb, transparent: true, depthWrite: false });

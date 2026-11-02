@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { at, barrel, blade, box, cyl, dome, group, lancet, lathe, piston, pipe, plate, rivetRow, sphere, spire, sunburst, torus, trimmed, type Palette } from './kit';
 
 export { makePalette, type Palette } from './kit';
-export { BASE_MM, baseMm, buildChassis, frameOf, type ChassisModel } from './chassis';
+export { baseMm, buildChassis, type ChassisModel } from './chassis';
 import { frameOf } from './chassis';
 
 const SCALE: Record<string, number> = { scout: 1, striker: 1.2, bulwark: 1.4, titan: 1.7 };

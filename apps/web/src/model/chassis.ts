@@ -33,7 +33,7 @@ import {
 } from './kit';
 
 /** Base sizes by frame, the model skeleton each class is built on. */
-export const BASE_MM: Record<string, number> = { scout: 25, striker: 32, bulwark: 40, titan: 50 };
+const BASE_MM: Record<string, number> = { scout: 25, striker: 32, bulwark: 40, titan: 50 };
 
 /** The model skeleton a class uses until it has its own faction model. */
 export const frameOf = (chassisId: string) => CHASSIS.find((c) => c.id === chassisId)?.frame ?? chassisId;

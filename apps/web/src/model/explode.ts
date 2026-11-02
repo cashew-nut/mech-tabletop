@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 
 /** Which kit component each one plugs into (the composite pipeline's TREE, assets/blender/parts/composite). */
-export const PARENT: Record<string, string> = {
+const PARENT: Record<string, string> = {
   torso: 'pelvis', thigh: 'pelvis', shin: 'thigh', foot: 'shin',
   helm: 'torso', crown: 'helm', back: 'torso', cloth: 'torso', collar: 'torso',
   pauldron: 'torso', arm: 'pauldron', forearm: 'arm', hand: 'forearm',
