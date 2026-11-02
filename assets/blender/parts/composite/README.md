@@ -126,6 +126,40 @@ node scripts/item-bounds.mjs      # item boxes for the equipment fit
 
 The 13 files come to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar).
 
+## The Paladin's items (Carapace Gun, Missile Rack, Kinetic Shield)
+
+Three items for the Paladin, built the way the walker was: the shape is Meshy's, the fit is designed. Nothing is hand-modelled
+from boxes. Two are new Meshy generations (a text-to-image reference in the Paladin's black, gold and red, then image-to-3D;
+about 66 credits for both), the third is the pod the Paladin was already cut with.
+
+```sh
+python3 -I ../meshy/cut.py extract RACK.glb RACK_WORK                  # and the same for the shield
+~/bvenv/bin/python -I paladin_items.py PARTS OUT --rack RACK_WORK --shield SHIELD_WORK --pod PALADIN_WORK   # ~35 s
+~/bvenv/bin/python -I paladin_items_build.py PARTS OUT [--samples 32] [--only items|loadouts|sockets]    # bake ~2.5 min, renders ~6 min
+```
+
+PARTS is `models/paladin-composite-1.5x`; PALADIN_WORK is the Paladin's WORK folder after `split.py` (its `parts/pod.npz` is the
+pod's textured solid). `paladin_items.py` writes `fit.json` and exits 1 if a check fails; `paladin_items_build.py` bakes through
+`build.py` (so textures, budgets and cut-face materials are the walker's own) and writes the game GLBs, print STLs and
+`paladin_items.blend`.
+
+- **Shoulder hardpoint.** A gunmetal boss on each side of the torso (3.1 mm radius, up to the pod's old seat plane) with the
+  D hole and a magnet pocket in it: r 1.5 x 3.0 mm peg, 2 x 1 mm disc, 0.4 mm wall at least. The Carapace Gun and the Missile
+  Rack use the same socket, either side. The boss is trimmed where the back spire, helm, pauldrons and arms are, so nothing
+  of the walker moves.
+- **Bracer hardpoint.** The same boss and hole on the forearm's outer face, tilted 12 degrees to follow the forearm (the face
+  slopes in towards the elbow), seat 0.5 mm proud of the highest metal under the collar. The Kinetic Shield plugs into it.
+- **Items.** Each carries a gunmetal collar with two gold bands, then its own peg. The Carapace Gun keeps the Meshy pod but loses
+  its old stem: the pod is a thin-walled lattice where no 3 mm disc fits, so the stem is cut flat and the new collar and peg
+  carry it. The Missile Rack stands on its own Meshy post; the shield is stood off 2.6 mm from the forearm.
+- **Checks** (fit.json): one closed piece; peg fills none of the host's metal; the hole and its wall lie inside the host; no
+  clash with any part of the walker, at rest, mirrored on the right side too. The shield also bent at the elbow (-30, -45
+  degrees): it grazes the pauldron by under 1 mm3, listed in fit.json as `bent_clashes_mm3`.
+- Item frame: +Z out of the host, origin on the seat. Items are modelled for the left; the web mirrors them for the right.
+  Game GLBs are at kit size (print mm / 1.5) with their origin on the `chest` joint (shoulder items) or the `elbow` joint
+  (shield), like the other composite parts. **Not published to the game yet**: the hosts gained sockets (the torso and the
+  forearm change), so publishing means re-baking the torso and forearm GLBs and re-tuning the fit entries.
+
 ## The Ashen Foundries Brute (MODEL=brute)
 
 The same pipeline cuts Luke's Meshy Brute (`Meshy_AI_ashen_foundry_mech_..._image-to-3d-texture.glb`, 6.24M
