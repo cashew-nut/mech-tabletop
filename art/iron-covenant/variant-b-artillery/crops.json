@@ -1,0 +1,114 @@
+{
+ "00-whole-platform": {
+  "board_box": [
+   657,
+   550,
+   981,
+   886
+  ],
+  "native": [
+   324,
+   336
+  ],
+  "upscaled_4x": [
+   1296,
+   1344
+  ]
+ },
+ "01-hull-spires-and-head": {
+  "board_box": [
+   718,
+   575,
+   903,
+   685
+  ],
+  "native": [
+   185,
+   110
+  ],
+  "upscaled_4x": [
+   740,
+   440
+  ]
+ },
+ "02-cannon-barrel-and-eye": {
+  "board_box": [
+   853,
+   655,
+   972,
+   720
+  ],
+  "native": [
+   119,
+   65
+  ],
+  "upscaled_4x": [
+   476,
+   260
+  ]
+ },
+ "03-shoulder-and-chest-plates": {
+  "board_box": [
+   760,
+   678,
+   842,
+   755
+  ],
+  "native": [
+   82,
+   77
+  ],
+  "upscaled_4x": [
+   328,
+   308
+  ]
+ },
+ "04-front-leg-knee-and-shin": {
+  "board_box": [
+   765,
+   735,
+   848,
+   842
+  ],
+  "native": [
+   83,
+   107
+  ],
+  "upscaled_4x": [
+   332,
+   428
+  ]
+ },
+ "05-right-leg-and-foot": {
+  "board_box": [
+   850,
+   735,
+   930,
+   850
+  ],
+  "native": [
+   80,
+   115
+  ],
+  "upscaled_4x": [
+   320,
+   460
+  ]
+ },
+ "06-left-leg-and-blade": {
+  "board_box": [
+   665,
+   672,
+   745,
+   840
+  ],
+  "native": [
+   80,
+   168
+  ],
+  "upscaled_4x": [
+   320,
+   672
+  ]
+ }
+}
