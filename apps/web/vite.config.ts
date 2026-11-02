@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 export default defineConfig({
   base: './',
   plugins: [react()],
-  // The Lance Ledger links to the walker viewer, so the build ships it beside the app.
+  // viewer.html is a redirect to the builder's Part view, kept for old links.
   build: { rollupOptions: { input: { main: resolve(__dirname, 'index.html'), viewer: resolve(__dirname, 'viewer.html') } } },
   server: { fs: { allow: ['../..'] } },
 });
