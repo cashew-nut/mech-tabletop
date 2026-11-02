@@ -59,7 +59,15 @@ const MODELS = {
     // build part -> [kit component, the joint its origin sits on, the joint it hangs on when that differs]
     component: { pauldron_r: 'pauldron-right' },
     origin: { helm: ['neck', 'head'] },
-    items: { spear: ['arc-cannon@seer', 'mount_armLeft_0', 'mount'] },
+    // The spear is the left fist's item. The Hellfire launcher stands on a gilded sleeve in the arm's shoulder drum
+    // (seer_items.py): its origin is the socket seat, given here as an offset from the shoulder joint (kit mm, Blender
+    // axes), and the sleeve (hosts/arm_sleeve.npz, the part of the socketed arm the plain arm does not have) is merged
+    // into the arm as a gold primitive. The right arm is the left mirrored, so the one socket serves both shoulders.
+    items: {
+      spear: ['arc-cannon@seer', 'mount_armLeft_0', 'mount'],
+      'hellfire-missiles': ['hellfire-missiles@seer', ['shoulder', [1.396, -0.958, 1.8]], 'mount', 'items'],
+    },
+    hosts: { arm: ['shoulder', ['arm_sleeve'], [0.78, 0.6, 0.25]] },
   },
 };
 
@@ -128,7 +136,7 @@ async function convert(file, name, out, fix, host) {
 
 /** Merge the sockets (npz files in print mm, Blender axes, world) into a part's mesh as a gunmetal primitive.
  * `joint` is the joint the part's origin sits on (kit mm), so the sockets land where the part's own vertices are. */
-function addHost(doc, [joint, names]) {
+function addHost(doc, [joint, names, colour]) {
   const mesh = doc.getRoot().listMeshes()[0];
   const buf = doc.getRoot().listBuffers()[0];
   const j = tunes.joints[joint];
@@ -143,7 +151,9 @@ function addHost(doc, [joint, names]) {
     }
     for (const t of T) idx.push(base + t);
   }
-  const mat = doc.createMaterial('hardpoint_gunmetal').setBaseColorFactor([0.09, 0.09, 0.1, 1]).setMetallicFactor(0.8).setRoughnessFactor(0.45);
+  const mat = colour
+    ? doc.createMaterial('hardpoint_gold').setBaseColorFactor([...colour, 1]).setMetallicFactor(0.9).setRoughnessFactor(0.35)
+    : doc.createMaterial('hardpoint_gunmetal').setBaseColorFactor([0.09, 0.09, 0.1, 1]).setMetallicFactor(0.8).setRoughnessFactor(0.45);
   const prim = doc
     .createPrimitive()
     .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)).setBuffer(buf))
@@ -165,7 +175,7 @@ for (const k of itemsOnly ? [] : KIT) {
 for (const [k, [id, mount, originJoint, from_]] of Object.entries(ITEMS)) {
   if (from_ === 'items' && !itemsDir) continue; // needs paladin_items_build.py's folder
   if (itemsOnly && !existsSync(join(from_ === 'items' ? itemsDir : src, `${k}.glb`))) continue;
-  const [mountJoint, [dx, dy, dz]] = tunes.mounts[mount]; // Blender axes, mm, relative to the mount's joint
+  const [mountJoint, [dx, dy, dz]] = Array.isArray(mount) ? mount : tunes.mounts[mount]; // Blender axes, mm, relative to the mount's joint
   // Where the mount is relative to the joint the part's origin sits on (nowhere if the origin is the mount).
   const from = tunes.joints[originJoint ?? mountJoint];
   const to = tunes.joints[mountJoint];
@@ -221,7 +231,8 @@ for (const key of itemsOnly ? [] : Object.keys(manifest.kit)) {
 }
 if (!itemsOnly) for (const k of KIT) manifest.kit[kitName(k)] = `kit/${kitName(k)}.glb`;
 if (model.frameFrom && !itemsOnly) manifest.kit[model.frame] = `kit/${model.frame}.glb`;
-for (const [k, [id]] of Object.entries(ITEMS)) if (!itemsOnly || existsSync(join(src, `${k}.glb`))) manifest.items[id] = `item_${id}.glb`;
+for (const [k, [id, , , from_]] of Object.entries(ITEMS))
+  if (from_ === 'items' ? itemsDir && existsSync(join(itemsDir, `${k}.glb`)) : !itemsOnly || existsSync(join(src, `${k}.glb`))) manifest.items[id] = `item_${id}.glb`;
 for (const kind of ['items', 'kit']) manifest[kind] = Object.fromEntries(Object.entries(manifest[kind]).sort(([a], [b]) => (a < b ? -1 : 1)));
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 

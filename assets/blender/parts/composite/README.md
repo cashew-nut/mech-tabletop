@@ -189,8 +189,11 @@ SEER is `models/seer-composite-v2` (its right arm is the mirror of the left). Ou
 - **Checks** (fit.json): closed and one piece; peg fills none of the arm; hole wall inside the arm; no clash with any part on
   either side at rest, and none on the left with the arm swung 15 degrees either way.
 - Item frame: +Z up out of the socket, -Y forward; the game GLB is at kit size with its origin on the socket seat.
-  **Not in the game yet**: the item is still cut from `data/equipment.json` and the arm and right pauldron GLBs would need
-  re-baking with the sleeve and the cut.
+  **In the game** (`node scripts/publish-composite.mjs SEER/glb seer models/seer-items/glb`, then `compress-parts.mjs` on the
+  arm and the launcher): the arm GLB carries the sleeve as a gold primitive (`hosts/arm_sleeve.npz`, the triangles of
+  `arm_hardpoints.stl` that the plain arm lacks; `extract_sleeve.py` beside it), `item_hellfire-missiles@seer.glb` has its
+  origin on the socket seat, and `fit.hardpoints.shoulder-socket` puts it there on either shoulder. The right pauldron's
+  2.7 mm3 clearance cut is not baked into the game's pauldron (the cut is invisible at game scale).
 - The serrated teeth and the thin ring behind the blades are about 0.1 mm thick at 17 mm: too thin to print cleanly. The
   missile bodies are 1.1 mm and the blades 0.3 to 1.3 mm.
 

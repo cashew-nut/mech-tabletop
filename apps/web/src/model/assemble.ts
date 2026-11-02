@@ -299,6 +299,8 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       if (!lib) return null;
       const own = itemPartName(lib.items, id, c.faction, c.id);
       if (!own?.endsWith(`@${c.id}`) || !arm) return own;
+      // A launcher on the shoulder socket (the Seer's Hellfire) is not held, so it sits beside the arm's one held item.
+      if (FIT.items[id]?.arm?.every((n) => n === 'shoulder-socket')) return own;
       if (!ownUsed) {
         ownUsed = true;
         return own;

@@ -73,6 +73,18 @@
     2.93
    ]
   },
+  "hellfire-missiles@seer": {
+   "min": [
+    -1.07,
+    -1.22,
+    -1.1
+   ],
+   "max": [
+    1.1,
+    3.85,
+    8.51
+   ]
+  },
   "industrial-claw": {
    "min": [
     -1.5,

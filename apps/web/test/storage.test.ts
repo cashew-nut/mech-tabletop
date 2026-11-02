@@ -16,7 +16,7 @@ describe('saved lances', () => {
     const saved = {
       name: 'Older',
       company: 'halvorsen',
-      walkers: [{ name: 'A', chassis: 'striker', driver: { command: 0, trait: null }, loadout: { armLeft: ['shear-blade', 'hellfire-missiles'] } }],
+      walkers: [{ name: 'A', chassis: 'striker', driver: { command: 0, trait: null }, loadout: { armLeft: ['shear-blade', 'anchor-spikes'] } }],
     } as unknown as LanceInput;
     expect(migrateLance(saved).walkers[0].loadout.armLeft).toEqual([]);
   });

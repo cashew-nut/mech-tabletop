@@ -40,7 +40,7 @@ const RENAMED_ITEMS: Record<string, string> = {
 };
 
 // Items cut from the game (docs/rules.md, v0.6). A saved lance that still carries one loses it rather than failing to load.
-const CUT_ITEMS = new Set(['melee-blade', 'hellfire-missiles', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']);
+const CUT_ITEMS = new Set(['melee-blade', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']);
 
 const withoutCutItems = <T extends { walkers: LanceInput['walkers'] }>(lance: T): T => ({
   ...lance,
