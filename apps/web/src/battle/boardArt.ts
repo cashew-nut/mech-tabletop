@@ -2,7 +2,8 @@
 // Everything is drawn at low resolution and sampled with nearest-neighbour filtering to match the pixel-art look.
 import * as THREE from 'three';
 
-const rndFrom = (seed: number) => (n: number) => ((Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
+/** A repeatable hash random in [0, 1): rndFrom(seed)(n) is the same number every time. */
+export const rndFrom = (seed: number) => (n: number) => ((Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
 
 function pixelTexture(size: number, draw: (g: CanvasRenderingContext2D, size: number) => void) {
   const canvas = document.createElement('canvas');

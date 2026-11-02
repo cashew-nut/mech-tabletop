@@ -67,8 +67,9 @@ only needs the read-only queries.
   once from `HexMap.tsx`.
 - The sine-hash random is written in both `boardArt.ts rndFrom` and `Board3D.tsx rnd01`, and they are the same
   function. Keep one.
-- `Battle.tsx` (670 lines) holds six components. Move `Setup`, `ActivationPanel`, and `WalkerCard` with `Log` into
-  their own files. `Trial` stays in `Battle.tsx`.
+- `Battle.tsx` (670 lines) holds six components. Move `Setup`, `ActivationPanel` and `WalkerCard` into their own
+  files. `Trial`, `Log` and the escort helper stay in `Battle.tsx`.
+- `boardWalkers.ts WalkerLibrary` keeps a `renderer` field it never reads. Keep it as a plain constructor argument.
 - `App.tsx` holds the whole Lance Ledger (`Builder`, 250 lines) beside the tab shell. Move it to `Builder.tsx`, and
   render the three tab buttons from one list.
 - Found but not changed here: `Board3D` does not dispose its scene geometries, materials or PMREM environment on
