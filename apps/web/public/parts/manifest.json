@@ -8,6 +8,7 @@
     "carapace-gun": "item_carapace-gun.glb",
     "carapace-gun@paladin": "item_carapace-gun@paladin.glb",
     "industrial-claw": "item_industrial-claw.glb",
+    "industrial-claw@brute": "item_industrial-claw@brute.glb",
     "kinetic-claws": "item_kinetic-claws.glb",
     "kinetic-shield": "item_kinetic-shield.glb",
     "kinetic-shield@paladin": "item_kinetic-shield@paladin.glb",
@@ -16,6 +17,7 @@
     "missile-rack": "item_missile-rack.glb",
     "missile-rack@paladin": "item_missile-rack@paladin.glb",
     "rail-cannon": "item_rail-cannon.glb",
+    "rail-cannon@brute": "item_rail-cannon@brute.glb",
     "rocket-pod": "item_rocket-pod.glb",
     "rocket-pod@brute": "item_rocket-pod@brute.glb",
     "soul-lantern": "item_soul-lantern.glb"
