@@ -195,6 +195,31 @@ old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. 
 now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
 An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.
 
+### The Brute's designed items: Industrial Claw and Rail Cannon
+
+The Meshy Brute has no claw and no rail gun, so these two are modelled in Blender-quality hard-surface geometry instead of
+being cut: `brute_items.py` builds them as manifold solids (boxes, chamfers, hulled tines, rivets, vents) in print mm, and
+`brute_items_build.py` finishes them. No Meshy credits and no paid service are used.
+
+```sh
+MODEL=brute ~/bvenv/bin/python -I brute_items.py PARTS ITEMS   # solids, print STLs, fit.json (exits 1 if a check fails)
+MODEL=brute ~/bvenv/bin/python -I brute_items_build.py PARTS ITEMS   # game GLBs, brute_items.blend, renders
+node scripts/publish-composite.mjs ITEMS/glb brute --items       # only the two items; then compress-parts and item-bounds as above
+```
+
+Both are whole forearms with their origin on the elbow and the cannon arm's exact peg (centre and axis from the build's
+`report.json`: a 3 mm D-section peg, 3.5 mm long, flat keyed, with a 2 x 1 mm magnet pocket in its tip, and the same collar the
+gatling carries), so a claw, a rail cannon, the cannon arm and the gatling all fit either elbow. `fit.json` records the checks:
+one closed piece, no contact with any other part of the walker at rest or with the arm swung 15 degrees either way, nothing of
+the part inside the pauldron's solid, and the peg filling the same volume as the cannon arm's. The items are modelled for the left;
+the web mirrors them for the right. Paints are four swatches (livery red, iron, steel, brass) in a 128 px atlas, so the web
+tints the red like the rest of the Brute. `brute_items.blend` holds the Brute with both items as hidden spares on each elbow.
+
+| Item | Size (print mm) | Parts | Notes |
+| --- | --- | --- | --- |
+| Industrial Claw (`item_industrial-claw@brute`) | 16 x 29 x 28 | wrist block, ram, pivot, steel pincer, jaws open about 30 degrees | one broad lower hook, two upper tines |
+| Rail Cannon (`item_rail-cannon@brute`) | 18 x 30 x 30 | breech block, capacitor drum, twin rails, three coil clamps, muzzle brace | 33 mm rails |
+
 ## The Reliquary Seer (MODEL=seer)
 
 Luke's Meshy Gilded Seraphim, rebuilt as 17 closed parts. Same steps, with `MODEL=seer` and no `label` step (the
