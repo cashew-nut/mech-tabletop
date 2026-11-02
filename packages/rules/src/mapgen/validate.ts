@@ -2,7 +2,7 @@
 // Works on any map, generated or hand-made, so the hand-made boards can be
 // checked against the same rules.
 import { RANGE_BANDS, type ObjectiveDef } from '../data';
-import { lineOfSight } from '../engine';
+import { lineOfSight } from '../queries';
 import { distance, hexToOffset, neighbors, offsetToHex, type Hex, type Offset } from '../hex';
 import { Board, Probe, objectiveKey } from './board';
 

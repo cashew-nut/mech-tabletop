@@ -1,6 +1,7 @@
 // Derived numbers for a war-walker build, for the lance builder and unit cards.
 import { LOCATIONS, getChassis, getEquipment, type EquipmentDef, type Location, type RangeBand } from './data';
 import type { WalkerInput } from './lance';
+import { BAND_ORDER, BAND_TN, BASE_TN } from './queries';
 import type { Zone } from './types';
 
 export interface WeaponSummary {
@@ -31,8 +32,6 @@ export interface WalkerStats {
   faultThreshold: number;
 }
 
-const BAND_TN: Record<RangeBand, number> = { melee: 4, short: 4, medium: 5, long: 6 };
-const BANDS: RangeBand[] = ['melee', 'short', 'medium', 'long'];
 
 /** Chance one die hits at a TN (a 6 always hits, a 1 always misses). */
 export const hitChance = (tn: number) => (7 - Math.min(6, Math.max(2, tn))) / 6;
@@ -69,11 +68,11 @@ export function walkerStats(input: WalkerInput): WalkerStats {
     .filter((f) => f.def.weapon)
     .map(({ def, location }) => {
       const wp = def.weapon!;
-      const reach = wp.range === 'melee' ? ['melee'] : BANDS.slice(1, BANDS.indexOf(wp.range) + 1);
+      const reach = wp.range === 'melee' ? ['melee'] : BAND_ORDER.slice(1, BAND_ORDER.indexOf(wp.range) + 1);
       const expected: Partial<Record<RangeBand, number>> = {};
       for (const band of reach as RangeBand[]) {
         if (wp.minRange && band === 'short') continue;
-        expected[band] = Math.round(wp.dice * hitChance(BAND_TN[band] + tnBonus) * wp.damage * 10) / 10;
+        expected[band] = Math.round(wp.dice * hitChance(BASE_TN + BAND_TN[band] + tnBonus) * wp.damage * 10) / 10;
       }
       return { id: def.id, name: def.name, location, dice: wp.dice, damage: wp.damage, range: wp.range, pressure: def.pressure, expected };
     });
