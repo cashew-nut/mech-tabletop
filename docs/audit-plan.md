@@ -93,13 +93,14 @@ only needs the read-only queries.
 
 ### PR 5: scripts and tools
 
-- Six Playwright scripts (`render-walkers`, `fit-check`, `fit-sheets`, `render-battle`, `render-card-art`,
-  `build-card-sheet`) each copy the same "start Vite on a port, wait for it, launch SwiftShader Chromium, kill the
-  server" block. Move it into `scripts/lib/viewer.mjs`.
+- Five Playwright scripts (`render-walkers`, `fit-check`, `fit-sheets`, `render-battle`, `render-card-art`) each
+  copy the same block: start Vite on a port, wait for it, launch SwiftShader Chromium, and kill the server. Move it
+  into `scripts/lib/viewer.mjs`. (`build-card-sheet` uses Chromium without Vite, so it keeps its own launch.)
 - `scripts/seed-parts.mjs` is a one-off seeding script, and its own header says not to run it again because it
   overwrites the hand-tuned `data/parts.json`. Delete it (it stays in git history) and update `docs/cards.md`.
-- `apps/web/test` and `tools/` are not typechecked, since `tsconfig` only includes `src`. Add both to
-  `npm run typecheck`, and fix whatever that turns up.
+- `apps/web/test` and `tools/` are not typechecked, since `tsconfig` only includes `src`. Give each its own
+  `tsconfig.json` with Node types (`@types/node` becomes a dev dependency, so browser code still sees no Node globals),
+  and add both to `npm run typecheck`. Both typecheck clean already.
 
 ## Order
 

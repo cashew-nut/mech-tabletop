@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "validate": "node scripts/validate-data.mjs",
-    "typecheck": "tsc -p packages/rules --noEmit && tsc -p packages/ai --noEmit && tsc -p apps/web --noEmit",
+    "typecheck": "tsc -p packages/rules --noEmit && tsc -p packages/ai --noEmit && tsc -p apps/web --noEmit && tsc -p apps/web/test --noEmit && tsc -p tools --noEmit",
     "test": "vitest run --testTimeout=30000",
     "check": "npm run validate && npm run typecheck && npm test",
     "dev": "npm run dev -w apps/web",
@@ -27,6 +27,7 @@
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",
     "@gltf-transform/functions": "^4.5.1",
+    "@types/node": "^22.20.5",
     "jpeg-js": "^0.4.4",
     "meshoptimizer": "^1.3.0",
     "typescript": "^5.6.3",

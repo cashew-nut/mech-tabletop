@@ -3,12 +3,9 @@
 //   node scripts/fit-check.mjs [class...]        FIT=off checks the old numbered mounts for comparison
 // Flags: HEAD (item centre inside the head box), GROUND (below the base), FLOAT (item box more than 0.22 body heights
 // from every joint, so it hangs in the air), MISSING (item not found).
-import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { openViewer } from './lib/viewer.mjs';
 
-const { chromium } = createRequire(import.meta.url)('playwright');
 const root = new URL('..', import.meta.url);
 const equipment = JSON.parse(readFileSync(new URL('data/equipment.json', root), 'utf8')).equipment;
 const chassis = JSON.parse(readFileSync(new URL('data/chassis.json', root), 'utf8')).chassis;
@@ -19,16 +16,9 @@ const classes = (picked.length ? picked : fitClasses).filter((c) => fitClasses.i
 const fitOff = process.env.FIT === 'off' ? '&fit=off' : '';
 const FILL = { armLeft: 'lance', armRight: 'lance' };
 
-const server = spawn('npx', ['vite', '--port', '5195', '--strictPort'], { cwd: resolve('apps/web'), stdio: 'ignore', detached: true });
-for (let i = 0; ; i++) {
-  if (await fetch('http://localhost:5195/render.html').then((r) => r.ok, () => false)) break;
-  if (i > 100) throw new Error('Vite dev server did not start');
-  await new Promise((r) => setTimeout(r, 300));
-}
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const page = await browser.newPage({ viewport: { width: 200, height: 200 } });
+const { page, base, close } = await openViewer({ port: 5195, viewport: { width: 200, height: 200 } });
 const dump = async (cls, lo) => {
-  await page.goto(`http://localhost:5195/render.html?chassis=${cls}&w=200&h=200&dump=1${fitOff}&lo=${encodeURIComponent(JSON.stringify(lo))}`);
+  await page.goto(`${base}render.html?chassis=${cls}&w=200&h=200&dump=1${fitOff}&lo=${encodeURIComponent(JSON.stringify(lo))}`);
   await page.waitForSelector('body[data-ready="1"]', { timeout: 90000 });
   return JSON.parse(await page.evaluate(() => document.body.dataset.dump));
 };
@@ -67,8 +57,7 @@ try {
     }
   }
 } finally {
-  await browser.close();
-  process.kill(-server.pid);
+  await close();
 }
 console.log(`\n${flagged} flagged`);
 process.exitCode = flagged ? 1 : 0;

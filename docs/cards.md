@@ -19,7 +19,7 @@ Each class in `chassis.json` splits into six parts: **legs, torso + pelvis, helm
 
 `frameSize` (the class's `size`: 1 scout, 2 striker, 3 bulwark, 4 titan) is the same on all six parts and is checked for equality, not summed. `structure.other` is a per-location value in the rules; here it sits on the arms card only, so a future build that swaps legs does not change it. That is a placeholder choice.
 
-`scripts/seed-parts.mjs` made the first split. Do not rerun it once numbers are tuned by hand.
+A one-off script, `scripts/seed-parts.mjs`, made the first split with the shares above. It has been removed (it is in git history), because the numbers are now tuned by hand and rerunning it would overwrite them.
 
 ## Card records (`data/cards.json`)
 
