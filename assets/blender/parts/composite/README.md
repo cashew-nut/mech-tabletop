@@ -229,6 +229,39 @@ old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. 
 now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
 An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.
 
+### The Brute's claw and rail cannon on the elbow socket
+
+The Industrial Claw and the Rail Cannon keep the sculpts every walker uses (`item_industrial-claw`, `item_rail-cannon`),
+but the Brute gets its own copies cut onto the cannon arm's elbow socket, so they seat on the socket like the guns
+instead of floating on the `grip` hardpoint. No new Meshy generation: the original high-detail sculpts are in the Meshy
+account history and download for free (`GET /openapi/v1/image-to-3d?sort_by=-created_at`; the claw is task
+`01a1938a-a9e6-74d1-993b-e3a0016057bf`, the rail cannon `01a1937f-24c3-70d2-be1a-a567272c27ad`).
+
+```sh
+python3 -I ../meshy/cut.py extract CLAW.glb WORK_CLAW
+MODEL=brute ~/bvenv/bin/python -I item_cut.py WORK_CLAW claw PARTS --length 30 --muzzle - --boss-at 0.14
+MODEL=brute ~/bvenv/bin/python -I item_cut.py WORK_RAIL rail PARTS --length 33 --muzzle - --boss-at 0.15 --girth 1.35
+echo '{}' > WORK/joints.json; MODEL=brute ~/bvenv/bin/python -I build.py WORK OUT claw     # (and rail): STL, game GLB, OUT/claw_part.blend
+MODEL=brute ~/bvenv/bin/python -I brute_items_build.py PARTS REVIEW claw=OUT_CLAW rail=OUT_RAIL   # renders on the walker
+node scripts/publish-composite.mjs DIR_WITH_claw.glb_AND_rail.glb brute --items   # then compress-parts and item-bounds
+```
+
+PARTS is the Brute composite build (`stl/`, `report.json`, `brute_composite.blend`). `item_cut.py` points the prop where the
+cannon arm's barrel points (the jaws or muzzle forward; `--muzzle -` because these sculpts have more vertices at the
+business end), scales it to `--length` print mm, puts the top of the housing at `--boss-at` of the length from the rear
+on the socket, subtracts the rest of the walker, and adds the gatling's collar and the cannon arm's exact peg
+(`brute_socket.py`: 3 mm D-section, 3.5 mm long, 2 x 1 mm magnet). `--girth` thickens a prop across its length: the rail
+cannon is 1.35x thicker than the sculpt, which was spindly next to the Brute's guns and thin for a print. Check
+`WORK/item.json`: `trimmed_mm3` and `swing_clash_mm3` should be empty (the arm swung 15 degrees either way touches nothing).
+
+| Item | Size (print mm) | Notes |
+| --- | --- | --- |
+| `item_industrial-claw@brute` | 12 x 29 x 21 | the original claw, unchanged except the collar and peg; one closed piece |
+| `item_rail-cannon@brute` | 10 x 33 x 20 | the original rail cannon, 1.35x girth; one closed piece |
+
+Both are whole forearms with their origin on the elbow, so the claw, the rail cannon, the cannon arm and the gatling all
+fit either elbow; modelled for the left, the web mirrors them for the right.
+
 ## The Reliquary Seer (MODEL=seer)
 
 Luke's Meshy Gilded Seraphim, rebuilt as 17 closed parts. Same steps, with `MODEL=seer` and no `label` step (the
