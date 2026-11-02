@@ -6,19 +6,11 @@ import { lineOfSight } from '../engine';
 import { distance, hexToOffset, neighbors, offsetToHex, type Hex, type Offset } from '../hex';
 import { Board, Probe, objectiveKey } from './board';
 
+/**
+ * The hard rules: H1 symmetry, H2 room to deploy, H3 connected, H4 objectives reachable, H5 objectives contestable,
+ * H6 objective spacing, H7 no shooting gallery, H8 cover on the approach, H9 no dominant perch.
+ */
 export type RuleId = 'H1' | 'H2' | 'H3' | 'H4' | 'H5' | 'H6' | 'H7' | 'H8' | 'H9';
-
-export const RULE_NAMES: Record<RuleId, string> = {
-  H1: 'Symmetry',
-  H2: 'Room to deploy',
-  H3: 'Connected',
-  H4: 'Objectives reachable',
-  H5: 'Objectives contestable',
-  H6: 'Objective spacing',
-  H7: 'No shooting gallery',
-  H8: 'Cover on the approach',
-  H9: 'No dominant perch',
-};
 
 /** Thresholds for the hard rules. Starting values, tuned with the sweep and sims. */
 export const LIMITS = {

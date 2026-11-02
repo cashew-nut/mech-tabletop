@@ -184,23 +184,6 @@ export function rivetRow(a: V3, b: V3, count: number, r: number, m: THREE.Materi
   return g;
 }
 
-/**
- * Rivets round a ring of the given radius in the XY plane, heads pointing
- * outward from the centre, or along +Z when `axial`. Rotate the group to place it.
- */
-export function rivetRing(radius: number, count: number, r: number, m: THREE.Material, axial = false) {
-  const g = new THREE.Group();
-  for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2;
-    const h = rivet(r, m);
-    h.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
-    if (axial) h.rotation.x = Math.PI / 2;
-    else h.rotation.z = a - Math.PI / 2;
-    g.add(h);
-  }
-  return g;
-}
-
 /** A flared smokestack standing on the origin. */
 export function smokestack(r: number, h: number, p: Palette) {
   const g = new THREE.Group();

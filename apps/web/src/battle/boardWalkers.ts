@@ -6,10 +6,10 @@ import { FACTION_COLOURS, buildWalkerModel, ensureKitParts, loadPartLibrary, typ
 import { frameOf } from '../model/chassis';
 
 /** Board units per millimetre of model. 0.07 puts a Paladin about 2 hex-widths tall, like the north star. */
-export const BOARD_UNITS_PER_MM = Number(new URLSearchParams(location.search).get('scale') ?? 0.07);
+const BOARD_UNITS_PER_MM = Number(new URLSearchParams(location.search).get('scale') ?? 0.07);
 
 /** Round base radius in board units, by frame (a hex is 0.87 across from centre to flat). */
-export const BASE_RADIUS: Record<string, number> = { scout: 0.52, striker: 0.64, bulwark: 0.76, titan: 0.84 };
+const BASE_RADIUS: Record<string, number> = { scout: 0.52, striker: 0.64, bulwark: 0.76, titan: 0.84 };
 const BASE_LIFT = 0.07;
 const DIM = 0.55;
 

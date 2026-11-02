@@ -32,6 +32,3 @@ export function duel(
   state.objectives = [];
   return state;
 }
-
-/** Three cheap filler walkers so a lance meets the 3-walker minimum. */
-export const fillers = (prefix: string) => [walker(`${prefix}1`, 'scavenger'), walker(`${prefix}2`, 'scavenger')];

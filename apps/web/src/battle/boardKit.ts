@@ -14,7 +14,7 @@ export type KitPiece = (typeof KIT_PIECES)[number] | (typeof HERO_PIECES)[number
 
 /** Pieces with simplified copies (<piece>_lod1.glb, _lod2.glb; made by scripts/board-lod.mjs). The loader swaps them in by distance
  * from the camera; the board camera sits 20 or so units from the action, so the near half of the board keeps full detail. */
-export const LOD_PIECES: readonly KitPiece[] = ['hero_tower', 'hero_chimney', 'hero_wall', 'tower_spire', 'tower_chimney', 'tower_ruined', 'wall_arched', 'wall_long'];
+const LOD_PIECES: readonly KitPiece[] = ['hero_tower', 'hero_chimney', 'hero_wall', 'tower_spire', 'tower_chimney', 'tower_ruined', 'wall_arched', 'wall_long'];
 /** Camera distances at which each lower level takes over. `?lod=off` shows only full detail, `?lod=1` or `?lod=2` forces a level (for review renders). */
 const LOD_AT = [24, 36];
 const LOD_MODE = new URLSearchParams(location.search).get('lod');
