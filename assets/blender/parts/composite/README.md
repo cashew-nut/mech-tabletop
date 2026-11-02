@@ -160,6 +160,40 @@ pod's textured solid). `paladin_items.py` writes `fit.json` and exits 1 if a che
   (shield), like the other composite parts. **Not published to the game yet**: the hosts gained sockets (the torso and the
   forearm change), so publishing means re-baking the torso and forearm GLBs and re-tuning the fit entries.
 
+## The Seer's Hellfire Missiles
+
+The Hellfire Missiles were cut in the item rework (step 3) and come back as a composite part for the Seer, built like the
+Paladin's items: Meshy's shape, a designed fit. No new Meshy credits: the launcher is the Oct 31 Meshy generation
+(image-to-3D task `01a1938a-a9f8-7753-968d-3d86a411c7a7`, the one baked into the old `item_hellfire-missiles.glb`), whose
+full-resolution source was still on Meshy and is now in the project folder at `meshy-sources/hellfire/`.
+
+```sh
+python3 -I ../meshy/cut.py extract meshy-sources/hellfire/01a1938a-....glb HF_WORK
+MODEL=seer ~/bvenv/bin/python -I seer_items.py SEER OUT --hellfire HF_WORK        # search + checks, ~3 min, exits 1 on a failed check
+MODEL=seer ~/bvenv/bin/python -I seer_items_build.py SEER OUT [--samples 32]     # bake, blend, renders, ~4 min
+```
+
+SEER is `models/seer-composite-v2` (its right arm is the mirror of the left). Outputs are in the project folder at
+`models/seer-items/` and `renders/seer-items/`.
+
+- **Launcher.** Two stacked missiles with curved blade tips on a shared housing, 17 mm long at print scale, blades forward,
+  standing on a gunmetal collar with gold bands under the back of the housing. One closed piece; r 1.3 x 2.2 mm D peg with a
+  2 x 1 mm magnet.
+- **Shoulder hardpoint.** A gilded sleeve in the Seer's own joint style (domed end, two bands) sunk into the shoulder drum on
+  top of the `arm` part, with the hole and magnet pocket. The drum is a 2.2 mm half ball, too small to hold a magnet hole on its
+  own, so the sleeve carries the 0.4 mm wall. Because the right arm is the mirrored left one, both shoulders have the socket
+  and the one launcher fits either side. A torso mount was tried first and fails (the shoulder plate is too thin, and the back
+  spires are in the way on the right).
+- **Right pauldron.** Its plate lies over the right shoulder drum (the pauldrons are not mirrors), so it gets a 2.7 mm3
+  clearance cut where the sleeve and collar come through (`stl/pauldron_r_cleared.stl`; in the blend, a boolean modifier).
+- **Checks** (fit.json): closed and one piece; peg fills none of the arm; hole wall inside the arm; no clash with any part on
+  either side at rest, and none on the left with the arm swung 15 degrees either way.
+- Item frame: +Z up out of the socket, -Y forward; the game GLB is at kit size with its origin on the socket seat.
+  **Not in the game yet**: the item is still cut from `data/equipment.json` and the arm and right pauldron GLBs would need
+  re-baking with the sleeve and the cut.
+- The serrated teeth and the thin ring behind the blades are about 0.1 mm thick at 17 mm: too thin to print cleanly. The
+  missile bodies are 1.1 mm and the blades 0.3 to 1.3 mm.
+
 ## The Ashen Foundries Brute (MODEL=brute)
 
 The same pipeline cuts Luke's Meshy Brute (`Meshy_AI_ashen_foundry_mech_..._image-to-3d-texture.glb`, 6.24M
