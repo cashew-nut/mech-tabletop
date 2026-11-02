@@ -7,6 +7,8 @@
 // kit names, so this renames and wraps them:
 //   pelvis, torso, helm, back, pauldron, arm, forearm, hand, thigh, shin, foot -> kit/covenant_<part>_paladin.glb
 //   blade -> item_lance@paladin.glb          pod -> item_carapace-gun@paladin.glb
+//   with ITEMS (paladin_items_build.py's output): carapace-gun, missile-rack, kinetic-shield -> item_<id>@paladin.glb, and the
+//   shoulder and bracer sockets merged into the torso and forearm as a gunmetal primitive
 // Items are stored at scout scale with their origin on the hand/core mount (the web grows them by the titan factor 1.7),
 // so their vertices are moved by the mount offset in data/model-kit.json and divided by 1.7.
 // The Brute (foundries/bulwark, grown 1.4 by the web) has no arm, forearm or hand: its parts are pelvis, torso, helm, back,
@@ -30,7 +32,15 @@ const MODELS = {
     faction: 'covenant', cls: 'paladin', tunes: 'covenant/titan', itemScale: 1.7,
     kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
     // part -> [item id, numbered mount, joint the part's origin is on (default: the mount's own joint; 'mount': the mount itself)]
-    items: { blade: ['lance@paladin', 'mount_armLeft_0'], pod: ['carapace-gun@paladin', 'mount_core_0'] },
+    // The Carapace Gun, Missile Rack and Kinetic Shield come from paladin_items_build.py's folder (the 4th argument), cut on the
+    // chest and elbow joints; their sockets (hosts/*.npz) are merged into the torso and the forearm.
+    items: {
+      blade: ['lance@paladin', 'mount_armLeft_0'],
+      'carapace-gun': ['carapace-gun@paladin', 'mount_core_0', 'chest', 'items'],
+      'missile-rack': ['missile-rack@paladin', 'mount_core_0', 'chest', 'items'],
+      'kinetic-shield': ['kinetic-shield@paladin', 'mount_armLeft_0', 'elbow', 'items'],
+    },
+    hosts: { torso: ['spine', ['shoulder_L', 'shoulder_R']], forearm: ['elbow', ['bracer_L']] },
   },
   brute: {
     // Its own frame: a copy of the bulwark frame (Artillery keeps that one) with the joints the parts were cut on.
@@ -55,17 +65,44 @@ const MODELS = {
 const src = process.argv[2];
 const itemsOnly = process.argv.includes('--items');
 const model = MODELS[process.argv[3] ?? 'paladin'];
+const itemsDir = process.argv[4];
 if (!src || !existsSync(src) || !model) {
-  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer]');
+  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer] [ITEMS_DIR]');
   process.exit(1);
 }
 const { faction, cls, itemScale: ITEM_SCALE, kit: KIT, items: ITEMS, component: COMPONENT = {}, origin: ORIGIN = {} } = model;
 const kitName = (k) => `${faction}_${COMPONENT[k] ?? k}_${cls}`;
 const tunes = JSON.parse(readFileSync('data/model-kit.json', 'utf8')).frameTunes[model.tunes];
+const PRINT = 1.5; // print mm per kit mm (paladin.py PRINT_SCALE)
+/** Read a numpy .npz of float32 P (n,3) and int32 T (m,3): stored (uncompressed) .npy members. */
+function readNpz(file) {
+  const z = readFileSync(file);
+  // The central directory has the real sizes (a streamed zip leaves them 0 in the local headers).
+  let e = z.length - 22;
+  while (z.readUInt32LE(e) !== 0x06054b50) e--;
+  let c = z.readUInt32LE(e + 16);
+  const out = {};
+  for (let n = z.readUInt16LE(e + 10); n > 0; n--) {
+    const method = z.readUInt16LE(c + 10);
+    const size = z.readUInt32LE(c + 24);
+    const nl = z.readUInt16LE(c + 28);
+    const xl = z.readUInt16LE(c + 30);
+    const cl = z.readUInt16LE(c + 32);
+    const lo = z.readUInt32LE(c + 42);
+    const name = z.toString('latin1', c + 46, c + 46 + nl).replace(/\.npy$/, '');
+    c += 46 + nl + xl + cl;
+    if (method !== 0) throw new Error(`${file}: compressed npz member`);
+    const start = lo + 30 + z.readUInt16LE(lo + 26) + z.readUInt16LE(lo + 28);
+    const hl = z.readUInt16LE(start + 8);
+    const copy = new Uint8Array(z.subarray(start + 10 + hl, start + size)).buffer;
+    out[name] = name === 'P' ? new Float32Array(copy) : new Int32Array(copy);
+  }
+  return out;
+}
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
 /** Wrap a part's nodes in a root named for the part; optionally move/scale its vertices. */
-async function convert(file, name, out, fix) {
+async function convert(file, name, out, fix, host) {
   const doc = await io.read(file);
   const scene = doc.getRoot().getDefaultScene();
   const root = doc.createNode(name);
@@ -83,8 +120,35 @@ async function convert(file, name, out, fix) {
         for (let i = 0; i < pos.getCount(); i++) pos.setElement(i, fix(pos.getElement(i, v)));
       }
   }
+  if (host) addHost(doc, host);
   await io.write(out, doc);
   return out;
+}
+
+/** Merge the sockets (npz files in print mm, Blender axes, world) into a part's mesh as a gunmetal primitive.
+ * `joint` is the joint the part's origin sits on (kit mm), so the sockets land where the part's own vertices are. */
+function addHost(doc, [joint, names]) {
+  const mesh = doc.getRoot().listMeshes()[0];
+  const buf = doc.getRoot().listBuffers()[0];
+  const j = tunes.joints[joint];
+  const pos = [];
+  const idx = [];
+  for (const n of names) {
+    const { P, T } = readNpz(join(itemsDir, '..', 'hosts', `${n}.npz`));
+    const base = pos.length / 3;
+    for (let i = 0; i < P.length; i += 3) {
+      const [x, y, z] = [P[i] / PRINT - j[0], P[i + 1] / PRINT - j[1], P[i + 2] / PRINT - j[2]];
+      pos.push(x, z, -y); // Blender (z up) to glTF (y up)
+    }
+    for (const t of T) idx.push(base + t);
+  }
+  const mat = doc.createMaterial('hardpoint_gunmetal').setBaseColorFactor([0.09, 0.09, 0.1, 1]).setMetallicFactor(0.8).setRoughnessFactor(0.45);
+  const prim = doc
+    .createPrimitive()
+    .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)).setBuffer(buf))
+    .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(idx)).setBuffer(buf))
+    .setMaterial(mat);
+  mesh.addPrimitive(prim);
 }
 
 const written = [];
@@ -94,10 +158,12 @@ for (const k of itemsOnly ? [] : KIT) {
   // A part built on one joint but hung on another (the Seer's helm) is moved by the difference.
   const [from, to] = ORIGIN[k] ?? [];
   const delta = from ? toGltf(tunes.joints[from].map((c, i) => c - tunes.joints[to][i])) : null;
-  written.push(await convert(join(src, `${k}.glb`), name, join(PARTS, 'kit', `${name}.glb`), delta && ((p) => p.map((c, i) => c + delta[i]))));
+  const host = itemsDir && model.hosts?.[k];
+  written.push(await convert(join(src, `${k}.glb`), name, join(PARTS, 'kit', `${name}.glb`), delta && ((p) => p.map((c, i) => c + delta[i])), host));
 }
-for (const [k, [id, mount, originJoint]] of Object.entries(ITEMS)) {
-  if (itemsOnly && !existsSync(join(src, `${k}.glb`))) continue;
+for (const [k, [id, mount, originJoint, from_]] of Object.entries(ITEMS)) {
+  if (from_ === 'items' && !itemsDir) continue; // needs paladin_items_build.py's folder
+  if (itemsOnly && !existsSync(join(from_ === 'items' ? itemsDir : src, `${k}.glb`))) continue;
   const [mountJoint, [dx, dy, dz]] = tunes.mounts[mount]; // Blender axes, mm, relative to the mount's joint
   // Where the mount is relative to the joint the part's origin sits on (nowhere if the origin is the mount).
   const from = tunes.joints[originJoint ?? mountJoint];
@@ -105,7 +171,7 @@ for (const [k, [id, mount, originJoint]] of Object.entries(ITEMS)) {
   const [ox, oy, oz] = originJoint === 'mount' ? [0, 0, 0] : [to[0] - from[0] + dx, to[1] - from[1] + dy, to[2] - from[2] + dz];
   const off = [ox, oz, -oy]; // glTF is y-up: (x, z, -y)
   const name = `item_${id}`;
-  written.push(await convert(join(src, `${k}.glb`), name, join(PARTS, `${name}.glb`), (p) => p.map((c, i) => (c - off[i]) / ITEM_SCALE)));
+  written.push(await convert(join(from_ === 'items' ? itemsDir : src, `${k}.glb`), name, join(PARTS, `${name}.glb`), (p) => p.map((c, i) => (c - off[i]) / ITEM_SCALE)));
 }
 
 // The Seer and the Brute measure their own skeletons: move the frame's joints (and the numbered arm mounts) to the tunes,
