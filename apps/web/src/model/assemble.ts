@@ -337,6 +337,14 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
         if (right !== NATIVE_RIGHT.has(libName)) part.scale.x *= -1;
       }
       anchor.add(part);
+      // A two-slot class item on the core (the Missile Rack) is a pair: one on each shoulder socket.
+      const twin = libName?.endsWith(`@${c.id}`) && loc === 'core' && def.slots === 2 ? mounts.core[slot - def.slots + 1] : undefined;
+      if (twin) {
+        const second = make();
+        second.scale.setScalar(scale);
+        second.scale.x *= NATIVE_RIGHT.has(libName!) ? 1 : -1;
+        twin.add(second);
+      }
     });
   }
   root.name = walker.name;

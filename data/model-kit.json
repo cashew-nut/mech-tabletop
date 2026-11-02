@@ -830,6 +830,7 @@
         ]
       },
       "missile-rack": {
+        "nativeMount": true,
         "core": [
           "shoulder-top-L",
           "shoulder-top-R"
@@ -885,6 +886,7 @@
         ]
       },
       "carapace-gun": {
+        "nativeMount": true,
         "core": [
           "shoulder-top-L",
           "shoulder-top-R"
@@ -911,6 +913,7 @@
         }
       },
       "kinetic-shield": {
+        "nativeMount": true,
         "arm": [
           "bracer",
           "forearm-top"

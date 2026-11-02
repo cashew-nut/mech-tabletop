@@ -31,6 +31,8 @@ export interface HardpointDef {
 }
 
 export interface ItemFit {
+  /** The class's own copy of this item (missile-rack@paladin) plugs into its numbered mount, where the walker's socket is, not a hardpoint. */
+  nativeMount?: boolean;
   arm?: string[];
   core?: string[];
   legs?: string[];
@@ -89,7 +91,7 @@ export function planLocation(chassisId: string, loc: string, ids: string[], nati
   const taken = new Set<string>();
   return ids.map((id, index) => {
     const prefs = FIT.items[id]?.[kind];
-    if (!prefs) return null;
+    if (!prefs || (native[index] && FIT.items[id]?.nativeMount)) return null;
     // A class's own item (lance@paladin) was cut for the tuned numbered mount, so it keeps that grip.
     for (const name of native[index] ? prefs.map((n) => (n === 'grip' ? 'grip-native' : n)) : prefs) {
       const def = hardpoint(chassisId, name);

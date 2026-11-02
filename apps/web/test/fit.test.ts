@@ -37,6 +37,14 @@ describe('equipment fit', () => {
     expect(new Set(plan).size).toBe(plan.length);
   });
 
+  it('lets the Paladin\'s own shield, rack and gun plug into their numbered mounts', () => {
+    for (const id of ['carapace-gun', 'missile-rack', 'kinetic-shield']) expect(FIT.items[id].nativeMount, id).toBe(true);
+    expect(planLocation('paladin', 'core', ['missile-rack', 'carapace-gun'], [true, true])).toEqual([null, null]);
+    expect(planLocation('paladin', 'armLeft', ['kinetic-shield'], [true])).toEqual([null]);
+    // the faction's shared copy still goes through the hardpoints
+    expect(names(planLocation('paladin', 'armLeft', ['kinetic-shield'], [false]))).toEqual(['bracer:L']);
+  });
+
   it('gives card-only items no hardpoint and no fit entry', () => {
     expect(FIT.cardOnly.length).toBeGreaterThan(0);
     for (const id of FIT.cardOnly) {
