@@ -28,6 +28,12 @@ export interface HardpointDef {
   contact?: Contact[];
   /** Hardpoints this one fills too: the Brute's elbow socket holds one forearm, gun (grip-native) or not (grip). */
   blocks?: string[];
+  /** Kit components on this side that the item replaces, so they are hidden while it is fitted: the Seer's blades and claws
+   * plug into the wrist socket in place of the hand. */
+  hides?: string[];
+  /** The hardpoint a class's own item (lance@paladin, arc-cannon@seer) takes instead of this one: `grip` sends it to
+   * `grip-native` (the tuned numbered mount) unless a class names another, as the Seer does with its wrist socket. */
+  nativeAs?: string;
 }
 
 export interface ItemFit {
@@ -93,7 +99,8 @@ export function planLocation(chassisId: string, loc: string, ids: string[], nati
     const prefs = FIT.items[id]?.[kind];
     if (!prefs || (native[index] && FIT.items[id]?.nativeMount)) return null;
     // A class's own item (lance@paladin) was cut for the tuned numbered mount, so it keeps that grip.
-    for (const name of native[index] ? prefs.map((n) => (n === 'grip' ? 'grip-native' : n)) : prefs) {
+    const nativeAs = (n: string) => (n === 'grip' ? (hardpoint(chassisId, n)?.nativeAs ?? 'grip-native') : n);
+    for (const name of native[index] ? prefs.map(nativeAs) : prefs) {
       const def = hardpoint(chassisId, name);
       if (!def || taken.has(name)) continue;
       taken.add(name);

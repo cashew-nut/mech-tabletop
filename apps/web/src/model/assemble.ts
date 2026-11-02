@@ -323,6 +323,12 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
       if (places && body && fit) {
         const placed = places.map((p) => placeAtHardpoint(c.id, body.joints, mounts, loc, id, libName, make(), p, scale * fit.scale, height));
         if (placed.every(Boolean)) {
+          // An item that plugs in where a body part was (the Seer's spear and claws in the wrist socket) hides that part.
+          for (const p of places)
+            for (const comp of hardpoint(c.id, p.hp)?.hides ?? []) {
+              const hidden = root.getObjectByName(`kit_${comp}${p.side ? `_${p.side}` : ''}`);
+              if (hidden) hidden.visible = false;
+            }
           slot += def.slots;
           return;
         }

@@ -358,11 +358,10 @@ What the Paladin taught, and what changed for the Seer:
 | helm | torso | on a neck knuckle |
 | crown | helm | the halo and its crown spire (thin contact: an r 0.75 mm peg, no magnet) |
 | back | torso | the reliquary spires |
-| pauldron | torso | left shoulder plate and wing (the wing was a loose shell; now fused); on a small knuckle |
-| pauldron_r | torso | right shoulder plate and wing |
-| arm, forearm, hand | torso, arm, forearm | mirrored for the right; the fist has the spear bore (the sword is gone) |
+| pauldron | torso | shoulder plate and wing (the left wing was a loose shell; now fused); on a small knuckle; mirrored for the right since 2026-11-02 (the native right wing's spar read as a third arm) |
+| arm, forearm, hand | torso, arm, forearm | mirrored for the right; the fist still has the old spear bore (the sword is gone) |
 | thigh, shin, foot | pelvis, thigh, shin | mirrored for the right |
-| spear | hand (held) | equipment: `item_arc-cannon@seer` |
+| spear | (raw material) | cut by `seer_wrist.py` into the wrist-socket arc spear, below |
 
 ### The Seer in the game
 
@@ -372,15 +371,43 @@ KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs <the files thi
 node scripts/item-bounds.mjs
 ```
 
-No Blender needed. The 13 body parts become `kit/reliquary_<part>_seer.glb`; the right pauldron (`pauldron_r`)
-publishes as the `-right` variant, so the web uses it as it is. The arm and legs are left only (the web mirrors them),
-and the old `-right` arm, forearm and hand are deleted and dropped from the manifest. The spear is
-`item_arc-cannon@seer`, modelled in the left fist. `data/model-kit.json` `omit.seer` keeps the Striker's collar from
+No Blender needed. The 12 body parts become `kit/reliquary_<part>_seer.glb`, left only (the web mirrors the arm,
+pauldron and legs); the old `-right` arm, forearm, hand and pauldron are deleted and dropped from the manifest. The arc
+spear and the claws come from `seer_wrist.py` (below), published with its glb folder as the items folder. `data/model-kit.json` `omit.seer` keeps the Striker's collar from
 filling in (the torso has its own).
 
 The script also writes the Seer's skeleton onto `reliquary_frame_striker.glb` from `frameTunes["reliquary/striker"]`:
-the new joints, and `mount_armLeft_0` placed on the left fist's grip (`mount_armRight_0` is its mirror). Since the
+the new joints, and `mount_armLeft_0` placed on the left fist's grip (`mount_armRight_0` is its mirror; the Seer's own
+weapons no longer use it). Since the
 right arm became the mirror of the left, the Seer has no `jointsRight` any more.
 (`assets/blender/kit/skeleton.py` still reads `jointsRight` where a model has one.) The helm is built on the neck
 knuckle but hangs on `joint_head`; the script moves its vertices by the difference. The spear's origin is its grip, which
 is where the mount is, so it only needs dividing by 1.2 (the web's Striker part scale).
+
+### The Seer's wrist weapons: arc spear and kinetic claws
+
+Luke (2026-11-02): a spear pushed through the fist and claws hung by the hand do not suit magnetic parts, since nothing
+should be carried. Like the Paladin's siege blade they now continue the arm: each one replaces the hand on its wrist socket.
+
+```sh
+python3 -I ../meshy/cut.py extract 01a1938a-aa42-71d6-beb1-9ff035b5041d.glb CLAWS   # meshy-sources/kinetic-claws/ (Meshy history, no credits)
+MODEL=seer python3 -I seer_wrist.py WORK WRIST --claws CLAWS          # WORK after split.py + joints.py; fit checks, exits 1 on a fail (~1 min)
+MODEL=seer ~/bvenv/bin/python -I seer_wrist_build.py SEER WRIST      # bake, seer_wrist.blend, renders (SEER holds seer_composite.blend)
+node scripts/publish-composite.mjs SEER/glb seer WRIST/glb --items    # item_arc-cannon@seer, item_kinetic-claws@seer
+```
+
+- **The socket is the hand's.** Each weapon carries an exact copy of the hand's half ball, sleeve and peg (r 1.15 mm D,
+  1 x 1 mm magnet), cut out of the hand itself, so it pushes into the forearm's existing hole and the forearm is unchanged.
+  Swap hand, spear and claws freely. `fit.json` checks: closed, one piece, no clash with either side of the walker or the
+  base, the peg matches the hand's exactly, and a straight 6 mm pull along the socket axis clears the forearm.
+- **Spear.** The Seraphim's own spear without its bulky rear housing (what stuck up behind the arm): a gilded sleeve in the
+  knuckles' style runs from the half ball onto the shaft and the blade grows out of the wrist. Its angle off the forearm's
+  line is searched, smallest first; it ends up 30 degrees forward, 19 mm long, its tip 1.7 mm above the base.
+- **Claws.** The original Meshy claws (Luke liked the Oct 31 weapon batch; no new generation), the gauntlet's rear cut off,
+  the big glowing rings round the wrist ball so they go on like a glove; the ring shells are fused on with short gold struts.
+  15.6 mm long, straight down the forearm's line.
+- **In the game.** The items' origin is the wrist joint. `fit.hardpoints.wrist-socket` (joint wrist, no offset, `hides:
+  ["hand"]`) takes them, and `fit.overrides.seer.grip.nativeAs` sends the Seer's own copies there instead of the numbered
+  grip; the web hides the hand on that side (`assemble.ts`). A shared (non-Seer) copy still goes to the grip.
+- **Mirrored pauldron.** `swap_parts.py` puts the re-cut torso, pauldron and back (the only parts the mirrored pauldron
+  changes) into the assembled v2 walker without rebaking the rest.

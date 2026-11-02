@@ -34,11 +34,23 @@ describe('equipment fit', () => {
     expect(FIT.nativeRight).not.toContain('rail-cannon@brute');
   });
 
-  it("seats the Seer's Hellfire launcher on the shoulder socket, beside a spear in the fist", () => {
-    expect(names(planLocation('seer', 'armLeft', ['arc-cannon', 'hellfire-missiles'], [true, true]))).toEqual(['grip-native:L', 'shoulder-socket:L']);
+  it("seats the Seer's Hellfire launcher on the shoulder socket, beside a spear on the wrist", () => {
+    expect(names(planLocation('seer', 'armLeft', ['arc-cannon', 'hellfire-missiles'], [true, true]))).toEqual(['wrist-socket:L', 'shoulder-socket:L']);
     expect(names(planLocation('seer', 'armRight', ['hellfire-missiles'], [true]))).toEqual(['shoulder-socket:R']);
     expect(hardpoint('seer', 'shoulder-socket')!.joint).toBe('shoulder');
     expect(pivotOf('hellfire-missiles@seer')).toEqual([0, 0, 0]);
+  });
+
+  it("plugs the Seer's own spear and claws into the wrist socket in place of the hand", () => {
+    // arc-cannon@seer and kinetic-claws@seer carry the hand's half knuckle and peg: they take the wrist, the hand is hidden,
+    // and a second weapon on that arm goes past the grip they block (the shared model, not the Seer's own).
+    expect(names(planLocation('seer', 'armRight', ['kinetic-claws', 'arc-cannon'], [true, false]))).toEqual(['wrist-socket:R', 'forearm-top:R']);
+    expect(names(planLocation('seer', 'armLeft', ['arc-cannon'], [true]))).toEqual(['wrist-socket:L']);
+    const socket = hardpoint('seer', 'wrist-socket')!;
+    expect([socket.joint, socket.offset, socket.hides]).toEqual(['wrist', [0, 0, 0], ['hand']]);
+    // other classes keep the tuned numbered grip for their own items, and shared items stay in the grip
+    expect(names(planLocation('paladin', 'armLeft', ['lance'], [true]))).toEqual(['grip-native:L']);
+    expect(names(planLocation('seer', 'armLeft', ['kinetic-claws'], [false]))).toEqual(['grip:L']);
   });
 
   it('fills the arm ladder in order and uses the right side', () => {
