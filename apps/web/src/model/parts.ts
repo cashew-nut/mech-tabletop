@@ -104,6 +104,14 @@ export const PARTS: Record<string, PartBuilder> = {
       at(spire(0.55, 3, p), 0, 0, 12.4, Math.PI / 2),
       at(plate(0.2, 2.4, 3, p.hull, 0.05), 0, -1.6, 4.4),
     ),
+  // A fallback when no model is loaded: two stacked missiles on a housing.
+  'hellfire-missiles': (p) =>
+    group(
+      at(plate(1.6, 1.8, 3.6, p.iron, 0.3), 0, 0, 1.8),
+      ...[-0.45, 0.45].map((y) => at(barrel(0.38, 6, p.trim, 10), 0, y, 5)),
+      ...[-0.45, 0.45].map((y) => at(sphere(0.3, p.glow, 10), 0, y, 8.2)),
+      at(cyl(0.9, 0.9, 0.5, p.copper, 12), 0, 0, 0.25, Math.PI / 2),
+    ),
   'kinetic-claws': (p) =>
     group(
       plate(2, 2.2, 2.4, p.iron, 0.4),

@@ -13,8 +13,8 @@ describe('lance building', () => {
     }
   });
 
-  it('has cut the six items that had no model to fit', () => {
-    for (const id of ['melee-blade', 'hellfire-missiles', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']) {
+  it('has cut the five items that had no model to fit (Hellfire Missiles came back as a Seer shoulder launcher)', () => {
+    for (const id of ['melee-blade', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']) {
       expect(hasEquipment(id), id).toBe(false);
     }
   });
