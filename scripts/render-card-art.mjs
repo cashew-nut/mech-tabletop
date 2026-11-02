@@ -3,12 +3,8 @@
 // Body parts are the Paladin's composite kit parts, each shown alone (solo=1: closed solids, no body behind them); items are the class's own item GLB
 // on its own. Both go through apps/web/render.html (see apps/web/src/model/preview.ts). Needs Playwright installed
 // globally, like scripts/render-walkers.mjs. Costs nothing: no Meshy.
-import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const { chromium } = createRequire(import.meta.url)('playwright');
+import { openViewer } from './lib/viewer.mjs';
 
 const W = 1100;
 const H = 920; // the 55 x 46 mm art window on the card, at about 500 dpi
@@ -31,25 +27,17 @@ const [outDir = 'cards/art', ...picked] = process.argv.slice(2);
 const keys = picked.length ? picked : Object.keys(SPECS);
 mkdirSync(outDir, { recursive: true });
 
-const server = spawn('npx', ['vite', '--port', '5199', '--strictPort'], { cwd: resolve('apps/web'), stdio: 'ignore', detached: true });
-for (let i = 0; ; i++) {
-  if (await fetch('http://localhost:5199/render.html').then((r) => r.ok, () => false)) break;
-  if (i > 100) throw new Error('Vite dev server did not start');
-  await new Promise((r) => setTimeout(r, 300));
-}
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const page = await browser.newPage({ viewport: { width: W, height: H } });
+const { page, base, close } = await openViewer({ port: 5199, viewport: { width: W, height: H } });
 page.on('pageerror', (e) => console.error(e));
 try {
   for (const key of keys) {
     if (!SPECS[key]) throw new Error(`Unknown art key ${key}`);
-    await page.goto(`http://localhost:5199/render.html?${SPECS[key]}&w=${W}&h=${H}`);
+    await page.goto(`${base}render.html?${SPECS[key]}&w=${W}&h=${H}`);
     await page.waitForSelector('body[data-ready="1"]', { timeout: 90000 });
     const file = `${outDir}/${key}.jpg`;
     await page.locator('canvas').screenshot({ path: file, type: 'jpeg', quality: 86 });
     console.log(file);
   }
 } finally {
-  await browser.close();
-  process.kill(-server.pid);
+  await close();
 }
