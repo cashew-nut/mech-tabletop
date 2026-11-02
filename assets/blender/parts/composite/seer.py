@@ -10,11 +10,13 @@ Luke's Meshy Gilded Seraphim, cut into closed parts that plug together. Lessons 
     through the knuckle's centre, square to the bone. Each side gets half a ball with a flat, round face that has room
     for a keyed peg and a 2 x 1 mm magnet. The reference already has orbs at the shoulders and knees, so the knuckles
     read as part of the design. Knuckle surfaces carry UV (-2, -2) and bake as polished gold.
-  * Both arms are their own. The Seer's character is its asymmetry (spear couched under the right arm, a sword-hand on
-    the left), so arms and pauldrons are built natively for each side; legs are built for the left and mirrored.
+  * One arm, mirrored. The Meshy figure's right arm is bent to couch its spear and read badly on its own, and its left
+    hand had a sword grown into it. The left arm is now the arm: its sword is cut off below the fist (SWORD), the fist
+    gets a bore, and the right arm is the left one mirrored, like the legs (Luke, 2026-11-02). The pauldrons and wings
+    stay native to each side; the right pauldron is trimmed where the mirrored arm sits (CLEAR_MIRRORED).
   * One solid per part. The left wing is a separate shell in the Meshy file (it floats behind the pauldron); design()
     fuses any loose piece of a part to the part's main body with a strut, so nothing has to be glued in place.
-  * The spear is equipment (the Seer's arc cannon slot) and plugs into the right arm where it is couched.
+  * The spear is equipment (the Seer's arc spear) and is held through either fist, in the old sword's pose.
 
 Positions are absolute Meshy units (z up, facing -Y, left is +X), measured from slices of the mesh. The figure's
 centre line is x = 0.235 (the shoulder orbs and feet), not the 0.28 the first Seraphim cut used.
@@ -34,6 +36,7 @@ MAGNETS = ((1.5, 2.0), (1.0, 1.0), (0.5, 1.0))
 RADII = (2.5, 2.2, 2.0, 1.75, 1.5, 1.3, 1.15, 1.0, 0.85, 0.75, 0.65, 0.55)
 LENGTHS = (3.5, 3.0, 2.6, 2.2, 1.8, 1.5, 1.2, 1.0)
 PREFER_MAGNET = True        # a slightly thinner peg with a magnet beats a fatter one without
+CRUMB = 0.3                 # joints.py: loose bits under this (mm3) are dropped (trimming for the mirrored arm leaves one)
 
 
 def _c(p):
@@ -41,17 +44,24 @@ def _c(p):
     return (p[0] - CX, p[1], p[2])
 
 
-# Joints, absolute Meshy units. Left side unless named _r (the right arm is its own part).
+# Joints, absolute Meshy units. Left side (the right arm and legs are mirrored); shoulder_r is the right pauldron's origin.
 JOINTS_ABS = {
     "pelvis": (CX, 0.08, -0.02), "spine": (CX, 0.08, 0.06), "chest": (CX, 0.10, 0.30),
     "neck": (CX, 0.05, 0.565), "head": (CX, 0.03, 0.62),
     "shoulder": (0.475, 0.16, 0.49), "elbow": (0.605, 0.19, 0.08), "wrist": (0.715, 0.08, -0.34),
-    "shoulder_r": (-0.005, 0.14, 0.47), "elbow_r": (-0.075, -0.04, 0.18), "wrist_r": (-0.08, -0.26, -0.01),
     "hip": (0.38, 0.08, -0.03), "knee": (0.465, 0.065, -0.40), "ankle": (0.57, 0.03, -0.80),
-    "grip_r": (-0.086, -0.304, -0.075),
+    "grip": (0.7406, 0.0583, -0.4542),      # the left fist's centre, on the line of the old sword's grip
+    "shoulder_r": (2 * CX - 0.475, 0.16, 0.49),     # the mirror of the left shoulder: the right pauldron's origin
     "pauldron_mount": (0.41, 0.26, 0.58),
 }
 JOINTS = {k: _c(v) for k, v in JOINTS_ABS.items()}     # centred
+# Where the Meshy figure's own right arm is (bent, couching the spear). Only used to find and cut it away.
+NATIVE_R = {k: _c(v) for k, v in {"shoulder": (-0.005, 0.14, 0.47), "elbow": (-0.075, -0.04, 0.18),
+                                  "wrist": (-0.08, -0.26, -0.01)}.items()}
+# The old sword in the left fist runs from the grip down, a little out and forward (measured on the hand's slices).
+# Everything of the hand more than SWORD_CUT past the grip along it is the blade, and is cut away.
+SWORD = (0.243, -0.304, -0.921)
+SWORD_CUT = 0.058                          # Meshy units (about 1.8 mm at print scale): the bottom of the fist
 
 
 def _unit(v):
@@ -70,9 +80,6 @@ KNUCKLES = {
     "arm": ("shoulder", (-1.0, 0.0, 0.0), 0.062),
     "forearm": ("elbow", _toward("elbow", "shoulder"), 0.055),
     "hand": ("wrist", _toward("wrist", "elbow"), 0.05),
-    "arm_r": ("shoulder_r", (1.0, 0.0, 0.0), 0.062),
-    "forearm_r": ("elbow_r", _toward("elbow_r", "shoulder_r"), 0.055),
-    "hand_r": ("wrist_r", _toward("wrist_r", "elbow_r"), 0.05),
     "thigh": ("hip", _toward("knee", "hip"), 0.062),
     "shin": ("knee", _toward("knee", "hip"), 0.058),
     "foot": ("ankle", _toward("ankle", "knee"), 0.055),
@@ -96,20 +103,20 @@ TREE = {
     "pauldron": ("pauldron", "shoulder", ("torso", "arm")),     # on a small knuckle behind the shoulder (below)
     "forearm": ("forearm", "elbow", "arm"),
     "hand": ("hand", "wrist", "forearm"),
-    "arm_r": ("arm-right", "shoulder_r", "torso"),
-    "pauldron_r": ("pauldron-right", "shoulder_r", ("arm_r", "torso")),
-    "forearm_r": ("forearm-right", "elbow_r", "arm_r"),
-    "hand_r": ("hand-right", "wrist_r", "forearm_r"),
+    "pauldron_r": ("pauldron-right", "shoulder_r", "torso"),
     "thigh": ("thigh", "hip", "pelvis"),
     "shin": ("shin", "knee", "thigh"),
     "foot": ("foot", "ankle", "shin"),
-    "spear": (None, "grip_r", "hand_r"),   # equipment: item_arc-cannon@seer, held through the right fist
+    "spear": (None, "grip", "hand"),       # equipment: item_arc-cannon@seer, held through the fist (either side)
 }
 # Held equipment has no peg: its shaft goes through a bore in the fist (see design()).
 GRIP_T, SHAFT_R, BORE_CLEAR = 5.25, 0.8, 0.06     # grip point on the shaft (mm from the spear's centre), shaft radius
-HELD = {"spear": {"parent": "hand_r", "peg": None,
-                  "how": f"shaft ({2 * SHAFT_R:g} mm) push-fits through a {2 * (SHAFT_R + BORE_CLEAR):.2f} mm bore in the right fist"}}
-SIDED = {"thigh", "shin", "foot"}
+HELD = {"spear": {"parent": "hand", "peg": None,
+                  "how": f"shaft ({2 * SHAFT_R:g} mm) push-fits through a {2 * (SHAFT_R + BORE_CLEAR):.2f} mm bore in either fist"}}
+SIDED = {"thigh", "shin", "foot", "arm", "forearm", "hand"}
+# joints.py: trim the centre parts (torso, right pauldron) where the mirrored right arm sits. Only the arm: the legs
+# were cut before this and already fit.
+CLEAR_MIRRORED = ("arm", "forearm", "hand")
 
 # Physical parts and the labels each is made of; right-side mirrored parts' labels only carve the torso and pelvis.
 PARTS = {
@@ -117,9 +124,9 @@ PARTS = {
     "helm": ["helm"], "crown": ["crown"], "back": ["back"],
     "pauldron": ["pauldron_L"], "pauldron_r": ["pauldron_R"],
     "arm": ["arm_L"], "forearm": ["forearm_L"], "hand": ["hand_L"],
-    "arm_r": ["arm_R"], "forearm_r": ["forearm_R"], "hand_r": ["hand_R"],
     "thigh": ["thigh_L"], "shin": ["shin_L"], "foot": ["foot_L"], "spear": ["spear"],
     "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"],
+    "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"], "_sword": ["sword"],
 }
 
 J = JOINTS
@@ -129,8 +136,8 @@ BONES = {  # label: (A, B, radius), centred
     "pauldron_L": (_c((0.47, 0.17, 0.55)), _c((0.56, 0.24, 0.53)), 0.08),
     "arm_L": (J["shoulder"], J["elbow"], 0.065), "forearm_L": (J["elbow"], J["wrist"], 0.08),
     "hand_L": (J["wrist"], _c((0.80, -0.02, -0.80)), 0.06),
-    "arm_R": (J["shoulder_r"], J["elbow_r"], 0.065), "forearm_R": (J["elbow_r"], J["wrist_r"], 0.07),
-    "hand_R": (J["wrist_r"], _c((-0.11, -0.36, -0.08)), 0.07),
+    "arm_R": (NATIVE_R["shoulder"], NATIVE_R["elbow"], 0.065), "forearm_R": (NATIVE_R["elbow"], NATIVE_R["wrist"], 0.07),
+    "hand_R": (NATIVE_R["wrist"], _c((-0.11, -0.36, -0.08)), 0.07),
     "thigh_L": (J["hip"], J["knee"], 0.08), "shin_L": (J["knee"], J["ankle"], 0.08),
 }
 BONES["pauldron_R"] = ((-0.24, 0.17, 0.55), (-0.33, 0.24, 0.53), 0.08)
@@ -212,6 +219,9 @@ def label_points(P, cloth_near):
     L = x >= 0
     setl(L & (z < J["ankle"][2]) & (np.abs(x) < 0.6), "foot_L")
     setl(~L & (z < J["ankle"][2]) & (np.abs(x) < 0.6), "foot_R")
+    # the left hand's sword: everything of the hand past the bottom of the fist, along the blade, is cut away
+    past = (P - np.asarray(J["grip"], np.float32)) @ _unit(SWORD).astype(np.float32)
+    setl(isin("hand_L") & (past > SWORD_CUT), "sword")
     # the spear, couched under the right arm (from just past the elbow knuckle to the tip)
     ds, ts = seg_d(P, SPEAR[0], SPEAR[1])
     setl((ds < SPEAR[2]) & (ts > 0.07) & (x < -0.1), "spear")
@@ -306,35 +316,42 @@ def _align(zc, ax):
 
 
 def seat_spear(solid, mf):
-    """Put the spear in the right fist. In the Meshy figure it is couched under the arm and touches it only at the elbow,
-    where there is no room for a peg; held in the fist, any hand with the bore can carry it. The spear keeps its own
-    shape: it is moved so a plain stretch of shaft runs through the fist, turned (within 40 degrees) to clear the arm,
-    body and legs, the grip stretch is trued up as a round shaft, and the fist gets the matching bore."""
+    """Put the spear in the left fist, in the pose of the sword the Meshy figure held there (Luke liked that pose). In the
+    Meshy figure the spear is couched under the right arm and touches it only at the elbow, where there is no room for a
+    peg; held in the fist, either hand can carry it (the right fist is the left one mirrored). The spear keeps its own
+    shape: it is turned onto the old sword's line, moved so a plain stretch of shaft runs through the fist, turned a
+    little more (within 30 degrees, and about its own axis) to clear the arm, body and legs and stay off the base, the
+    grip stretch is trued up as a round shaft, and the fist gets the matching bore."""
     from layout import joint
-    sp, fist = solid["spear"], solid["hand_r"]
+    sp, fist = solid["spear"], solid["hand"]
     P = np.asarray(sp.to_mesh().vert_properties)[:, :3]
     c = P.mean(0)
     a = np.linalg.svd(P - c, full_matrices=False)[2][0]
     a = a if a[2] < 0 else -a                      # from the butt towards the tip
-    g0 = c + GRIP_T * a                            # grip point on the shaft
-    G = np.array(joint("grip_r"))                  # the fist's grip centre
-    others = []
-    for k in ("arm_r", "forearm_r", "torso", "pelvis", "thigh", "shin", "foot", "pauldron_r"):
-        m = solid[k].simplify(0.3)
-        others.append(m.transform([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]) if k in SIDED else m)
+    s = _unit(SWORD)
+    G = np.array(joint("grip"))                    # the fist's grip centre
+    floor = BASE * PRINT_SCALE                     # top of the base: the tip must stay above it
+    others = [solid[k].simplify(0.3) for k in ("arm", "forearm", "torso", "pelvis", "thigh", "shin", "foot", "pauldron")
+              if k in solid]
     lite = sp.simplify(0.3)
     best = None
-    for ax_a in (0, -15, 15, -30, 30, -40, 40):
-        for ax_b in (0, -15, 15, -30, 30, -40, 40):
-            Rm = _rot((1, 0, 0), ax_a) @ _rot((0, 1, 0), ax_b)
-            T = np.concatenate([Rm, (G - Rm @ g0)[:, None]], 1).tolist()
-            moved = lite.transform(T)
-            hit = sum((moved ^ o).volume() for o in others)
-            score = hit + 0.02 * (abs(ax_a) + abs(ax_b))
-            if best is None or score < best[0]:
-                best = (score, ax_a, ax_b, T, hit, Rm)
-    _, ax_a, ax_b, T, hit, Rm = best
-    print(f"  spear: grip at {GRIP_T} mm, turned {ax_a} / {ax_b} deg, overlap with body {hit:.1f} mm3", flush=True)
+    for grip_t in (GRIP_T, GRIP_T + 2.0, GRIP_T - 2.0):
+        g0 = c + grip_t * a                        # grip point on the shaft
+        for roll in (0, 90, 180, 270):
+            R0 = _align(a, s) @ _rot(a, roll)      # onto the sword's line, turned about its own axis
+            for ax_a in (0, -10, 10, -20, 20, -30, 30):
+                for ax_b in (0, -10, 10, -20, 20, -30, 30):
+                    Rm = _rot((1, 0, 0), ax_a) @ _rot((0, 1, 0), ax_b) @ R0
+                    T = np.concatenate([Rm, (G - Rm @ g0)[:, None]], 1).tolist()
+                    moved = lite.transform(T)
+                    hit = sum((moved ^ o).volume() for o in others)
+                    low = max(0.0, floor - moved.bounding_box()[2])
+                    score = hit + 5.0 * low + 0.02 * (abs(ax_a) + abs(ax_b)) + 0.3 * abs(grip_t - GRIP_T)
+                    if best is None or score < best[0]:
+                        best = (score, grip_t, roll, ax_a, ax_b, T, hit, Rm, low)
+    _, grip_t, roll, ax_a, ax_b, T, hit, Rm, low = best
+    print(f"  spear: grip at {grip_t} mm, roll {roll}, turned {ax_a} / {ax_b} deg off the sword's line, "
+          f"overlap with body {hit:.1f} mm3, below the base {low:.1f} mm", flush=True)
     sp = sp.transform(T)
     na = Rm @ a
     L = 9.0                                          # bore and true-up length, through the fist
@@ -345,15 +362,16 @@ def seat_spear(solid, mf):
     # true up the grip: whatever the Meshy shaft has there (rings, flares) is replaced by a plain round shaft
     clear = mf.Manifold.cylinder(L, 4.0, -1.0, 32).translate((0, 0, -L / 2)).transform(M4)
     solid["spear"] = (sp - clear) + shaft.set_properties(2, lambda q, old: (-2.0, -2.0))
-    solid["hand_r"] = fist - bore.set_properties(2, lambda q, old: (-1.0, -1.0))
-    _extra["spear_seat"] = {"turn_deg": [ax_a, ax_b], "overlap_mm3": round(hit, 1), "axis": [round(float(v), 4) for v in na]}
+    solid["hand"] = fist - bore.set_properties(2, lambda q, old: (-1.0, -1.0))
+    _extra["spear_seat"] = {"grip_t_mm": grip_t, "roll_deg": roll, "turn_deg": [ax_a, ax_b],
+                            "overlap_mm3": round(hit, 1), "axis": [round(float(v), 4) for v in na]}
     return solid
 
 
 def design(solid, mf):
     """Seat the spear in the fist, then fuse every loose piece of a part to its main body with a short strut."""
     from scipy.spatial import cKDTree
-    if "spear" in solid and "hand_r" in solid:
+    if "spear" in solid and "hand" in solid:
         solid = seat_spear(solid, mf)
     out = {}
     for k, m in solid.items():
@@ -397,17 +415,16 @@ def design(solid, mf):
 BUDGET = {
     "torso": (10000, 1024), "pelvis": (7000, 1024), "helm": (3000, 768), "crown": (4000, 768), "back": (5000, 768),
     "pauldron": (6500, 1024), "pauldron_r": (6500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (3000, 768),
-    "arm_r": (1800, 512), "forearm_r": (2800, 768), "hand_r": (2500, 512),
     "thigh": (3200, 768), "shin": (3800, 768), "foot": (2500, 512), "spear": (7000, 1024),
 }
 LABEL = {
     "pelvis": "Pelvis + loincloths + banner", "torso": "Torso + banner", "helm": "Helm", "crown": "Halo + crown spire",
-    "back": "Reliquary spires", "pauldron": "Pauldron + wing (left)", "pauldron_r": "Pauldron + wing (right)", "arm": "Upper arm (left)", "forearm": "Forearm (left)",
-    "hand": "Sword hand (left)", "arm_r": "Upper arm (right)", "forearm_r": "Forearm (right)", "hand_r": "Fist (right)",
+    "back": "Reliquary spires", "pauldron": "Pauldron + wing (left)", "pauldron_r": "Pauldron + wing (right)", "arm": "Upper arm",
+    "forearm": "Forearm", "hand": "Fist (spear bore)",
     "thigh": "Thigh", "shin": "Greave", "foot": "Foot", "spear": "Spear (equipment)",
 }
 POSE = {
-    "arm": (25, 0, 10), "forearm": (-35, 0, 0), "arm_r": (-30, 0, 0), "helm": (0, 0, 20),
+    "arm_L": (25, 0, 10), "forearm_L": (-35, 0, 0), "arm_R": (-30, 0, 0), "helm": (0, 0, 20),
     "thigh_L": (-20, 0, 0), "shin_L": (25, 0, 0), "foot_L": (-5, 0, 0),
 }
 EXPLODE, EXPLODE_MARGIN = 10.0, 0.85     # render.py: exploded view reach (print mm) and framing

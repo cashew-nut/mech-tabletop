@@ -11,11 +11,12 @@
 // The Brute (foundries/bulwark, grown 1.4 by the web) has no arm, forearm or hand: its parts are pelvis, torso, helm, back,
 // pauldron, thigh, shin and foot, and each gun is a whole forearm with its origin on the elbow. The guns are moved onto the
 // numbered arm mount the old brute items used, so they hang from the same hardpoint; both are modelled for the left.
-// The Seer (reliquary/striker, grown 1.2 by the web) is asymmetric: its arms and pauldrons are built for each side, so the
-// right ones (arm_r, pauldron_r, forearm_r, hand_r) publish as the `-right` variants and hang on joints of their own
-// (frameTunes "jointsRight" moves joint_shoulder_R, elbow_R and wrist_R off the mirror of the left). Its helm is built on the
-// neck knuckle but hangs on the head joint, so its vertices are moved by the difference. The spear is the right hand's item
-// with its origin on the grip, where the frame's mount_armRight_0 is. The script also moves the frame's joints to the tunes.
+// The Seer (reliquary/striker, grown 1.2 by the web) has its own right pauldron and wing (pauldron_r publishes as the
+// `-right` variant); its arm, like its legs, is built for the left and mirrored by the web. A model whose right arm is its
+// own can still give frameTunes "jointsRight" (joint_shoulder_R, elbow_R and wrist_R off the mirror of the left). Its helm
+// is built on the neck knuckle but hangs on the head joint, so its vertices are moved by the difference. The spear is the
+// left fist's item with its origin on the grip, where the frame's mount_armLeft_0 is (mount_armRight_0 is its mirror).
+// The script also moves the frame's joints to the tunes.
 // The old open-shell cut is retired: its right-hand copies (the web mirrors the left), cloth and collar files go, and the
 // manifest drops them. The collar is part of the torso now (data/model-kit.json "omit" keeps the Titan collar off).
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -39,11 +40,11 @@ const MODELS = {
   },
   seer: {
     faction: 'reliquary', cls: 'seer', tunes: 'reliquary/striker', itemScale: 1.2, frame: 'reliquary_frame_striker',
-    kit: ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'pauldron_r', 'arm_r', 'forearm_r', 'hand_r', 'thigh', 'shin', 'foot'],
+    kit: ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'pauldron_r', 'thigh', 'shin', 'foot'],
     // build part -> [kit component, the joint its origin sits on, the joint it hangs on when that differs]
-    component: { pauldron_r: 'pauldron-right', arm_r: 'arm-right', forearm_r: 'forearm-right', hand_r: 'hand-right' },
+    component: { pauldron_r: 'pauldron-right' },
     origin: { helm: ['neck', 'head'] },
-    items: { spear: ['arc-cannon@seer', 'mount_armRight_0', 'mount'] },
+    items: { spear: ['arc-cannon@seer', 'mount_armLeft_0', 'mount'] },
   },
 };
 

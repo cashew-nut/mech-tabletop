@@ -411,7 +411,7 @@
       }
     },
     "reliquary/striker": {
-      "$comment": "Joints (mm, left side) measured from the composite Seer (assets/blender/parts/composite/seer.py, MODEL=seer). The Seer's right arm is its own part, so jointsRight gives the right shoulder, elbow and wrist (x as is, not mirrored). mount_armRight_0 is the spear's grip; the left one is its mirror. scripts/publish-composite.mjs seer writes these onto the frame.",
+      "$comment": "Joints (mm, left side) measured from the composite Seer (assets/blender/parts/composite/seer.py, MODEL=seer). The right arm is the left one mirrored (2026-11-02), so it has no joints of its own. mount_armLeft_0 is the left fist's grip, where the arc spear is held; the right one is its mirror. scripts/publish-composite.mjs seer writes these onto the frame.",
       "joints": {
         "pelvis": [
           0.0,
@@ -469,38 +469,21 @@
           6.086
         ]
       },
-      "jointsRight": {
-        "shoulder": [
-          -4.937,
-          2.88,
-          32.211
-        ],
-        "elbow": [
-          -6.377,
-          -0.823,
-          26.246
-        ],
-        "wrist": [
-          -6.48,
-          -5.349,
-          22.337
-        ]
-      },
       "mounts": {
         "mount_armLeft_0": [
           "wrist",
           [
-            0.123,
-            -0.905,
-            -1.337
+            0.527,
+            -0.446,
+            -2.349
           ]
         ],
         "mount_armRight_0": [
           "wrist",
           [
-            -0.123,
-            -0.905,
-            -1.337
+            -0.527,
+            -0.446,
+            -2.349
           ]
         ]
       }
@@ -519,9 +502,7 @@
         "scale": 1.0
       }
     },
-    "nativeRight": [
-      "arc-cannon@seer"
-    ],
+    "nativeRight": [],
     "cardOnly": [
       "ablative-plating",
       "reactive-shell",

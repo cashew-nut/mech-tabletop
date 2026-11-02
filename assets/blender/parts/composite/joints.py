@@ -33,6 +33,7 @@ CRUMB = getattr(M, "CRUMB", 0.2)                    # mm3: loose bits smaller th
 PREFER_MAGNET = getattr(M, "PREFER_MAGNET", False)  # the biggest peg that takes a magnet, rather than the biggest peg
 BOTH_WAYS = getattr(M, "BOTH_WAYS", False)          # always try the peg on the parent too; keep whichever holds better
 CLEAR_MIRRORED = getattr(M, "CLEAR_MIRRORED", False)  # trim centre parts where mirrored right-hand parts would sit
+                                                      # (True, or a tuple of the sided parts to trim for)
 # STRICT: check joints against the real solids, not only the voxel grid. Each hole and its wall are reserved so later
 # holes keep clear of them, a left part's hole in a centre part stays clear of its mirror image, and a SKIN mm skin
 # round each hole (below its mouth) must lie inside the part, so no hole breaks out of its side.
@@ -446,9 +447,11 @@ def main(work):
         e.pop("_mag", None)
     if CLEAR_MIRRORED:
         # the right-hand parts are the left ones mirrored, so trim the centre parts wherever a mirrored part would sit
+        # (True: every sided part; a tuple names the sided parts to clear for, the Seer's arm)
+        mirrored = [k for k in parts if k in SIDED and (CLEAR_MIRRORED is True or k in CLEAR_MIRRORED)]
         for c in [k for k in parts if k not in SIDED]:
             before = parts[c].volume()
-            for k in [k for k in parts if k in SIDED]:
+            for k in mirrored:
                 parts[c] = parts[c] - mirror(parts[k])
             print(f"  {c:9s} trimmed {before - parts[c].volume():.2f} mm3 for the mirrored right side", flush=True)
     import manifold3d as mf
