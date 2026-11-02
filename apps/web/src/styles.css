@@ -1487,3 +1487,33 @@ button.end {
 .view-toggle button.on {
   opacity: 1;
 }
+
+/* ---------- part view (explode, joint lines, part toggles) ---------- */
+
+.part-view-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.part-view-tools input[type='range'] {
+  flex: 1 1 140px;
+}
+
+#explode-btn {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.part-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 2px 12px;
+  font-size: 0.85rem;
+}
+
+.part-list .item {
+  color: #d98a5a;
+}

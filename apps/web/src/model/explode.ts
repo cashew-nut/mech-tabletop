@@ -1,5 +1,5 @@
 // Exploded view of a kit walker: every part slides off its parent, and the move adds up down the joint tree, so a hand
-// ends up one step past its forearm, which is one step past its arm. Pure maths (no three.js scene), used by viewer.ts.
+// ends up one step past its forearm, which is one step past its arm. Pure maths (no three.js scene), used by partview.ts.
 import * as THREE from 'three';
 
 /** Which kit component each one plugs into (the composite pipeline's TREE, assets/blender/parts/composite). */
