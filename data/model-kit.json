@@ -690,14 +690,15 @@
         "side": "pair",
         "pair": true
       },
-      "shoulder-socket": {
+      "shoulder-sockets": {
         "joint": "shoulder",
         "offset": [
           0.03955,
           0.051,
           0.02714
         ],
-        "side": "loc"
+        "side": "pair",
+        "pair": true
       }
     },
     "overrides": {
@@ -917,8 +918,8 @@
         }
       },
       "hellfire-missiles": {
-        "arm": [
-          "shoulder-socket"
+        "core": [
+          "shoulder-sockets"
         ]
       }
     },

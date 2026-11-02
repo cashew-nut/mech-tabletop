@@ -13,7 +13,7 @@ describe('lance building', () => {
     }
   });
 
-  it('has cut the five items that had no model to fit (Hellfire Missiles came back as a Seer shoulder launcher)', () => {
+  it('has cut the five items that had no model to fit (Hellfire Missiles came back as Seer body equipment)', () => {
     for (const id of ['melee-blade', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']) {
       expect(hasEquipment(id), id).toBe(false);
     }
@@ -30,6 +30,12 @@ describe('lance building', () => {
     const bad = validateLance(lance('Rack', [walker('A', 'lancer', { core: ['missile-rack'] }), walker('B', 'lancer', { armLeft: ['missile-rack'] }), walker('C', 'lancer')]));
     expect(bad.errors.join('\n')).toMatch(/core uses 2 slots/);
     expect(bad.errors.join('\n')).toMatch(/cannot be mounted in armLeft/);
+  });
+
+  it('mounts the Hellfire Missiles on the core, so they take no arm slot', () => {
+    expect(getEquipment('hellfire-missiles').mount).toEqual(['core']);
+    expect(validateLance(lance('Fire', [walker('A', 'seer', { core: ['hellfire-missiles'] }), walker('B', 'seer'), walker('C', 'seer')])).errors.join('\n')).not.toMatch(/Hellfire/);
+    expect(validateLance(lance('Fire', [walker('A', 'seer', { armRight: ['hellfire-missiles'] }), walker('B', 'seer'), walker('C', 'seer')])).errors.join('\n')).toMatch(/cannot be mounted in armRight/);
   });
 
   it('applies faction discounts', () => {
