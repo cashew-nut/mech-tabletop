@@ -411,7 +411,7 @@
       }
     },
     "reliquary/striker": {
-      "$comment": "Joints (mm, left side) measured from the composite Seer (assets/blender/parts/composite/seer.py, MODEL=seer). The right arm is the left one mirrored (2026-11-02), so it has no joints of its own. mount_armLeft_0 is the left fist's grip, where the arc spear is held; the right one is its mirror. scripts/publish-composite.mjs seer writes these onto the frame.",
+      "$comment": "Joints (mm, left side) measured from the composite Seer (assets/blender/parts/composite/seer.py, MODEL=seer). The right arm is the left one mirrored (2026-11-02), so it has no joints of its own. mount_armLeft_0 is the left fist's grip (the arc spear and claws now plug into the wrist socket instead: fit.hardpoints wrist-socket); the right one is its mirror. The elbow is bent 25 degrees forward (seer_elbow.py, 2026-11-02): the wrist and the grip mounts are the turned ones. scripts/publish-composite.mjs seer writes these onto the frame.",
       "joints": {
         "pelvis": [
           0.0,
@@ -450,8 +450,8 @@
         ],
         "wrist": [
           9.874,
-          1.646,
-          15.549
+          -1.794,
+          17.314
         ],
         "hip": [
           2.983,
@@ -474,16 +474,16 @@
           "wrist",
           [
             0.527,
-            -0.446,
-            -2.349
+            -1.397,
+            -1.94
           ]
         ],
         "mount_armRight_0": [
           "wrist",
           [
             -0.527,
-            -0.446,
-            -2.349
+            -1.397,
+            -1.94
           ]
         ]
       }
@@ -526,6 +526,21 @@
       "grip-native": {
         "mount": "mount_{loc}_0",
         "side": "loc"
+      },
+      "wrist-socket": {
+        "joint": "wrist",
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "side": "loc",
+        "blocks": [
+          "grip"
+        ],
+        "hides": [
+          "hand"
+        ]
       },
       "forearm-top": {
         "joint": "elbow",
@@ -782,6 +797,9 @@
         }
       },
       "seer": {
+        "grip": {
+          "nativeAs": "wrist-socket"
+        },
         "back-high": {
           "offset": [
             0,

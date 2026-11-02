@@ -13,7 +13,8 @@ Luke's Meshy Gilded Seraphim, cut into closed parts that plug together. Lessons 
   * One arm, mirrored. The Meshy figure's right arm is bent to couch its spear and read badly on its own, and its left
     hand had a sword grown into it. The left arm is now the arm: its sword is cut off below the fist (SWORD), the fist
     gets a bore, and the right arm is the left one mirrored, like the legs (Luke, 2026-11-02). The pauldrons and wings
-    stay native to each side; the right pauldron is trimmed where the mirrored arm sits (CLEAR_MIRRORED).
+    were native to each side at first, but the right wing's front spar reached out level with the shoulder and read as a
+    third arm, so the right pauldron and wing are now the left ones mirrored too (Luke, 2026-11-02).
   * One solid per part. The left wing is a separate shell in the Meshy file (it floats behind the pauldron); design()
     fuses any loose piece of a part to the part's main body with a strut, so nothing has to be glued in place.
   * The spear is equipment (the Seer's arc spear) and is held through either fist, in the old sword's pose.
@@ -44,7 +45,8 @@ def _c(p):
     return (p[0] - CX, p[1], p[2])
 
 
-# Joints, absolute Meshy units. Left side (the right arm and legs are mirrored); shoulder_r is the right pauldron's origin.
+# Joints, absolute Meshy units. Left side (the right arm, pauldron and legs are mirrored). shoulder_r is the old native right
+# pauldron's origin, kept for the labels.
 JOINTS_ABS = {
     "pelvis": (CX, 0.08, -0.02), "spine": (CX, 0.08, 0.06), "chest": (CX, 0.10, 0.30),
     "neck": (CX, 0.05, 0.565), "head": (CX, 0.03, 0.62),
@@ -103,7 +105,6 @@ TREE = {
     "pauldron": ("pauldron", "shoulder", ("torso", "arm")),     # on a small knuckle behind the shoulder (below)
     "forearm": ("forearm", "elbow", "arm"),
     "hand": ("hand", "wrist", "forearm"),
-    "pauldron_r": ("pauldron-right", "shoulder_r", "torso"),
     "thigh": ("thigh", "hip", "pelvis"),
     "shin": ("shin", "knee", "thigh"),
     "foot": ("foot", "ankle", "shin"),
@@ -113,16 +114,16 @@ TREE = {
 GRIP_T, SHAFT_R, BORE_CLEAR = 5.25, 0.8, 0.06     # grip point on the shaft (mm from the spear's centre), shaft radius
 HELD = {"spear": {"parent": "hand", "peg": None,
                   "how": f"shaft ({2 * SHAFT_R:g} mm) push-fits through a {2 * (SHAFT_R + BORE_CLEAR):.2f} mm bore in either fist"}}
-SIDED = {"thigh", "shin", "foot", "arm", "forearm", "hand"}
-# joints.py: trim the centre parts (torso, right pauldron) where the mirrored right arm sits. Only the arm: the legs
-# were cut before this and already fit.
-CLEAR_MIRRORED = ("arm", "forearm", "hand")
+SIDED = {"thigh", "shin", "foot", "arm", "forearm", "hand", "pauldron"}
+# joints.py: trim the centre parts (the torso) where the mirrored right arm and pauldron sit. Not the legs: they were cut
+# before this and already fit.
+CLEAR_MIRRORED = ("arm", "forearm", "hand", "pauldron")
 
 # Physical parts and the labels each is made of; right-side mirrored parts' labels only carve the torso and pelvis.
 PARTS = {
     "torso": ["torso", "cloth_upper"], "pelvis": ["pelvis", "cloth_lower"],
     "helm": ["helm"], "crown": ["crown"], "back": ["back"],
-    "pauldron": ["pauldron_L"], "pauldron_r": ["pauldron_R"],
+    "pauldron": ["pauldron_L"], "_pauldron_R": ["pauldron_R"],
     "arm": ["arm_L"], "forearm": ["forearm_L"], "hand": ["hand_L"],
     "thigh": ["thigh_L"], "shin": ["shin_L"], "foot": ["foot_L"], "spear": ["spear"],
     "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"],
@@ -414,12 +415,12 @@ def design(solid, mf):
 # part: (game triangles, texture size)
 BUDGET = {
     "torso": (10000, 1024), "pelvis": (7000, 1024), "helm": (3000, 768), "crown": (4000, 768), "back": (5000, 768),
-    "pauldron": (6500, 1024), "pauldron_r": (6500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (3000, 768),
+    "pauldron": (6500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (3000, 768),
     "thigh": (3200, 768), "shin": (3800, 768), "foot": (2500, 512), "spear": (7000, 1024),
 }
 LABEL = {
     "pelvis": "Pelvis + loincloths + banner", "torso": "Torso + banner", "helm": "Helm", "crown": "Halo + crown spire",
-    "back": "Reliquary spires", "pauldron": "Pauldron + wing (left)", "pauldron_r": "Pauldron + wing (right)", "arm": "Upper arm",
+    "back": "Reliquary spires", "pauldron": "Pauldron + wing", "arm": "Upper arm",
     "forearm": "Forearm", "hand": "Fist (spear bore)",
     "thigh": "Thigh", "shin": "Greave", "foot": "Foot", "spear": "Spear (equipment)",
 }

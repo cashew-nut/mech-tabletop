@@ -14,11 +14,11 @@
 // The Brute (foundries/bulwark, grown 1.4 by the web) has no arm, forearm or hand: its parts are pelvis, torso, helm, back,
 // pauldron, thigh, shin and foot, and each gun is a whole forearm with its origin on the elbow. The guns are moved onto the
 // numbered arm mount the old brute items used, so they hang from the same hardpoint; both are modelled for the left.
-// The Seer (reliquary/striker, grown 1.2 by the web) has its own right pauldron and wing (pauldron_r publishes as the
-// `-right` variant); its arm, like its legs, is built for the left and mirrored by the web. A model whose right arm is its
+// The Seer (reliquary/striker, grown 1.2 by the web) is built for the left and mirrored by the web: arm, pauldron and
+// wing, and legs (its native right pauldron, published as the `-right` variant before 2026-11-02, is retired). A model whose right arm is its
 // own can still give frameTunes "jointsRight" (joint_shoulder_R, elbow_R and wrist_R off the mirror of the left). Its helm
-// is built on the neck knuckle but hangs on the head joint, so its vertices are moved by the difference. The spear is the
-// left fist's item with its origin on the grip, where the frame's mount_armLeft_0 is (mount_armRight_0 is its mirror).
+// is built on the neck knuckle but hangs on the head joint, so its vertices are moved by the difference. The arc spear and
+// the kinetic claws take the hand's place on the wrist socket, with their origin on the wrist joint (seer_wrist.py).
 // The script also moves the frame's joints to the tunes.
 // The old open-shell cut is retired: its right-hand copies (the web mirrors the left), cloth and collar files go, and the
 // manifest drops them. The collar is part of the torso now (data/model-kit.json "omit" keeps the Titan collar off).
@@ -55,16 +55,17 @@ const MODELS = {
   },
   seer: {
     faction: 'reliquary', cls: 'seer', tunes: 'reliquary/striker', itemScale: 1.2, frame: 'reliquary_frame_striker',
-    kit: ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'pauldron_r', 'thigh', 'shin', 'foot'],
+    kit: ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
     // build part -> [kit component, the joint its origin sits on, the joint it hangs on when that differs]
-    component: { pauldron_r: 'pauldron-right' },
     origin: { helm: ['neck', 'head'] },
-    // The spear is the left fist's item. The Hellfire launcher stands on a gilded sleeve in the arm's shoulder drum
+    // The arc spear and the kinetic claws (seer_wrist.py) plug into the wrist socket in place of the hand: their origin is
+    // the wrist joint, and the web hides the hand on that side (fit.hardpoints wrist-socket). The Hellfire launcher stands on a gilded sleeve in the arm's shoulder drum
     // (seer_items.py): its origin is the socket seat, given here as an offset from the shoulder joint (kit mm, Blender
     // axes), and the sleeve (hosts/arm_sleeve.npz, the part of the socketed arm the plain arm does not have) is merged
     // into the arm as a gold primitive. The right arm is the left mirrored, so the one socket serves both shoulders.
     items: {
-      spear: ['arc-cannon@seer', 'mount_armLeft_0', 'mount'],
+      'arc-cannon': ['arc-cannon@seer', ['wrist', [0, 0, 0]], 'mount', 'items'],
+      'kinetic-claws': ['kinetic-claws@seer', ['wrist', [0, 0, 0]], 'mount', 'items'],
       'hellfire-missiles': ['hellfire-missiles@seer', ['shoulder', [1.396, -0.958, 1.8]], 'mount', 'items'],
     },
     hosts: { arm: ['shoulder', ['arm_sleeve'], [0.78, 0.6, 0.25]] },
