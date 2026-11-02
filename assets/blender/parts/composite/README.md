@@ -293,15 +293,21 @@ What the Paladin taught, and what changed for the Seer:
   a third part (the right pauldron sits between the arm and the torso).
 - **Magnets first.** With `PREFER_MAGNET`, joints.py takes the biggest peg that also takes a magnet, rather than the
   biggest peg. Magnet sizes now include 3 x 2 mm.
-- **Both arms are their own.** The Seer's asymmetry is its character (sword hand on the left, spear on the right), so
-  the arms and pauldrons are built natively for each side (`arm`, `forearm`, `hand`, `pauldron`, and `*_r`). Legs are
-  built for the left and mirrored, like the Paladin.
+- **One arm, mirrored (2026-11-02).** The first cut built both arms natively, but the Meshy right arm is bent to couch
+  its spear and read badly on its own, and the left hand had a sword grown into it, so a second spear doubled up. Now
+  the left hand's sword is cut off below the fist (`SWORD`, `SWORD_CUT`: the hand's voxels past the bottom of the fist
+  along the blade go to a throwaway `_sword` part), the fist gets the spear bore, and the right arm is the left one
+  mirrored (`arm`, `forearm`, `hand` are in `SIDED`, the Meshy right arm's voxels only carve the torso). The pauldrons
+  and wings stay native to each side; `CLEAR_MIRRORED = ("arm", "forearm", "hand")` trims the right pauldron where the
+  mirrored arm sits. Legs are built for the left and mirrored, like the Paladin.
 - **One solid per part.** The left wing is a loose shell in the Meshy file. `seer.design()` fuses any loose piece of a
   part to its body with a short gold strut, and drops crumbs.
 - **Held equipment.** In the Meshy figure the spear is couched under the right arm and touches it only at the elbow,
-  with no room for a peg. It is now held: moved so a plain stretch of shaft runs through the right fist, turned (search
-  over small rotations) until it clears the body and legs, the grip stretch trued up as a 1.6 mm round shaft, and a
-  1.72 mm bore cut through the fist. It is a push fit and can be turned in the fist to set its angle.
+  with no room for a peg. It is now held in the fist, either side: turned onto the line of the old sword, then searched
+  over small turns (up to 30 degrees, and about its own axis) until it clears the arm, body and legs and its tip stays
+  above the base. The spear is about 40 mm long and the fist hangs low, so it ends up pointing down and forward, like the
+  single spear Luke liked on the left. The grip stretch is trued up as a 1.6 mm round shaft and a 1.72 mm bore is cut
+  through the fist. It is a push fit and can be turned in the fist to set its angle.
 - **Centre line.** The first Seraphim cut used x = 0.28 as the centre; slices of the mesh (shoulder orbs, feet) put it at
   0.235. The Seer measures its own joints (`JOINTS_ABS`) instead of reading `frameTunes["reliquary/striker"]`, so the
   game's frame tunes will need updating when these parts are published.
@@ -317,10 +323,9 @@ What the Paladin taught, and what changed for the Seer:
 | back | torso | the reliquary spires |
 | pauldron | torso | left shoulder plate and wing (the wing was a loose shell; now fused); on a small knuckle |
 | pauldron_r | torso | right shoulder plate and wing |
-| arm, forearm, hand | torso, arm, forearm | left: the hand carries the downward sword |
-| arm_r, forearm_r, hand_r | torso, arm_r, forearm_r | right: the fist has the spear bore |
+| arm, forearm, hand | torso, arm, forearm | mirrored for the right; the fist has the spear bore (the sword is gone) |
 | thigh, shin, foot | pelvis, thigh, shin | mirrored for the right |
-| spear | hand_r (held) | equipment: `item_arc-cannon@seer` |
+| spear | hand (held) | equipment: `item_arc-cannon@seer` |
 
 ### The Seer in the game
 
@@ -330,15 +335,15 @@ KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs <the files thi
 node scripts/item-bounds.mjs
 ```
 
-No Blender needed. The 16 body parts become `kit/reliquary_<part>_seer.glb`; the right arm and pauldron (`arm_r`,
-`forearm_r`, `hand_r`, `pauldron_r`) publish as the `-right` variants, so the web uses them as they are instead of
-mirroring the left. The legs are left only (the web mirrors them), and the old open-shell `thigh-right`, `shin-right`
-and `foot-right` are deleted and dropped from the manifest. The spear is `item_arc-cannon@seer`. All of it comes to
-5.1 MB. `data/model-kit.json` `omit.seer` keeps the Striker's collar from filling in (the torso has its own).
+No Blender needed. The 13 body parts become `kit/reliquary_<part>_seer.glb`; the right pauldron (`pauldron_r`)
+publishes as the `-right` variant, so the web uses it as it is. The arm and legs are left only (the web mirrors them),
+and the old `-right` arm, forearm and hand are deleted and dropped from the manifest. The spear is
+`item_arc-cannon@seer`, modelled in the left fist. `data/model-kit.json` `omit.seer` keeps the Striker's collar from
+filling in (the torso has its own).
 
 The script also writes the Seer's skeleton onto `reliquary_frame_striker.glb` from `frameTunes["reliquary/striker"]`:
-the new joints, `jointsRight` for the right shoulder, elbow and wrist (the Seer's right arm is posed differently, so it
-is not the mirror of the left), and `mount_armRight_0` placed on the spear's grip (`mount_armLeft_0` is its mirror).
-`assets/blender/kit/skeleton.py` reads `jointsRight` too, so a rebuilt frame matches. The helm is built on the neck
+the new joints, and `mount_armLeft_0` placed on the left fist's grip (`mount_armRight_0` is its mirror). Since the
+right arm became the mirror of the left, the Seer has no `jointsRight` any more.
+(`assets/blender/kit/skeleton.py` still reads `jointsRight` where a model has one.) The helm is built on the neck
 knuckle but hangs on `joint_head`; the script moves its vertices by the difference. The spear's origin is its grip, which
 is where the mount is, so it only needs dividing by 1.2 (the web's Striker part scale).
