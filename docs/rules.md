@@ -312,7 +312,7 @@ the Trial ends at once and the other side wins.
 | Foundries | Rocket Pod | Arm | 2 | 2 | 4 | Long | 2 | 2 | Blast. Minimum range 4. |
 | Foundries | Industrial Claw | Arm | 1 | 1 | 5 | Melee | 2 | 3 | Push the target 1 hex away on a hit. |
 | Reliquary | Arc Spear (id `arc-cannon`) | Arm | 1 | 1 | 6 | Medium | 3 | 1 | Each hit drains 1 Pressure from the target's next activation. No ammo. |
-| Reliquary | Hellfire Missiles | Arm (shoulder socket) | 2 | 1 | 5 | Long | 3 | 1 | Indirect. Each hit adds 1 Overpressure. Ammo 3. |
+| Reliquary | Hellfire Missiles | Core (shoulder sockets) | 2 | 1 | 5 | Long | 3 | 1 | Indirect. Each hit adds 1 Overpressure. Ammo 3. |
 | Reliquary | Kinetic Claws | Arm | 1 | 1 | 6 | Melee | 4 | 1 | **Backstab:** rolls of 5 or 6 are criticals from the target's rear arc. |
 | Reliquary | Soul Lantern | Core (system) | 1 | 0 | 5 | | | | Enemy attacks on friendly war-walkers within 2 hexes get +1 TN. Does not stack. |
 
@@ -399,7 +399,7 @@ Every item that has a model must plug into a socket its walker was built with (s
 [`equipment-fit.md`](equipment-fit.md)), so the item list was cut to what can be built or is honest as a card.
 
 - **Cut:** Melee Blade, Anchor Spikes, Jump Jets, Overcharged Boiler and Field Repair Rig. (Hellfire Missiles was
-  cut here too and came back with a model, a launcher on the Seer's shoulder socket.) Their rules, AI use and battle buttons are gone (so is the Anchored state). Saved lances lose them on load.
+  cut here too and came back with a model: body equipment, a pair of launchers on the Seer's shoulder sockets, taking 2 core slots and no arm slot.) Their rules, AI use and battle buttons are gone (so is the Anchored state). Saved lances lose them on load.
   The four example slots that used them were swapped: Vigil gets a Kinetic Shield and a Reactive Shell, Long Tom
   Gyro Stabilisers, Oracle an Arc Spear and Eternal Kinetic Claws.
 - **Card only** (rules and cards kept, no model, `fit.cardOnly` in `data/model-kit.json`): Ablative Plating,

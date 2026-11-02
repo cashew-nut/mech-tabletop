@@ -34,10 +34,10 @@ describe('equipment fit', () => {
     expect(FIT.nativeRight).not.toContain('rail-cannon@brute');
   });
 
-  it("seats the Seer's Hellfire launcher on the shoulder socket, beside a spear on the wrist", () => {
-    expect(names(planLocation('seer', 'armLeft', ['arc-cannon', 'hellfire-missiles'], [true, true]))).toEqual(['wrist-socket:L', 'shoulder-socket:L']);
-    expect(names(planLocation('seer', 'armRight', ['hellfire-missiles'], [true]))).toEqual(['shoulder-socket:R']);
-    expect(hardpoint('seer', 'shoulder-socket')!.joint).toBe('shoulder');
+  it("seats the Seer's Hellfire launchers on both shoulder sockets from the core, leaving the arms free", () => {
+    expect(names(planLocation('seer', 'core', ['hellfire-missiles'], [true]))).toEqual(['shoulder-sockets:L+shoulder-sockets:R']);
+    expect(planLocation('seer', 'armLeft', ['hellfire-missiles'], [true])).toEqual([null]);
+    expect(hardpoint('seer', 'shoulder-sockets')!.joint).toBe('shoulder');
     expect(pivotOf('hellfire-missiles@seer')).toEqual([0, 0, 0]);
   });
 
