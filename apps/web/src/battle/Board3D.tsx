@@ -9,14 +9,14 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/rules';
-import { hexCentre, type Highlight } from './HexMap';
+import { HEX_SIZE, hexCentre, type Highlight } from './HexMap';
 import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
 import { WalkerLibrary } from './boardWalkers';
-import { BANNER_CLOTH, PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, objectiveBanner, rippleBanner, rubble, ruinWall, stoneTexture, tower, wreck, type MarkerKind } from './boardArt';
+import { BANNER_CLOTH, PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, objectiveBanner, rippleBanner, rndFrom, rubble, ruinWall, stoneTexture, tower, wreck, type MarkerKind } from './boardArt';
 
 // Render scale: 1 draws at full resolution so the walker textures stay crisp (?pixel=2 gives the old half-resolution look).
 const PIXEL = Number(new URLSearchParams(location.search).get('pixel') ?? 1);
-const UNIT = 1 / 26; // hexCentre is in SVG units; the scene works in hex-size units
+const UNIT = 1 / HEX_SIZE; // hexCentre is in SVG units; the scene works in hex-size units
 const ELEVATION_STEP = 0.35;
 
 // Dark ruined flagstones: open ground is grey slate, cover is mossier or more broken.
@@ -41,7 +41,7 @@ interface Props {
   onWalker: (id: string) => void;
 }
 
-const rnd01 = (n: number) => ((Math.sin(n * 12.9898) * 43758.5453) % 1 + 1) % 1;
+const rnd01 = (n: number) => rndFrom(n)(0);
 const hexShape = new THREE.CylinderGeometry(1, 1, 1, 6, 1);
 const box = new THREE.BoxGeometry(1, 1, 1);
 const planeGeo = new THREE.PlaneGeometry(1.92, 1.92); // sized so the marker's hex outline (radius 30 of 64px) sits just inside a tile

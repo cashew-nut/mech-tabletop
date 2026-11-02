@@ -1,11 +1,9 @@
 // Overlays for the 3D board: a unit readout in the bottom-left and a minimap with the current order in the bottom-right.
-import { hexKey, type GameState, type WalkerState } from '@brass-charter/rules';
-import { getChassis } from '@brass-charter/rules';
-import { hexCentre } from './HexMap';
+import { getChassis, hexKey, type GameState, type WalkerState } from '@brass-charter/rules';
+import { HEX_SIZE as SIZE, hexCentre } from './HexMap';
 
 const TERRAIN_FILL: Record<string, string> = { open: '#7b7a73', rough: '#6b6457', light: '#66714f', heavy: '#525a49', blocking: '#2c2a27' };
 const SIDE_FILL = ['#3aa7ff', '#ff5a1f'];
-const SIZE = 26;
 
 // Pixel-style icons drawn on a 8x8 grid.
 const Icon = ({ rows, colour }: { rows: string[]; colour: string }) => (

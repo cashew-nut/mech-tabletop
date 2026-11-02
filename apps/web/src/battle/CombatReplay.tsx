@@ -3,17 +3,11 @@
 // animate: the board, the walkers and the rules are untouched.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getChassis, getEquipment, type GameState, type WalkerState, type Zone } from '@brass-charter/rules';
+import { ZONE_NAMES } from './labels';
 import { buildExchanges, type Die, type Exchange } from './replayExchanges';
 import './combatReplay.css';
 
 const STORAGE_KEY = 'diceAnimations';
-const ZONES: Array<[Zone, string]> = [
-  ['coreFront', 'Core'],
-  ['coreRear', 'Core (rear)'],
-  ['armLeft', 'Left arm'],
-  ['armRight', 'Right arm'],
-  ['legs', 'Legs'],
-];
 const LOC: Record<Zone, 'core' | 'armLeft' | 'armRight' | 'legs'> = { coreFront: 'core', coreRear: 'core', armLeft: 'armLeft', armRight: 'armRight', legs: 'legs' };
 const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
@@ -173,7 +167,7 @@ function ReplayCard({ before, after, ex, impact }: { before: WalkerState; after:
       </div>
       <table className="grid-table compact">
         <tbody>
-          {ZONES.map(([z, label]) => {
+          {(Object.entries(ZONE_NAMES) as Array<[Zone, string]>).map(([z, label]) => {
             const loc = LOC[z];
             const gone = impact && after.destroyedLocations.includes(loc);
             const dmg = dealt(z);

@@ -34,7 +34,7 @@ export class WalkerLibrary {
   private requested = new Set<string>();
   private cache = new Map<string, BoardWalker>();
 
-  constructor(private renderer: THREE.WebGLRenderer, private onChange: () => void) {
+  constructor(renderer: THREE.WebGLRenderer, private onChange: () => void) {
     loadPartLibrary(renderer).then((lib) => {
       this.lib = lib;
       onChange();
