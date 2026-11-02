@@ -16,6 +16,8 @@ import {
   hexKey,
   hexInfo,
   hexToOffset,
+  BAND_TN,
+  BASE_TN,
   hitChance,
   lineOfSight,
   moveAllowance,
@@ -37,8 +39,6 @@ export interface AiOptions {
   /** How much the AI fears incoming fire relative to dealing damage (default 0.4). */
   caution?: number;
 }
-
-const BAND_TN = { melee: 4, short: 4, medium: 5, long: 6 } as const;
 
 function legal(state: GameState, action: Action): boolean {
   try {
@@ -114,7 +114,7 @@ function threatAt(state: GameState, w: WalkerState, hex: Hex): number {
       const band = wp.range === 'melee' ? 'melee' : rangeBand(Math.max(1, d - closing)) ?? 'long';
       const indirect = getEquipment(it.id).tags?.includes('indirect');
       if (!indirect && wp.range !== 'melee' && d > closing + 1 && !lineOfSight(state, e.pos, hex).clear) continue;
-      threat += wp.dice * hitChance(BAND_TN[band] + 1) * wp.damage;
+      threat += wp.dice * hitChance(BASE_TN + BAND_TN[band] + 1) * wp.damage;
     }
   }
   return threat;

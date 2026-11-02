@@ -8,7 +8,7 @@
 // exactly one partner, and a board that matches its partners is the same
 // ground seen from either side.
 import type { MapDef, ObjectiveDef, Terrain } from '../data';
-import { passable, stepCost } from '../engine';
+import { passable, stepCost } from '../queries';
 import { hexKey, hexToOffset, neighbors, offsetToHex, type Hex, type Offset } from '../hex';
 import type { GameState, HexInfo } from '../types';
 

@@ -86,8 +86,10 @@ only needs the read-only queries.
   `web/battle/replayExchanges.ts isHit`. Export `isHit` from rules and use it in both.
 - `engine.ts` is 1,190 lines. Split out `queries.ts` (walker and hex lookups, movement, reach, line of sight, range
   bands, `previewAttack`, deployment zones), which are pure reads. Mutations stay in `engine.ts`, and `mapgen` imports
-  from `queries.ts`. The public API through `index.ts` is unchanged.
-- `ai.test.ts` and `game.test.ts` each define the same test random. Move it into `test/helpers.ts`.
+  from `queries.ts`. `index.ts` re-exports the same query names as before by name, so the engine's internal helpers
+  stay private. The only additions are `BASE_TN`, `BAND_TN`, `BAND_ORDER` and `isHit`.
+- `ai.test.ts` and `game.test.ts` each define the same small test random. They are in different packages, and a
+  test importing across packages would cost more than the two lines it saves, so they stay as they are.
 
 ### PR 5: scripts and tools
 

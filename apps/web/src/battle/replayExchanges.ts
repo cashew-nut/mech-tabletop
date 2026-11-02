@@ -1,7 +1,7 @@
 // Turns the events the rules engine already logged into "exchanges" the UI can replay:
 // the dice that were rolled and what they did to the target. Nothing here rolls or decides
 // anything; it only reads state.log (and the walkers before/after) so the rules stay untouched.
-import { SURVEYOR_ID, type GameEvent, type GameState, type WalkerState } from '@brass-charter/rules';
+import { SURVEYOR_ID, isHit, type GameEvent, type GameState, type WalkerState } from '@brass-charter/rules';
 
 export interface Die {
   value: number;
@@ -40,9 +40,6 @@ export interface Exchange {
   targetAfter: WalkerState | null;
   surveyorHp?: { before: number; after: number; max: number };
 }
-
-/** The engine's hit rule, used only to colour dice the roll event already reported. */
-export const isHit = (roll: number, tn: number) => roll === 6 || (roll !== 1 && roll >= tn);
 
 const NOTE_TYPES = new Set(['shield', 'reactive', 'critical', 'location', 'destroyed', 'push', 'valve', 'hit']);
 
