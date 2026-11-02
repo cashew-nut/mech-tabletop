@@ -391,8 +391,10 @@ should be carried. Like the Paladin's siege blade they now continue the arm: eac
 
 ```sh
 python3 -I ../meshy/cut.py extract 01a1938a-aa42-71d6-beb1-9ff035b5041d.glb CLAWS   # meshy-sources/kinetic-claws/ (Meshy history, no credits)
-MODEL=seer python3 -I seer_wrist.py WORK WRIST --claws CLAWS          # WORK after split.py + joints.py; fit checks, exits 1 on a fail (~1 min)
-MODEL=seer ~/bvenv/bin/python -I seer_wrist_build.py SEER WRIST      # bake, seer_wrist.blend, renders (SEER holds seer_composite.blend)
+MODEL=seer python3 -I seer_elbow.py WORK BENT --deg 25                # bend the elbow: re-cut arm/forearm, turn the hand (checks)
+MODEL=seer python3 -I seer_wrist.py BENT WRIST --claws CLAWS          # BENT holds WORK + the bent kit, joints.json, bend.json (~1 min)
+MODEL=seer ~/bvenv/bin/python -I seer_wrist_build.py SEER WRIST --bend BENT/bend.json   # bake, seer_wrist.blend, renders
+node scripts/turn-part.mjs hand.glb hand_bent.glb BENT/bend.json      # the game hand turned with the forearm, no rebake
 node scripts/publish-composite.mjs SEER/glb seer WRIST/glb --items    # item_arc-cannon@seer, item_kinetic-claws@seer
 ```
 
@@ -402,10 +404,15 @@ node scripts/publish-composite.mjs SEER/glb seer WRIST/glb --items    # item_arc
   base, the peg matches the hand's exactly, and a straight 6 mm pull along the socket axis clears the forearm.
 - **Spear.** The Seraphim's own spear without its bulky rear housing (what stuck up behind the arm): a gilded sleeve in the
   knuckles' style runs from the half ball onto the shaft and the blade grows out of the wrist. Its angle off the forearm's
-  line is searched, smallest first; it ends up 30 degrees forward, 19 mm long, its tip 1.7 mm above the base.
+  line is searched, smallest first; with the bent elbow it sits straight on (0 degrees), scaled 0.8 to about 15 mm.
 - **Claws.** The original Meshy claws (Luke liked the Oct 31 weapon batch; no new generation), the gauntlet's rear cut off,
   the big glowing rings round the wrist ball so they go on like a glove; the ring shells are fused on with short gold struts.
-  15.6 mm long, straight down the forearm's line.
+  Scaled 0.9 to about 14 mm, straight down the forearm's line.
+- **Bent elbow (second pass, Luke's sketch review).** The arms read too long and stiff with the weapons tilted, so
+  `seer_elbow.py` turns the forearm and hand 25 degrees forward about the elbow ball's centre: the cut plane between arm
+  and forearm is re-cut on the bisector, the knuckle halves swapped across it, the peg stays on the arm bone (r 1.3 x
+  2.6 mm, 1 x 1 mm magnet) and the wall round it is checked against the unbent baseline. Only arm and forearm are rebaked;
+  the hand is the same print part, placed turned. In the game `frameTunes.reliquary/striker.wrist` moves to the bent wrist.
 - **In the game.** The items' origin is the wrist joint. `fit.hardpoints.wrist-socket` (joint wrist, no offset, `hides:
   ["hand"]`) takes them, and `fit.overrides.seer.grip.nativeAs` sends the Seer's own copies there instead of the numbered
   grip; the web hides the hand on that side (`assemble.ts`). A shared (non-Seer) copy still goes to the grip.

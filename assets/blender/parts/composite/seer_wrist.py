@@ -52,7 +52,11 @@ BODY = ("torso", "pelvis", "thigh", "shin", "foot", "pauldron", "pauldron_r", "b
 # spear: where the rear housing is cut off, along the shaft from the grip (mm, towards the tip is +)
 SPEAR_KEEP_FROM = -1.5
 SLEEVE_LEN = 3.2                           # gilded sleeve from the knuckle centre down onto the shaft
+# Luke (2026-11-02, second pass): straight on, no tilt at the wrist; the elbow is bent forward instead (seer_elbow.py), and
+# the weapons are shorter so the arm does not look too long. Only if straight on fails do the turns below get tried.
 TURNS = (0, 10, 20, 30, 40, 50, 60)        # degrees off the forearm's line, towards the front
+SPEAR_SCALE = 0.8                          # the spear's size about its root in the sleeve (it was 19 mm, now about 15)
+CLAW_SCALE = 0.9                           # the claws' size (the rings still clear the wrist ball)
 ROLLS = (0, 45, 90, 135, 180, 225, 270, 315)
 
 # claws: Meshy units (long axis x, blades at -x, rings at x 0.57..0.76 and 0.09..0.30)
@@ -143,6 +147,14 @@ def one_piece(m, label):
     return body
 
 
+def settle(item, wr):
+    """Struts added to rejoin pieces the clearance cut split off may cross it again: cut once more, keep the cap whole and
+    drop what is left loose."""
+    item = (item - wr.keep_out) + wr.cap
+    keep = [p for p in item.decompose() if p.volume() > 0.5]
+    return mf.Manifold.batch_boolean(keep, mf.OpType.Add) if len(keep) > 1 else keep[0]
+
+
 class Wrist:
     """The hand's socket at the wrist: knuckle centre, axis (from the hand into the forearm), ball radius, and the cap: the
     hand's own half ball, sleeve and peg."""
@@ -154,6 +166,12 @@ class Wrist:
         self.a = unit(j["axis"])
         jn, _, r = M.KNUCKLES["hand"]
         self.knuckle_c = np.array(layout.joint(jn), float)
+        bend = Path(work) / "bend.json"         # seer_elbow.py turned the forearm and hand about the elbow
+        if bend.exists():
+            b = json.loads(bend.read_text())
+            Rb, cb = np.array(b["R"], float), np.array(b["centre"], float)
+            self.knuckle_c = cb + Rb @ (self.knuckle_c - cb)
+        self.wrist = self.knuckle_c.copy()
         self.R = r * layout.MM
         sl_r, sl_up, sl_dn = M.SLEEVE
         R, kc = self.R, self.knuckle_c
@@ -163,7 +181,7 @@ class Wrist:
         self.cap = keep_marks(parts["hand"] ^ region)
         # what the weapon may not fill: the forearm, and the forearm's half of the ball and its sleeve swept straight out
         # (swept along the pull-off path, so the weapon also comes off in a straight pull without catching on the forearm)
-        low_end = parts["forearm"] ^ mf.Manifold.sphere(R * 5.0, 48).translate(tuple(kc))     # the wrist end, full detail
+        low_end = parts["forearm"] ^ mf.Manifold.sphere(R * 8.0, 48).translate(tuple(kc))     # the wrist end, full detail
         fa = low_end + along(R * sl_r * 1.18, 0.0, R * (sl_up + 1.0), kc, self.a)
         self.keep_out = mf.Manifold.batch_boolean([parts["forearm"]] + [fa.translate(tuple(self.a * k))
                                                   for k in np.arange(0.0, PULL + 1e-6, 0.25)], mf.OpType.Add)
@@ -206,6 +224,8 @@ def spear(work, parts, wr, others):
                   G + na * SPEAR_KEEP_FROM)
     blade = sp ^ half
     blade = sorted(blade.decompose(), key=lambda p: -p.volume())[0]     # the shaft and blade (one piece)
+    root = G + na * SPEAR_KEEP_FROM
+    blade = blade.translate(tuple(-root)).scale((SPEAR_SCALE,) * 3).translate(tuple(root))
     sl_r = wr.R * M.SLEEVE[0]
     best = None
     lite = blade.simplify(0.05)
@@ -232,7 +252,7 @@ def spear(work, parts, wr, others):
     dome = affine(dome, align(np.array([0, 0, 1.0]), d), kc + d * SLEEVE_LEN)
     bands = [along(sl_r * 1.1, z, z + 0.12 * R, kc, d) for z in (0.95 * R, 1.55 * R)]
     gilt = mark(mf.Manifold.batch_boolean([sleeve, dome] + bands, mf.OpType.Add), GOLD)
-    item = one_piece(((gilt + body) - wr.keep_out) + wr.cap, "spear")
+    item = settle(one_piece(((gilt + body) - wr.keep_out) + wr.cap, "spear"), wr)
     return item, {"turned_forward_deg": turn, "roll_deg": roll, "lowest_mm": round(low, 2), "base_top_mm": BASE_TOP,
                   "blade_axis": [round(float(v), 4) for v in d], "kept_from_grip_mm": SPEAR_KEEP_FROM}
 
@@ -244,7 +264,7 @@ def claws(cwork, wr, others):
     me.merge()
     m = mf.Manifold(me)
     m = m ^ mf.Manifold.cube((CLAW_CUT_X + 2.0, 2.0, 2.0), True).translate((CLAW_CUT_X - (CLAW_CUT_X + 2.0) / 2, 0, 0))
-    s = wr.R * CLAW_RING_OVER / CLAW_RING_R                   # print mm per Meshy unit
+    s = wr.R * CLAW_RING_OVER / CLAW_RING_R * CLAW_SCALE      # print mm per Meshy unit
     m = m.scale((s, s, s)).translate((-CLAW_KNUCKLE_X * s, 0, 0))   # knuckle centre at the origin
     best = None
     lite = m.simplify(0.05)
@@ -265,7 +285,7 @@ def claws(cwork, wr, others):
     _, turn, roll, dd, Rm, low, hit = best
     glove = affine(m, Rm, wr.knuckle_c)
     glove = one_piece(glove, "claws")          # struts to the loose rings first, so the clearance cut below trims them too
-    item = one_piece((glove - wr.keep_out) + wr.cap, "claws")
+    item = settle(one_piece((glove - wr.keep_out) + wr.cap, "claws"), wr)
     return item, {"turned_forward_deg": turn, "roll_deg": roll, "lowest_mm": round(low, 2), "meshy_to_mm": round(s, 3),
                   "length_mm": round(s * (CLAW_CUT_X + 0.953), 1), "ring_radius_mm": round(CLAW_RING_R * s, 2)}
 
@@ -306,7 +326,7 @@ def main(work, out, cwork):
         (out / "stl").mkdir(parents=True, exist_ok=True)
         (out / "stl" / f"{item}.stl").write_bytes(stl_bytes(plain(m).simplify(0.015)))
         print(item, json.dumps(info), flush=True)
-    report["origin"] = {"joint": "wrist", "print_mm": [round(v, 3) for v in layout.joint("wrist")]}
+    report["origin"] = {"joint": "wrist", "print_mm": [round(float(v), 3) for v in wr.wrist]}
     (out / "fit.json").write_text(json.dumps(report, indent=1))
     sys.exit(0 if ok else 1)
 

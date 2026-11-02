@@ -1,12 +1,15 @@
 """Bake the Seer's wrist weapons (arc spear, kinetic claws), fit them on the walker in Blender and render the review shots
 (needs bpy).
 
-    MODEL=seer ~/bvenv/bin/python -I seer_wrist_build.py PARTS WRIST [--samples 32] [--size 1024] [--no-render]
+    MODEL=seer ~/bvenv/bin/python -I seer_wrist_build.py PARTS WRIST [--bend BEND.json] [--samples 32] [--size 1024]
+                                                          [--no-render]
 
 PARTS  models/seer-composite-v2 (needs seer_composite.blend: the assembled walker, right arm the mirror of the left)
 WRIST  seer_wrist.py's output folder (work/<item>/kit/<item>.npz and that item's textures; fit.json). Writes into it:
 
   glb/<item>.glb       the game part: kit mm (print mm / 1.5), origin on the wrist joint, Blender axes like every kit part
+  with --bend (seer_elbow.py's bend.json) PARTS's hands are turned with the bent forearm; the game hand is turned without a
+  rebake by scripts/turn-part.mjs
   stl/<item>.stl       the print copy (closed, the hand's half ball and peg in place)
   textures/            the baked colour, orm and normal maps
   seer_wrist.blend     the walker with the spear on the left wrist and the claws on the right, in place of the hands (the
@@ -51,7 +54,10 @@ def bake_item(item, wrist, size_override):
     ob, info = build.build_part(item, work, wrist, mats, size_override, True)
     for m in [m for m in bpy.data.materials if m.name.startswith(("high_", "lo_"))]:
         bpy.data.materials.remove(m)
-    c = ob.location.copy()
+    # origin on the wrist (seer_wrist.py's fit.json: the bent wrist when the elbow is bent) instead of the unbent joint
+    c = Vector(json.loads((wrist / "fit.json").read_text())["origin"]["print_mm"])
+    ob.data.transform(Matrix.Translation(ob.location - c))
+    ob.location = c
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True)
     ob.location = (0, 0, 0)
@@ -90,6 +96,15 @@ def main(a):
         parent_keep(r, obj["forearm_R"])
         placed[item] = {"L": ob, "R": r}
     hands = {"L": obj["hand_L"], "R": obj["hand_R"]}
+    if "--bend" in a:       # the elbow is bent (seer_elbow.py): turn the hands about the elbow
+        b = json.loads(Path(a[a.index("--bend") + 1]).read_text())
+        Rb = Matrix([list(r) for r in b["R"]]).to_4x4()
+        cb = Vector(b["centre"])
+        turn = Matrix.Translation(cb) @ Rb @ Matrix.Translation(-cb)
+        flip = Matrix.Scale(-1, 4, (1, 0, 0))
+        for s, h in hands.items():
+            h.matrix_world = (turn if s == "L" else flip @ turn @ flip) @ h.matrix_world
+        bpy.context.view_layer.update()
     # the spare spear bore in the fist stays: the fist still works with the old held spear
 
     def fit(left, right):
