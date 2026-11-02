@@ -53,9 +53,11 @@ only needs the read-only queries.
 - `fit.ts nudgeOf` repeats the identity test that `isQuiet` already does.
 - The seeded Park-Miller random is written three times (`kit.ts` twice, `stage.ts` once). Export one `seeded()`.
 - The "dispose every mesh under a node" loop appears twice in `stage.ts`. Add one helper.
-- `WalkerModel.tsx` hard-codes `KIT_CHASSIS = ['paladin', 'brute', 'seer']`, which is the same list as
-  `fit.classes` in `model-kit.json`, and repeats the `partsOn && KIT_CHASSIS.includes(...)` test three times. Derive
-  the list once and compute the test once.
+- `WalkerModel.tsx` repeats the `partsOn && KIT_CHASSIS.includes(...)` test three times. Compute it once. The
+  `KIT_CHASSIS` list stays written out: it matches `fit.classes` today, but it means something different (classes
+  with closed composite parts).
+- `parts.ts` also re-exports `kit.ts` and `chassis.ts` symbols, so callers reach the palette and the chassis through
+  the item file. Import them from where they live, and drop the re-exports.
 
 ### PR 3: battle UI and app shell (`apps/web/src/battle`, `App.tsx`)
 
