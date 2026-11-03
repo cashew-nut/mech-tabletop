@@ -291,20 +291,10 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
     let slot = 0;
     // Card-only items (internal systems and effects) have no model: they take no mount and no hardpoint.
     const ids = (walker.loadout[loc] ?? []).filter((id) => !isCardOnly(id));
-    // An arm holds one of the class's own items (the Brute's guns are whole forearms on its one elbow socket); a second
-    // copy on the same arm is the faction's or shared model, placed like any other item.
-    const arm = loc === 'armLeft' || loc === 'armRight';
-    let ownUsed = false;
-    const libNames = ids.map((id) => {
-      if (!lib) return null;
-      const own = itemPartName(lib.items, id, c.faction, c.id);
-      if (!own?.endsWith(`@${c.id}`) || !arm) return own;
-      if (!ownUsed) {
-        ownUsed = true;
-        return own;
-      }
-      return itemPartName(lib.items, id, c.faction);
-    });
+    // Always the item's best model for this class (lance@paladin, then the faction's, then the shared one). It never
+    // depends on what else is fitted or in which order: a second item on the same arm used to fall back to the shared
+    // model, which is the pre-rework look, so the same loadout showed different weapons depending on the order it was built.
+    const libNames = ids.map((id) => (lib ? itemPartName(lib.items, id, c.faction, c.id) : null));
     const native = libNames.map((n) => !!n?.endsWith(`@${c.id}`));
     const plan = fit && height > 0 ? planLocation(c.id, loc, ids, native) : null;
     ids.forEach((id, index) => {
