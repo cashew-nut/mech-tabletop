@@ -44,6 +44,7 @@ for (const c of chassis) {
   for (const loc of LOCATIONS) {
     if (!isNonNegInt(c.slots?.[loc])) fail(w, `slots.${loc} must be a non-negative integer`);
   }
+  if (c.armItemLimit !== undefined && !isPosInt(c.armItemLimit)) fail(w, 'armItemLimit must be a positive integer');
   for (const key of ['coreFront', 'coreRear', 'arm', 'legs']) {
     if (!isPosInt(c.armour?.[key])) fail(w, `armour.${key} must be a positive integer`);
   }
@@ -180,6 +181,7 @@ function walkerCost(walker, faction, where) {
       total += Math.max(1, e.points + (faction?.pointModifiers?.[id] ?? 0));
     }
     if (used > c.slots[loc]) fail(where, `${loc} uses ${used} slots but ${c.name} has ${c.slots[loc]}`);
+    if (MOUNT_OF[loc] === 'arm' && c.armItemLimit !== undefined && items.length > c.armItemLimit) fail(where, `${loc} holds ${items.length} items but a ${c.name} arm carries ${c.armItemLimit}`);
   }
   for (const [id, n] of counts) {
     const max = equipmentById.get(id).maxPerWalker;

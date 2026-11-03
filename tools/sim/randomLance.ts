@@ -6,6 +6,7 @@ import {
   EQUIPMENT,
   RULES,
   TRAITS,
+  armItemLimit,
   mountableItems,
   nextFloat,
   validateLance,
@@ -41,6 +42,8 @@ function randomWalker(rng: Rng, name: string, budget: number, faction: Faction):
     if (item.maxPerWalker && Object.values(trial.loadout).flat().filter((x) => x === item.id).length > item.maxPerWalker) continue;
     Object.assign(w, trial);
     free[loc] -= item.slots;
+    // A single-socket arm is full after one item, whatever slots it has left.
+    if ((w.loadout[loc]?.length ?? 0) >= (armItemLimit(c, loc) ?? Infinity)) free[loc] = 0;
     if (tries >= 2 && nextFloat(rng) < 0.08) break;
   }
   if (nextFloat(rng) < 0.3) {

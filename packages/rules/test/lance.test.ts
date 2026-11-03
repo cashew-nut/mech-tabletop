@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import examples from '../../../data/lances/examples.json';
-import { getEquipment, getFaction, hasEquipment, validateLance, walkerCost, type LanceInput } from '../src';
+import { armItemLimit, getChassis, getEquipment, getFaction, hasEquipment, validateLance, validateWalker, walkerCost, type LanceInput } from '../src';
 import { lance, walker } from './helpers';
 
 describe('lance building', () => {
@@ -17,6 +17,17 @@ describe('lance building', () => {
     for (const id of ['melee-blade', 'anchor-spikes', 'jump-jets', 'overcharged-boiler', 'field-repair-rig']) {
       expect(hasEquipment(id), id).toBe(false);
     }
+  });
+
+  it('lets a Brute or Seer arm carry one item only, since it has one socket (the Paladin still takes two)', () => {
+    const errors = (w: ReturnType<typeof walker>) => validateWalker(w);
+    expect(errors(walker('B', 'brute', { armLeft: ['autocannon', 'autocannon'] })).join('\n')).toMatch(/armLeft holds 2 items/);
+    expect(errors(walker('S', 'seer', { armRight: ['arc-cannon', 'kinetic-claws'] })).join('\n')).toMatch(/armRight holds 2 items/);
+    expect(errors(walker('B', 'brute', { armLeft: ['rail-cannon'], armRight: ['industrial-claw'] }))).toEqual([]);
+    expect(errors(walker('P', 'paladin', { armLeft: ['lance', 'kinetic-shield'] }))).toEqual([]);
+    expect(armItemLimit(getChassis('brute'), 'armLeft')).toBe(1);
+    expect(armItemLimit(getChassis('brute'), 'core')).toBeUndefined();
+    expect(armItemLimit(getChassis('paladin'), 'armLeft')).toBeUndefined();
   });
 
   it('shows the Siege Blade and Arc Spear names, with the old ids', () => {

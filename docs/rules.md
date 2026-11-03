@@ -49,6 +49,9 @@ uses as many slots as listed and must fit in one location: a 2-slot weapon needs
 2 free slots. Items list which locations they may use (`arm`, `core`, `legs`, or `any`). The Carapace Gun is
 a weapon that mounts on the core.
 
+The Brute and the Seer have one socket per arm (`armItemLimit` in `data/chassis.json`), so each of their arms carries a single
+item even where the table below shows spare slots; the spare slot cannot be filled. Every other class fills its arms by slots alone.
+
 **Limits.** At most one Targeting Array per war-walker. Fitting two or more Ablative Plating on
 one war-walker gives it -1 Stride.
 
@@ -408,3 +411,9 @@ Every item that has a model must plug into a socket its walker was built with (s
 - **Missile Rack moved from the arm to the core.** It still takes 2 slots, so a Lancer (1 core slot) can no longer
   carry it. Censer and Psalm in the example lances became Sentinels.
 - Not rebalanced. The cut items' win rates are in [`balance.md`](balance.md) as they stood in v0.6.
+
+## 21. Changes after v0.7: one item per Brute or Seer arm
+
+A second item on a Brute or Seer arm had no connector on the model, so those arms now carry one item each (`armItemLimit: 1`).
+Slot counts and costs are unchanged; the builder greys out the arm once it holds an item, and `validateWalker` rejects a second
+one. Ashfall Warband's Anvil lost its second Autocannon (the lance now costs less).

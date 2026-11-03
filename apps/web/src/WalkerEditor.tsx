@@ -2,6 +2,7 @@ import { Suspense, lazy, type ReactNode } from 'react';
 import {
   CHASSIS,
   EQUIPMENT,
+  armItemLimit,
   getChassis,
   getEquipment,
   itemCost,
@@ -128,7 +129,10 @@ export function WalkerControls(props: Props) {
       <section className="doll" aria-label="Loadout">
         {(['armLeft', 'core', 'armRight', 'legs'] as Location[]).map((loc) => {
           const items = walker.loadout[loc] ?? [];
-          const free = stats.slotsFree[loc];
+          // A Brute or Seer arm has one socket: once it holds an item nothing else can be fitted, whatever slots are left.
+          const limit = armItemLimit(chassis, loc);
+          const full = limit !== undefined && items.length >= limit;
+          const free = full ? 0 : stats.slotsFree[loc];
           const options = mountableItems(loc, EQUIPMENT).filter((o) => !o.faction || o.faction === faction.id);
           return (
             <div key={loc} className={`location loc-${loc} ${free < 0 ? 'overfull' : ''}`}>
@@ -136,7 +140,7 @@ export function WalkerControls(props: Props) {
                 <h3>{LOCATION_NAMES[loc]}</h3>
                 <span className="pips" aria-label={`${stats.slotsUsed[loc]} of ${chassis.slots[loc]} slots used`}>
                   {Array.from({ length: Math.max(chassis.slots[loc], stats.slotsUsed[loc]) }, (_, i) => (
-                    <i key={i} className={i < stats.slotsUsed[loc] ? (i < chassis.slots[loc] ? 'full' : 'excess') : ''} />
+                    <i key={i} className={i < stats.slotsUsed[loc] || (full && i < chassis.slots[loc]) ? (i < chassis.slots[loc] ? 'full' : 'excess') : ''} />
                   ))}
                 </span>
               </div>
@@ -176,7 +180,7 @@ export function WalkerControls(props: Props) {
                           const atMax = !!o.maxPerWalker && countOf(o.id) >= o.maxPerWalker;
                           return (
                             <option key={o.id} value={o.id} disabled={tooBig || atMax} title={o.rules}>
-                              {o.name} · {itemCost(o.id, faction)} pts{tooBig ? ` (needs ${o.slots} slots)` : ''}
+                              {o.name} · {itemCost(o.id, faction)} pts{tooBig ? (full ? ' (arm is full)' : ` (needs ${o.slots} slots)`) : ''}
                               {atMax ? ' (limit reached)' : ''}
                             </option>
                           );

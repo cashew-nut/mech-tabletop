@@ -32,6 +32,7 @@
       "id": "brute", "name": "Brute", "faction": "foundries", "role": "Frontline", "frame": "bulwark",
       "size": 3, "points": 15, "stride": 2, "boiler": 6,
       "slots": { "armLeft": 2, "armRight": 2, "core": 2, "legs": 1 },
+      "armItemLimit": 1,
       "armour": { "coreFront": 9, "coreRear": 4, "arm": 5, "legs": 5 },
       "structure": { "core": 5, "other": 4 }
     },
@@ -53,6 +54,7 @@
       "id": "seer", "name": "Seer", "faction": "reliquary", "role": "Artillery and psychic", "frame": "striker",
       "size": 2, "points": 10, "stride": 2, "boiler": 6,
       "slots": { "armLeft": 1, "armRight": 2, "core": 3, "legs": 1 },
+      "armItemLimit": 1,
       "armour": { "coreFront": 5, "coreRear": 2, "arm": 2, "legs": 3 },
       "structure": { "core": 4, "other": 3 }
     },

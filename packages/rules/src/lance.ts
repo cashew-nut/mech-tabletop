@@ -3,6 +3,7 @@ import {
   COMMAND_COST,
   LOCATIONS,
   RULES,
+  armItemLimit,
   getChassis,
   getFaction,
   getEquipment,
@@ -95,6 +96,8 @@ export function validateWalker(walker: WalkerInput, faction: string | null = nul
     }
     const free = chassis.slots[loc as Location];
     if (used > free) errors.push(`${loc} uses ${used} slots but ${chassis.name} has ${free}`);
+    const limit = armItemLimit(chassis, loc as Location);
+    if (limit !== undefined && (items ?? []).length > limit) errors.push(`${loc} holds ${(items ?? []).length} items but a ${chassis.name} arm carries ${limit}`);
   }
   for (const [id, n] of counts) {
     const max = getEquipment(id).maxPerWalker;

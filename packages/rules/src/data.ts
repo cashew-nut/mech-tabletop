@@ -24,6 +24,9 @@ export interface ChassisDef {
   stride: number;
   boiler: number;
   slots: Record<Location, number>;
+  /** Most items one arm may carry, whatever its slots: the Brute and Seer arms have a single socket, so a second item has
+   * nothing to connect to. Absent: slots are the only limit. */
+  armItemLimit?: number;
   armour: { coreFront: number; coreRear: number; arm: number; legs: number };
   structure: { core: number; other: number };
 }
@@ -134,6 +137,11 @@ function lookup<T>(map: Map<string, T>, id: string, kind: string): T {
   const v = map.get(id);
   if (!v) throw new Error(`Unknown ${kind} "${id}"`);
   return v;
+}
+
+/** Most items a location may hold on this chassis, or undefined when only its slots limit it (see ChassisDef.armItemLimit). */
+export function armItemLimit(chassis: ChassisDef, location: Location): number | undefined {
+  return location === 'armLeft' || location === 'armRight' ? chassis.armItemLimit : undefined;
 }
 
 export const getChassis = (id: string) => lookup(chassisById, id, 'chassis');
