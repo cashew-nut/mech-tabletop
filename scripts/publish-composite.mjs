@@ -76,7 +76,9 @@ const MODELS = {
   sentinel: {
     faction: 'covenant', cls: 'sentinel', tunes: 'covenant/sentinel', itemScale: 1.4, frame: 'covenant_frame_sentinel', frameFrom: 'covenant_frame_bulwark',
     kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
-    items: {},
+    // The Carapace Gun is cut as a whole forearm on the elbow (RESEAT in sentinel.py), modelled for the left; the web hangs it
+    // on the right elbow (fit.items.carapace-gun.classes.sentinel) and hides the forearm and hand there.
+    items: { gun: ['carapace-gun@sentinel', ['elbow', [0, 0, 0]], 'elbow'] },
   },
 };
 

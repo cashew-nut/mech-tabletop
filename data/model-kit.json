@@ -815,6 +815,32 @@
         ],
         "side": "pair",
         "pair": true
+      },
+      "forearm-gun-R": {
+        "joint": "elbow",
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "side": "R",
+        "hides": [
+          "forearm",
+          "hand"
+        ]
+      },
+      "forearm-gun-L": {
+        "joint": "elbow",
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "side": "L",
+        "hides": [
+          "forearm",
+          "hand"
+        ]
       }
     },
     "overrides": {
@@ -1036,6 +1062,16 @@
             "contact": [
               "bottom"
             ]
+          }
+        },
+        "classes": {
+          "sentinel": {
+            "nativeMount": false,
+            "core": [
+              "forearm-gun-R",
+              "forearm-gun-L"
+            ],
+            "pose": {}
           }
         }
       },

@@ -238,6 +238,10 @@ console.log(summary.join('\n'));
         if (!item[kindOf[m]]?.length) fail(`model-kit.json fit.items.${e.id}`, `no hardpoints for ${m}`);
       }
       for (const k of ['arm', 'core', 'legs']) for (const hp of item[k] ?? []) if (!fit.hardpoints[hp]) fail(`model-kit.json fit.items.${e.id}`, `unknown hardpoint "${hp}"`);
+      for (const [cls, own] of Object.entries(item.classes ?? {})) {
+        if (!fit.classes[cls]) fail(`model-kit.json fit.items.${e.id}.classes`, `"${cls}" is not a class with a fit`);
+        for (const k of ['arm', 'core', 'legs']) for (const hp of own[k] ?? []) if (!fit.hardpoints[hp]) fail(`model-kit.json fit.items.${e.id}.classes.${cls}`, `unknown hardpoint "${hp}"`);
+      }
     }
     // Placement table: classes with a fit, known hardpoints, known items, sane numbers.
     const isTriple = (v) => Array.isArray(v) && v.length === 3 && v.every((n) => Number.isFinite(n));

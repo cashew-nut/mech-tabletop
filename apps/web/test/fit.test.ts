@@ -26,6 +26,19 @@ describe('equipment fit', () => {
     expect([socket.joint, socket.contact]).toEqual(['elbow', ['back']]);
   });
 
+  it("hangs the Sentinel's Carapace Gun as a forearm on the elbow while the Paladin keeps it on the shoulder", () => {
+    // A core item in the rules; the Sentinel's own copy (item_carapace-gun@sentinel) is a whole forearm, so it takes the elbow and
+    // hides the forearm and hand, and a second core item is not pushed off the elbow.
+    expect(names(planLocation('sentinel', 'core', ['carapace-gun'], [true]))).toEqual(['forearm-gun-R:R']);
+    expect(names(planLocation('sentinel', 'core', ['carapace-gun', 'carapace-gun'], [true, true]))).toEqual(['forearm-gun-R:R', 'forearm-gun-L:L']);
+    expect(hardpoint('sentinel', 'forearm-gun-R')).toMatchObject({ joint: 'elbow', hides: ['forearm', 'hand'] });
+    expect(poseOf('carapace-gun', 'forearm-gun-R', 'sentinel').contact).toEqual([]);
+    // unchanged for the Paladin: its own copy takes the numbered mount, the shared model the shoulder pod
+    expect(planLocation('paladin', 'core', ['carapace-gun'], [true])).toEqual([null]);
+    expect(names(planLocation('paladin', 'core', ['carapace-gun'], [false]))).toEqual(['shoulder-top-L:L']);
+    expect(poseOf('carapace-gun', 'shoulder-top-L', 'paladin').contact).toEqual(['bottom']);
+  });
+
   it("hangs the Brute's own claw and rail cannon on the elbow socket like its gun forearms", () => {
     // item_industrial-claw@brute and item_rail-cannon@brute are whole forearms on the same peg as the cannon arm and the gatling.
     expect(names(planLocation('brute', 'armLeft', ['industrial-claw'], [true]))).toEqual(['grip-native:L']);
