@@ -62,7 +62,18 @@ export function loadPartLibrary(renderer?: THREE.WebGLRenderer): Promise<PartLib
     }
     const loader = new GLTFLoader();
     if (renderer) loader.setKTX2Loader(new KTX2Loader().setTranscoderPath('basis/').detectSupport(renderer));
-    lib.load = async (file: string) => (await loader.loadAsync(`parts/${file}`)).scene;
+    // Anisotropic filtering keeps the fine gold filigree and panel lines of the baked parts crisp at glancing angles
+    // (three.js leaves glTF textures at 1, which smears them on a walker seen from the side or above).
+    const anisotropy = Math.min(8, renderer?.capabilities.getMaxAnisotropy() ?? 1);
+    lib.load = async (file: string) => {
+      const scene = (await loader.loadAsync(`parts/${file}`)).scene;
+      if (anisotropy > 1)
+        scene.traverse((o) => {
+          const mat = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+          for (const t of [mat?.map, mat?.normalMap, mat?.roughnessMap, mat?.metalnessMap]) if (t) t.anisotropy = anisotropy;
+        });
+      return scene;
+    };
     for (const [kind, entries] of [
       ['chassis', manifest.chassis ?? {}],
       ['items', manifest.items ?? {}],
