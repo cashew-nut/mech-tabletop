@@ -136,7 +136,7 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron. The composite Sentinel's torso carries its gorget and its pelvis the tabard.",
     "paladin": [
       "cloth",
       "collar"
@@ -149,6 +149,10 @@
       "hand"
     ],
     "seer": [
+      "cloth",
+      "collar"
+    ],
+    "sentinel": [
       "cloth",
       "collar"
     ]
@@ -487,6 +491,100 @@
           ]
         ]
       }
+    },
+    "covenant/sentinel": {
+      "$comment": "The composite Sentinel's own skeleton (mm, left side): the joints assets/blender/parts/composite/sentinel.py cut its parts on, shifted 5.5 mm in y so the feet stand near the hex centre. scripts/publish-composite.mjs writes it as covenant_frame_sentinel (a copy of the bulwark frame) so the Sentinel's parts meet at their pegs. The arm mounts follow the Paladin's, scaled for the bulwark.",
+      "joints": {
+        "pelvis": [
+          0.0,
+          -3.015,
+          27.852
+        ],
+        "spine": [
+          0.0,
+          -3.015,
+          31.331
+        ],
+        "chest": [
+          0.0,
+          -3.015,
+          35.308
+        ],
+        "neck": [
+          0.0,
+          -4.257,
+          39.284
+        ],
+        "head": [
+          0.0,
+          -5.5,
+          40.775
+        ],
+        "shoulder": [
+          10.438,
+          0.216,
+          35.308
+        ],
+        "elbow": [
+          12.426,
+          -0.033,
+          30.834
+        ],
+        "wrist": [
+          13.669,
+          -2.518,
+          22.882
+        ],
+        "hip": [
+          6.959,
+          -0.53,
+          26.361
+        ],
+        "knee": [
+          8.45,
+          -1.027,
+          15.923
+        ],
+        "ankle": [
+          11.432,
+          -0.53,
+          6.479
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            0.6,
+            -7.5,
+            -2.7
+          ]
+        ],
+        "mount_core_0": [
+          "chest",
+          [
+            6.6,
+            3.0,
+            10.2
+          ]
+        ],
+        "mount_core_1": [
+          "chest",
+          [
+            -6.6,
+            3.0,
+            10.2
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            -0.6,
+            -7.5,
+            -2.7
+          ]
+        ]
+      }
     }
   },
   "fit": {
@@ -499,6 +597,9 @@
         "scale": 1.0
       },
       "seer": {
+        "scale": 1.0
+      },
+      "sentinel": {
         "scale": 1.0
       }
     },
@@ -828,6 +929,36 @@
             0.14
           ]
         }
+      },
+      "sentinel": {
+        "grip": {
+          "offset": [
+            0.0,
+            -0.05,
+            0.17
+          ]
+        },
+        "chest-front": {
+          "offset": [
+            0,
+            0.0,
+            0.23
+          ]
+        },
+        "waist-L": {
+          "offset": [
+            0.17,
+            0.0,
+            0.12
+          ]
+        },
+        "waist-R": {
+          "offset": [
+            -0.17,
+            0.0,
+            0.12
+          ]
+        }
       }
     },
     "items": {
@@ -956,7 +1087,8 @@
           }
         }
       },
-      "seer": {}
+      "seer": {},
+      "sentinel": {}
     }
   }
 }

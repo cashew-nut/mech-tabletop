@@ -7,8 +7,8 @@ it into closed parts the way the Paladin, Brute and Seer were cut. What is speci
 * **Axes.** cut.py extract puts the figure z up, facing -Y, walker's left +X. Meshy normalised this model to z -1..1
   (sole to spire tip), so the figure's own units differ from the Paladin's; every number here is in those units. The
   figure's centre line is x = 0 (y is arbitrary: the body sits around y = 0.2).
-* **Print scale.** A bulwark is 42 kit mm to the helm top, 63 mm printed at Luke's 1.5x (docs/model-pipeline-plan.md);
-  the helm top (crest) is z = 0.69, the sole z = -1.0, so S = 42 / 1.69 kit mm per unit. The back spires reach 79 mm.
+* **Print scale.** Sole to helm top is the bulwark frame's 42 kit mm (plus the 3 mm base), so S = 42 / 1.69 kit mm per unit
+  (helm crest z = 0.69, sole z = -1.0); at Luke's 1.5x that is about 67 mm to the helm top and 79 mm to the spire tips.
 * **The gun arm.** The right arm is the Carapace Gun: the upper arm hangs and the whole forearm is a rotary gun held
   level, pointing forward. Like the Brute's gatling, the gun is cut from the figure's right, mirrored, turned and
   re-seated on the left forearm's socket (RESEAT), so it fits an elbow of either side. The body keeps one plain

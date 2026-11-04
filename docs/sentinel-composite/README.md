@@ -1,8 +1,8 @@
 # Sentinel composite parts (gate E, 2026-11-04)
 
 The Sentinel Meshy model (`meshy-sources/sentinel/model/`) cut into 12 closed parts by the shared composite pipeline
-(`MODEL=sentinel`, settings in `assets/blender/parts/composite/sentinel.py`). Printed at Luke's 1.5x scale: 63 mm to the
-helm top, about 79 mm to the spire tips. Parts, STLs, game GLBs and the .blend are in the project folder
+(`MODEL=sentinel`, settings in `assets/blender/parts/composite/sentinel.py`). Printed at Luke's 1.5x scale: about 67 mm to
+the helm top, 79 mm to the spire tips. Parts, STLs, game GLBs and the .blend are in the project folder
 `models/sentinel-composite/`; renders in `renders/sentinel-composite/` (JPEG copies here).
 
 | File | What |
@@ -42,7 +42,17 @@ All pass the strict checks (hole walls inside the part, no break-outs, mirrored 
 - **Weak joints.** The elbow (forearm, gun) has only a 2 mm peg with a 1 x 1 magnet because the upper arm is a small part (7 x 7 x 10 mm).
   The gauntlet has no magnet. A knuckle (as on the Seer) would fix both.
 - **Helm.** The Meshy helm is a thin hood, so the helm part is only 273 mm3.
-- **Not in the concept art any more.** The banner pole and flag did not come out of Meshy (too thin). Add them by hand if wanted.
-- **Not published to the game yet.** That needs a `covenant/bulwark` frame tune in `data/model-kit.json`, a Sentinel entry in
-  `scripts/publish-composite.mjs`, `parts.json` rows and the card faces.
+- **Missing from the model.** The banner pole and flag did not come out of Meshy (too thin). Add them by hand if wanted.
+## In the game
+
+Published (`node scripts/publish-composite.mjs models/sentinel-composite/glb sentinel`, then `compress-parts.mjs` with
+`KTX2_NORMAL=etc1s KTX2_BASE_Q=150`): the eleven body parts as `kit/covenant_<part>_sentinel.glb` (left side only, the web
+mirrors the right) and the class frame `covenant_frame_sentinel.glb`, 3.6 MB in all. `data/model-kit.json` has the Sentinel's
+joints (`frameTunes["covenant/sentinel"]`, shifted 5.5 mm in y so the feet stand near the hex centre), `omit.sentinel`
+(collar, cloth) and a `fit` class with the Paladin's overrides. `game.jpg` is the in-game render.
+The script strips the ".002" Blender suffix that every node in `covenant_frame_bulwark` carried (its joints were not found).
+
+Not done: the Carapace Gun forearm (`gun.glb`) is not in the game. Items still use the shared models on the Sentinel's hardpoints,
+so a Carapace Gun shows as the shoulder pod. Giving it a gun-forearm model needs fit entries like the Brute's (grip-native,
+hides forearm and hand). Card faces and `parts.json` rows were already in the repo (the Sentinel cards exist); their art is still the old render.
 - **Not test-printed.** Magnet pockets are 0.1 mm over stock size, as on the other walkers.

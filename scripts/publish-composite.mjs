@@ -1,5 +1,5 @@
 // Publish a composite walker (assets/blender/parts/composite) into the game, without Blender.
-//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer]   (DIR is the build.py output, e.g. models/paladin-composite)
+//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel]   (DIR is the build.py output, e.g. models/paladin-composite)
 //   node scripts/publish-composite.mjs DIR/glb brute --items   (only the items present in DIR/glb: the Brute's claw and rail cannon)
 //   node scripts/compress-parts.mjs <the files this prints>   (KTX2 and quantisation; see assets/blender/parts/meshy/README.md)
 //
@@ -19,6 +19,9 @@
 // own can still give frameTunes "jointsRight" (joint_shoulder_R, elbow_R and wrist_R off the mirror of the left). Its helm
 // is built on the neck knuckle but hangs on the head joint, so its vertices are moved by the difference. The arc spear and
 // the kinetic claws take the hand's place on the wrist socket, with their origin on the wrist joint (seer_wrist.py).
+// The Sentinel (covenant/bulwark, its own frame covenant_frame_sentinel copied from the bulwark frame) has the Paladin's eleven
+// body parts under covenant_<part>_sentinel and no items yet; its twelfth part, the Carapace Gun forearm, is not published
+// (it needs fit entries first, see docs/sentinel-composite/README.md).
 // The script also moves the frame's joints to the tunes.
 // The old open-shell cut is retired: its right-hand copies (the web mirrors the left), cloth and collar files go, and the
 // manifest drops them. The collar is part of the torso now (data/model-kit.json "omit" keeps the Titan collar off).
@@ -70,6 +73,11 @@ const MODELS = {
     },
     hosts: { arm: ['shoulder', ['arm_sleeve'], [0.78, 0.6, 0.25]] },
   },
+  sentinel: {
+    faction: 'covenant', cls: 'sentinel', tunes: 'covenant/sentinel', itemScale: 1.4, frame: 'covenant_frame_sentinel', frameFrom: 'covenant_frame_bulwark',
+    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    items: {},
+  },
 };
 
 const src = process.argv[2];
@@ -77,7 +85,7 @@ const itemsOnly = process.argv.includes('--items');
 const model = MODELS[process.argv[3] ?? 'paladin'];
 const itemsDir = process.argv[4];
 if (!src || !existsSync(src) || !model) {
-  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer] [ITEMS_DIR]');
+  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel] [ITEMS_DIR]');
   process.exit(1);
 }
 const { faction, cls, itemScale: ITEM_SCALE, kit: KIT, items: ITEMS, component: COMPONENT = {}, origin: ORIGIN = {} } = model;
@@ -196,6 +204,8 @@ if (model.frame && !itemsOnly) {
   if (model.frameFrom) {
     doc.getRoot().getDefaultScene().listChildren()[0].setName(model.frame);
   }
+  // covenant_frame_bulwark was exported with Blender's ".002" suffix on every node name: the joints would not be found.
+  for (const n of doc.getRoot().listNodes()) if (/\.\d{3}$/.test(n.getName())) n.setName(n.getName().replace(/\.\d{3}$/, ''));
   const nodes = new Map(doc.getRoot().listNodes().map((n) => [n.getName(), n]));
   const PARENT = { hip: 'pelvis', spine: 'pelvis', knee: 'hip', ankle: 'knee', chest: 'spine', neck: 'chest', head: 'neck', shoulder: 'chest', elbow: 'shoulder', wrist: 'elbow' };
   const SIDED = new Set(['shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle']);
