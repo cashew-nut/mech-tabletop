@@ -418,3 +418,21 @@ node scripts/publish-composite.mjs SEER/glb seer WRIST/glb --items    # item_arc
   grip; the web hides the hand on that side (`assemble.ts`). A shared (non-Seer) copy still goes to the grip.
 - **Mirrored pauldron.** `swap_parts.py` puts the re-cut torso, pauldron and back (the only parts the mirrored pauldron
   changes) into the assembled v2 walker without rebaking the rest.
+
+## The Covenant Sentinel (MODEL=sentinel)
+
+New walker from the Meshy pilot (`docs/model-pipeline-plan.md`): concept art, then one whole-body model, then this cut. Settings in
+`sentinel.py`; the figure is z -1..1 (Meshy normalised it), centre line x = 0. The model has no hands on the right: the forearm is the
+Carapace Gun, cut from the right and re-seated on the left forearm's socket like the Brute's gatling (`RESEAT`).
+
+```sh
+python3 -I ../meshy/cut.py extract model.glb WORK       # the retextured GLB, 3.8M triangles
+~/bvenv/bin/python -I repair_mesh.py WORK               # closes Meshy's pin-holes (manifold3d refuses the raw mesh)
+MODEL=sentinel ~/bvenv/bin/python -I split.py WORK      # ~1.5 min
+MODEL=sentinel ~/bvenv/bin/python -I joints.py WORK     # ~2 min
+MODEL=sentinel ~/bvenv/bin/python -I build.py WORK OUT  # ~4 min
+MODEL=sentinel ~/bvenv/bin/python -I render.py OUT      # ~4 min
+```
+
+`~/bvenv` here is a Python 3.11 venv with `pip install bpy scikit-image manifold3d xatlas scipy pillow trimesh`, and
+`apt-get install libegl1 libgl1` for Workbench. Results and notes: `docs/sentinel-composite/`.

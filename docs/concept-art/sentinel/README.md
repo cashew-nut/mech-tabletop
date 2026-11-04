@@ -24,4 +24,4 @@ mesh only (multi-image-to-3d, 20 credits, 3.8M triangles), silhouette checked ag
 (`tools/meshy/silhouette.py`: spires, pauldrons, gun, tabard and stance all match; the banner flag is not in the mesh),
 then retexture from the same three views (meshy-7, original UVs, PBR, 10 credits). `model-vs-concept.jpg` compares the result
 with the hero. Files are in the project folder `meshy-sources/sentinel/model/` (mesh task `01a1a5cf...`, textured `01a1a5d1...`).
-Total for the Sentinel: 54 credits (24 for the 2D art, 30 for the model), balance 142. Next: composite parts (Blender cut).
+Total for the Sentinel: 54 credits (24 for the 2D art, 30 for the model), balance 142. The composite cut is in `docs/sentinel-composite/`.
