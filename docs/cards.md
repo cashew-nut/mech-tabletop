@@ -41,6 +41,10 @@ Three example parts, Paladin legs, torso and arms, exist at all five tiers. Tier
 
 The Iron Covenant Sentinel (the first walker made with the Meshy-light pipeline, `docs/sentinel-composite/`) has its six body part cards at tier 1, `CV-SEN-LEG-T1` to `CV-SEN-CRB-T1`, with stats equal to its rows in `data/parts.json`. The art is rendered from the published composite parts (`sentinel-legs`, `-torso`, `-helm`, `-pauldrons`, `-arms`, `-crown-back` in `render-card-art.mjs`), the same way as the Paladin's, so each card shows the printable part with its pegs. The concept art they came from is in `docs/concept-art/sentinel/`. The Carapace Gun card still prints the Paladin's art; the Sentinel's own gun forearm (`item_carapace-gun@sentinel`) could be rendered for it later.
 
+## The Artillery's cards
+
+The Ashen Foundries Artillery (`docs/artillery-composite/`) has its six body part cards at tier 1, `AF-ART-LEG-T1` to `AF-ART-CRB-T1` (`AF` is the Ashen Foundries' code), with stats equal to its rows in `data/parts.json`. The art is rendered from the published composite parts (`artillery-legs`, `-torso`, `-helm`, `-pauldrons`, `-arms`, `-crown-back` in `render-card-art.mjs`), so each card shows the printable part with its pegs; the torso card carries the howitzer, and the helm card is the cupola dome. The parts are the model's own brown, not the in-game rust red. The concept art they came from is in `docs/concept-art/artillery/`. The Foundries have no equipment cards yet.
+
 ## Art, faces and the sheet
 
 ```sh

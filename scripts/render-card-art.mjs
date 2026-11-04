@@ -1,4 +1,4 @@
-// Render the art for the Paladin and Sentinel card faces from the existing GLBs, with the headless renderer.
+// Render the art for the Paladin, Sentinel and Artillery card faces from the existing GLBs, with the headless renderer.
 //   node scripts/render-card-art.mjs [outDir] [artKey...]      (default outDir: cards/art)
 // Body parts are the Paladin's composite kit parts, each shown alone (solo=1: closed solids, no body behind them); items are the class's own item GLB
 // on its own. Both go through apps/web/render.html (see apps/web/src/model/preview.ts). Needs Playwright installed
@@ -11,6 +11,7 @@ const H = 920; // the 55 x 46 mm art window on the card, at about 500 dpi
 const BODY = 'chassis=paladin&kit=force&plain=1&solo=1';
 const ITEM = 'plain=1&angle=35';
 const SEN = 'chassis=sentinel&kit=force&plain=1&solo=1';
+const ART = 'chassis=artillery&kit=force&plain=1&solo=1';
 const SPECS = {
   'sentinel-legs': `${SEN}&show=thigh,shin,foot&side=L&angle=30&zoom=0.78`,
   'sentinel-torso': `${SEN}&show=torso,pelvis&angle=30&zoom=0.8`,
@@ -18,6 +19,12 @@ const SPECS = {
   'sentinel-pauldrons': `${SEN}&show=pauldron&side=L&angle=20&zoom=0.85`,
   'sentinel-arms': `${SEN}&show=arm,forearm,hand&side=L&angle=25&zoom=0.78`,
   'sentinel-crown-back': `${SEN}&show=back&angle=150&zoom=0.85`,
+  'artillery-legs': `${ART}&show=thigh,shin,foot&side=L&angle=30&zoom=1.0`,
+  'artillery-torso': `${ART}&show=torso,pelvis&angle=30&zoom=1.0`,
+  'artillery-helm': `${ART}&show=helm&angle=20&zoom=1.0`,
+  'artillery-pauldrons': `${ART}&show=pauldron&side=L&angle=20&zoom=1.0`,
+  'artillery-arms': `${ART}&show=arm,forearm,hand&side=L&angle=25&zoom=1.0`,
+  'artillery-crown-back': `${ART}&show=back&angle=150&zoom=1.0`,
   'paladin-legs': `${BODY}&show=thigh,shin,foot&angle=30&zoom=1.05`,
   'paladin-torso': `${BODY}&show=torso,pelvis&angle=30&zoom=1.0`,
   'paladin-helm': `${BODY}&show=helm&angle=20&zoom=1.3`,

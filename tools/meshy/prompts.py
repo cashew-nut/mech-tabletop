@@ -20,7 +20,7 @@ def load(cls):
 HERO_VARIANTS = [
     "standing in a wide stance, three-quarter view from the front left",
     "standing braced, slightly low camera angle, three-quarter view from the front right",
-    "marching forward, three-quarter view from the front left, banner and cloth moving",
+    "advancing with a heavy stride, three-quarter view from the front left, smoke and steam drifting",
 ]
 
 def hero(f, c, variant=0):

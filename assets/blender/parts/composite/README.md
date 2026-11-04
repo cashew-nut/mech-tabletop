@@ -436,3 +436,10 @@ MODEL=sentinel ~/bvenv/bin/python -I render.py OUT      # ~4 min
 
 `~/bvenv` here is a Python 3.11 venv with `pip install bpy scikit-image manifold3d xatlas scipy pillow trimesh`, and
 `apt-get install libegl1 libgl1` for Workbench. Results and notes: `docs/sentinel-composite/`.
+
+## The Foundries Artillery (MODEL=artillery)
+
+Second new walker from the Meshy pipeline. Settings in `artillery.py`; the figure is z -0.80 to 0.80 with its centre line at x = 0.09.
+Same steps as the Sentinel (`cut.py extract`, `repair_mesh.py`, then `split.py`, `joints.py`, `build.py`, `render.py` with `MODEL=artillery`;
+about 4 + 1 + 2 + 3 minutes). Meshy's invented third leg is dropped (`REAR_LEG`), the head is a dome stand-in (`HELM`), and the howitzer
+stays with the torso. Notes: `docs/artillery-composite/`.
