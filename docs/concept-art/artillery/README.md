@@ -1,16 +1,24 @@
 # Artillery concept art (first Ashen Foundries walker, 2026-11-04)
 
-Gate B of `docs/model-pipeline-plan.md`. Made with Meshy image-to-image (nano-banana, 3 credits a roll, 9 in all) from
-`docs/style-bible/foundries.md` through `tools/meshy/prompts.py artillery hero --variant N`. References: the Artillery
-and Brute tiles and the Foundries hero from the three-faction board, and the approved Brute 3D render.
-Originals and a `source.json` per task are in the project folder `meshy-sources/artillery/hero/`; ledger rows in
-`meshy-sources/ledger.json`.
+Made with Meshy image-to-image (nano-banana, 3 credits each, 15 in all) from `docs/style-bible/foundries.md` through
+`tools/meshy/prompts.py`. References for the hero: the Artillery and Brute tiles and the Foundries hero from the
+three-faction board, and the approved Brute 3D render. Luke picked hero roll 3 (2026-11-04); the turnaround and part sheet
+were made from it alone. Originals (including the unused hero rolls 1 and 2, kept only in the project folder) and a
+`source.json` per task are in `meshy-sources/artillery/`; ledger rows are in `meshy-sources/ledger.json`.
 
 | File | What |
 | --- | --- |
-| `hero-roll1.jpg` | wide stance, front left (first prompt variant) |
-| `hero-roll2.jpg` | braced, low camera, front right |
-| `hero-roll3.jpg` | heavy stride, front left |
-| `concept-sheet.jpg` | all three side by side |
+| `concept-sheet.jpg` | hero, front, side, back and part sheet on one page |
+| `hero.jpg` | the north star (roll 3) and card hero art |
+| `turnaround-front/side/back.png` | one multi-view task, transparent background |
+| `partsheet.jpg` | the walker taken apart (card art source) |
 
-No 3D credits spent. Next, after the hero is picked: turnaround and part sheet (6 credits), then one whole-body model (30).
+Known gaps (for the Sentinel-style check before 3D):
+
+- The turnaround colours drifted from the hero's rust red to ochre and brown, with no red lacquer. The hero stays the colour
+  reference, and the retexture step can use it.
+- The "side" view is a three-quarter view with the howitzer pointing to the left.
+- The part sheet shows the torso, back and howitzer as one assembled block with the left arm; legs and one pauldron appear
+  once, not as a left and right pair; no hands.
+
+No 3D credits spent. Next, after approval: one whole-body model (mesh 20, retexture 10).
