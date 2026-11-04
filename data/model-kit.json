@@ -730,24 +730,6 @@
           0
         ]
       },
-      "shoulder-top-L": {
-        "joint": "shoulder",
-        "offset": [
-          0.0,
-          0.075,
-          -0.02
-        ],
-        "side": "L"
-      },
-      "shoulder-top-R": {
-        "joint": "shoulder",
-        "offset": [
-          0.0,
-          0.075,
-          -0.02
-        ],
-        "side": "R"
-      },
       "pelvis-ring": {
         "joint": "pelvis",
         "offset": [
@@ -984,15 +966,22 @@
       },
       "missile-rack": {
         "nativeMount": true,
-        "core": [
-          "shoulder-top-L",
-          "shoulder-top-R"
+        "arm": [
+          "shoulder-top"
         ],
         "pose": {
           "default": {
             "contact": [
               "bottom"
             ]
+          }
+        },
+        "classes": {
+          "sentinel": {
+            "nativeMount": false
+          },
+          "paladin": {
+            "nativeMount": false
           }
         }
       },

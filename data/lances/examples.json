@@ -54,8 +54,10 @@
               "kinetic-shield"
             ],
             "core": [
-              "missile-rack",
               "targeting-array"
+            ],
+            "armLeft": [
+              "missile-rack"
             ]
           }
         }
@@ -248,7 +250,7 @@
             "trait": null
           },
           "loadout": {
-            "core": [
+            "armLeft": [
               "missile-rack"
             ]
           }

@@ -2,7 +2,7 @@
   "$comment": "Loadouts for the equipment fit review (scripts/fit-sheets.mjs, scripts/fit-check.mjs). Only the classes with full models, and only items that have a model (card-only items show nothing).",
   "paladin": {
     "weapons": { "armRight": ["lance", "kinetic-shield"], "armLeft": ["lance", "carapace-gun"] },
-    "rack": { "armRight": ["lance"], "armLeft": ["kinetic-shield"], "core": ["missile-rack"] },
+    "rack": { "armRight": ["lance", "missile-rack"], "armLeft": ["kinetic-shield", "missile-rack"] },
     "shield": { "armRight": ["kinetic-shield", "carapace-gun"], "armLeft": ["kinetic-shield", "lance"] }
   },
   "brute": {

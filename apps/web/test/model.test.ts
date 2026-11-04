@@ -65,7 +65,7 @@ describe('walker models', () => {
 
     it(`${c.id} exports an STL with every slot filled`, () => {
       const loadout: WalkerInput['loadout'] = {};
-      for (const loc of LOCATIONS) loadout[loc] = Array(c.slots[loc]).fill(loc === 'core' ? 'missile-rack' : 'autocannon');
+      for (const loc of LOCATIONS) loadout[loc] = Array(c.slots[loc]).fill(loc === 'core' ? 'soul-lantern' : 'autocannon');
       const walker = { name: c.id, chassis: c.id, driver: { command: 0, trait: null }, loadout } as WalkerInput;
       const bytes = stlBytes(buildWalkerModel(walker, '#1f5c63'));
       expect(bytes.byteLength).toBeGreaterThan(10_000);

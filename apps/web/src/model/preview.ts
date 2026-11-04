@@ -17,7 +17,7 @@ import { createStage, type Backdrop } from './stage';
 
 const SHOWCASE: Record<string, WalkerInput['loadout']> = {
   lancer: { armRight: ['lance'], armLeft: ['carapace-gun'] },
-  sentinel: { armRight: ['kinetic-shield'], armLeft: ['carapace-gun'], core: ['missile-rack'] },
+  sentinel: { armRight: ['carapace-gun'], armLeft: ['missile-rack'] },
   paladin: { armRight: ['lance'], armLeft: ['kinetic-shield', 'carapace-gun'] },
   scavenger: { armRight: ['autocannon'], armLeft: ['industrial-claw'] },
   brute: { armRight: ['autocannon', 'autocannon'], armLeft: ['industrial-claw'] },

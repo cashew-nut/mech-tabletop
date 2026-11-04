@@ -294,7 +294,7 @@ the Trial ends at once and the other side wins.
 | Faction | Class | Role | Size | Pts | Stride | Boiler | Slots (arm / arm / core / legs) | Armour (core front / rear / arm / legs) | Structure (core / other) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Covenant | Lancer | Assault | 2 | 16 | 3 | 5 | 2 / 2 / 1 / 1 | 6 / 3 / 3 / 3 | 4 / 3 |
-| Covenant | Sentinel | Defence and support | 3 | 19 | 2 | 6 | 1 / 1 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
+| Covenant | Sentinel | Defence and support | 3 | 19 | 2 | 6 | 2 / 2 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
 | Covenant | Paladin | Heavy melee | 4 | 22 | 2 | 6 | 2 / 2 / 2 / 1 | 10 / 5 / 5 / 6 | 6 / 5 |
 | Foundries | Scavenger | Utility and recon | 1 | 6 | 3 | 4 | 1 / 1 / 2 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
 | Foundries | Brute | Frontline | 3 | 15 | 2 | 6 | 2 / 2 / 2 / 1 | 9 / 4 / 5 / 5 | 5 / 4 |
@@ -425,4 +425,7 @@ forearm on the elbow, replacing the forearm and hand, so an arm holds it in plac
 shoulder of the arm that holds it. Saved lances move a core Carapace Gun to the first arm with room, or leave it in the core with a
 validation error when both arms are full. The Warden example now carries it on the left arm. No cost changed.
 
-The Missile Rack stays on the core: it takes 2 slots and a Sentinel arm has 1, so it cannot move to an arm without a rules change.
+The Sentinel's arms now have 2 slots each (was 1), at the same 19 points, and the Missile Rack (2 slots, 6 points) also mounts on an arm
+instead of the core. On the model it is one launcher pod on the shoulder of the arm that holds it, so a Sentinel carries up to two. A Lancer
+arm already has 2 slots; a Scavenger's has 1 and cannot hold it. A Sentinel can fit a Rack or a Gun plus a Siege Blade on an arm, and
+the example lances Censer and Psalm carry their Rack on the left arm. The Sentinel's body-part card (`CV-SEN-ARM-T1`) shows 2 slots per arm.

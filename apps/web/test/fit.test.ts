@@ -72,14 +72,16 @@ describe('equipment fit', () => {
   });
 
   it('spreads core items over different hardpoints, away from the neck', () => {
-    const plan = names(planLocation('seer', 'core', ['missile-rack', 'missile-rack', 'soul-lantern', 'soul-lantern']));
-    expect(plan).toEqual(['shoulder-top-L:L', 'shoulder-top-R:R', 'waist-L', 'waist-R']);
+    const plan = names(planLocation('seer', 'core', ['soul-lantern', 'soul-lantern', 'soul-lantern']));
+    expect(plan).toEqual(['waist-L', 'waist-R', null]);
     expect(new Set(plan).size).toBe(plan.length);
   });
 
-  it('lets the Paladin\'s own shield, rack and gun plug into their numbered mounts', () => {
-    for (const id of ['carapace-gun', 'missile-rack', 'kinetic-shield']) expect(FIT.items[id].nativeMount, id).toBe(true);
-    expect(planLocation('paladin', 'core', ['missile-rack'], [true])).toEqual([null]);
+  it('lets the Paladin\'s own shield plug into its numbered mount, and sits its rack and gun pods on the shoulder of their arm', () => {
+    expect(FIT.items['kinetic-shield'].nativeMount).toBe(true);
+    // arm weapons: the Paladin's and the Sentinel's own pods go through the shoulder hardpoint, not a numbered mount
+    for (const cls of ['paladin', 'sentinel'])
+      expect(names(planLocation(cls, 'armRight', ['missile-rack'], [true])), cls).toEqual(['shoulder-top:R']);
     expect(planLocation('paladin', 'armLeft', ['kinetic-shield'], [true])).toEqual([null]);
     // the faction's shared copy still goes through the hardpoints
     expect(names(planLocation('paladin', 'armLeft', ['kinetic-shield'], [false]))).toEqual(['bracer:L']);

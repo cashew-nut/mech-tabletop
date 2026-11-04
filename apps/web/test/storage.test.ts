@@ -19,12 +19,12 @@ describe('saved lances', () => {
       faction: 'covenant',
       walkers: [
         walker('sentinel', { core: ['carapace-gun', 'reactive-shell'] }),
-        walker('sentinel', { armLeft: ['lance'], armRight: ['lance'], core: ['carapace-gun'] }),
+        walker('sentinel', { armLeft: ['lance', 'lance'], armRight: ['lance', 'lance'], core: ['carapace-gun'] }),
       ],
     } as unknown as LanceInput;
     const [free, full] = migrateLance(saved).walkers;
     expect(free.loadout).toEqual({ core: ['reactive-shell'], armLeft: ['carapace-gun'] });
-    expect(full.loadout).toEqual({ armLeft: ['lance'], armRight: ['lance'], core: ['carapace-gun'] });
+    expect(full.loadout).toEqual({ armLeft: ['lance', 'lance'], armRight: ['lance', 'lance'], core: ['carapace-gun'] });
   });
 
   it('drops a cut item reached through an old rename', () => {
