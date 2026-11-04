@@ -1,6 +1,6 @@
 // Build the printable card sheet from data/cards.json and the art in cards/art.
 //   node scripts/build-card-sheet.mjs [facesDir]
-// Writes cards/sheet.html (A4, 3 x 3 cards of 63 x 88 mm per page, with crop marks) and cards/paladin-cards.pdf.
+// Writes cards/sheet.html (A4, 3 x 3 cards of 63 x 88 mm per page, with crop marks) and cards/cards.pdf.
 // With facesDir, also saves each card face as a 300 dpi PNG named by its print id.
 // Render the art first with scripts/render-card-art.mjs. Needs Playwright installed globally.
 import { createRequire } from 'node:module';
@@ -72,7 +72,7 @@ function face(c) {
 </article>`;
 }
 
-// Tier 1 cards first (the ten faces), then the tier ladders.
+// Tier 1 cards first (every class's faces), then the tier ladders.
 const ordered = [...cards.filter((c) => c.tier === 1), ...cards.filter((c) => c.tier > 1)];
 const pages = [];
 for (let i = 0; i < ordered.length; i += 9) pages.push(ordered.slice(i, i + 9));
@@ -124,11 +124,11 @@ const marks = (() => {
 })();
 
 const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Brass Charter: Paladin card sheet</title><style>${css}</style></head><body>
+<html lang="en"><head><meta charset="utf-8"><title>Brass Charter: card sheet</title><style>${css}</style></head><body>
 ${pages
   .map(
     (p, i) => `<section class="page">${marks}<div class="grid">${p.map(face).join('\n')}</div>
-<div class="cap">Brass Charter · Paladin cards · page ${i + 1}/${pages.length} · 63×88 mm, print at 100% · cut on the marks · tier 2–5 stats are placeholders</div></section>`,
+<div class="cap">Brass Charter · Cards · page ${i + 1}/${pages.length} · 63×88 mm, print at 100% · cut on the marks · tier 2–5 stats are placeholders</div></section>`,
   )
   .join('\n')}
 </body></html>
@@ -141,8 +141,8 @@ try {
   await page.goto(`file://${join(root, 'cards/sheet.html')}`);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
-  await page.pdf({ path: join(root, 'cards/paladin-cards.pdf'), format: 'A4', printBackground: true, preferCSSPageSize: true });
-  console.log('cards/paladin-cards.pdf');
+  await page.pdf({ path: join(root, 'cards/cards.pdf'), format: 'A4', printBackground: true, preferCSSPageSize: true });
+  console.log('cards/cards.pdf');
   if (facesDir) {
     mkdirSync(resolve(facesDir), { recursive: true });
     for (const el of await page.locator('article.card').all()) {
