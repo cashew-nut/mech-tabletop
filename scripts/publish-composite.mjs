@@ -1,5 +1,5 @@
 // Publish a composite walker (assets/blender/parts/composite) into the game, without Blender.
-//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel]   (DIR is the build.py output, e.g. models/paladin-composite)
+//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery]   (DIR is the build.py output, e.g. models/paladin-composite)
 //   node scripts/publish-composite.mjs DIR/glb brute --items   (only the items present in DIR/glb: the Brute's claw and rail cannon)
 //   node scripts/compress-parts.mjs <the files this prints>   (KTX2 and quantisation; see assets/blender/parts/meshy/README.md)
 //
@@ -80,6 +80,12 @@ const MODELS = {
     // on the right elbow (fit.items.carapace-gun.classes.sentinel) and hides the forearm and hand there.
     items: { gun: ['carapace-gun@sentinel', ['elbow', [0, 0, 0]], 'elbow'] },
   },
+  artillery: {
+    // Its own frame, a copy of the bulwark frame with the joints the parts were cut on (like the Brute's). The howitzer is part of the torso.
+    faction: 'foundries', cls: 'artillery', tunes: 'foundries/artillery', itemScale: 1.4, frame: 'foundries_frame_artillery', frameFrom: 'foundries_frame_bulwark',
+    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    items: {},
+  },
 };
 
 const src = process.argv[2];
@@ -87,7 +93,7 @@ const itemsOnly = process.argv.includes('--items');
 const model = MODELS[process.argv[3] ?? 'paladin'];
 const itemsDir = process.argv[4];
 if (!src || !existsSync(src) || !model) {
-  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel] [ITEMS_DIR]');
+  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery] [ITEMS_DIR]');
   process.exit(1);
 }
 const { faction, cls, itemScale: ITEM_SCALE, kit: KIT, items: ITEMS, component: COMPONENT = {}, origin: ORIGIN = {} } = model;

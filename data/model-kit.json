@@ -136,7 +136,7 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron. The composite Sentinel's torso carries its gorget and its pelvis the tabard.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron. The composite Sentinel's torso carries its gorget and its pelvis the tabard. The composite Artillery's howitzer is part of its torso.",
     "paladin": [
       "cloth",
       "collar"
@@ -153,6 +153,10 @@
       "collar"
     ],
     "sentinel": [
+      "cloth",
+      "collar"
+    ],
+    "artillery": [
       "cloth",
       "collar"
     ]
@@ -397,9 +401,21 @@
       },
       "jointsRight": {
         "$comment": "The Meshy torso is turned: its right side sits about 0.9 mm (kit) further back than its left, so the mirrored right pauldron looked pushed forward. The right shoulder, elbow and wrist (the left's mirror) move back by that much.",
-        "shoulder": [-5.95, -0.488, 27.99],
-        "elbow": [-7.041, -0.092, 25.213],
-        "wrist": [-8.727, -3.067, 20.85]
+        "shoulder": [
+          -5.95,
+          -0.488,
+          27.99
+        ],
+        "elbow": [
+          -7.041,
+          -0.092,
+          25.213
+        ],
+        "wrist": [
+          -8.727,
+          -3.067,
+          20.85
+        ]
       },
       "mounts": {
         "mount_armLeft_0": [
@@ -591,6 +607,100 @@
           ]
         ]
       }
+    },
+    "foundries/artillery": {
+      "$comment": "The composite Artillery's own skeleton (mm, left side): the joints assets/blender/parts/composite/artillery.py cut its parts on, shifted 4.35 mm in y so the feet stand near the hex centre. scripts/publish-composite.mjs writes it as foundries_frame_artillery (a copy of the bulwark frame) so the Artillery's parts meet at their pegs. The arm mounts follow the Sentinel's (a forearm held level and pointing forward).",
+      "joints": {
+        "pelvis": [
+          0.0,
+          7.581,
+          25.076
+        ],
+        "spine": [
+          0.0,
+          7.581,
+          28.953
+        ],
+        "chest": [
+          0.0,
+          7.581,
+          38.645
+        ],
+        "neck": [
+          0.0,
+          6.935,
+          43.168
+        ],
+        "head": [
+          0.0,
+          6.935,
+          44.784
+        ],
+        "shoulder": [
+          13.892,
+          11.458,
+          37.999
+        ],
+        "elbow": [
+          19.708,
+          11.458,
+          28.953
+        ],
+        "wrist": [
+          19.708,
+          -0.496,
+          25.722
+        ],
+        "hip": [
+          9.692,
+          8.227,
+          21.845
+        ],
+        "knee": [
+          15.185,
+          -0.496,
+          14.414
+        ],
+        "ankle": [
+          17.123,
+          -0.496,
+          7.63
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            0.6,
+            -7.5,
+            -2.7
+          ]
+        ],
+        "mount_core_0": [
+          "chest",
+          [
+            6.6,
+            3.0,
+            10.2
+          ]
+        ],
+        "mount_core_1": [
+          "chest",
+          [
+            -6.6,
+            3.0,
+            10.2
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            -0.6,
+            -7.5,
+            -2.7
+          ]
+        ]
+      }
     }
   },
   "fit": {
@@ -606,6 +716,9 @@
         "scale": 1.0
       },
       "sentinel": {
+        "scale": 1.0
+      },
+      "artillery": {
         "scale": 1.0
       }
     },
@@ -960,6 +1073,36 @@
             0.12
           ]
         }
+      },
+      "artillery": {
+        "grip": {
+          "offset": [
+            0.0,
+            -0.05,
+            0.17
+          ]
+        },
+        "chest-front": {
+          "offset": [
+            0,
+            0.0,
+            0.23
+          ]
+        },
+        "waist-L": {
+          "offset": [
+            0.17,
+            0.0,
+            0.12
+          ]
+        },
+        "waist-R": {
+          "offset": [
+            -0.17,
+            0.0,
+            0.12
+          ]
+        }
       }
     },
     "items": {
@@ -1110,12 +1253,17 @@
         },
         "grip-native": {
           "*": {
-            "offset": [0, 0.04, 0]
+            "offset": [
+              0,
+              0.04,
+              0
+            ]
           }
         }
       },
       "seer": {},
-      "sentinel": {}
+      "sentinel": {},
+      "artillery": {}
     }
   }
 }

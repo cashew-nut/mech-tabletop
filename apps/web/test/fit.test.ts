@@ -7,8 +7,8 @@ const names = (plan: ReturnType<typeof planLocation>) => plan.map((p) => p?.map(
 
 describe('equipment fit', () => {
   it('only the built classes use hardpoints', () => {
-    for (const id of ['paladin', 'brute', 'seer', 'sentinel']) expect(fitClass(id), id).not.toBeNull();
-    for (const id of ['lancer', 'scavenger', 'artillery', 'wraith', 'goliath']) expect(fitClass(id), id).toBeNull();
+    for (const id of ['paladin', 'brute', 'seer', 'sentinel', 'artillery']) expect(fitClass(id), id).not.toBeNull();
+    for (const id of ['lancer', 'scavenger', 'wraith', 'goliath']) expect(fitClass(id), id).toBeNull();
   });
 
   it('puts a second weapon after a two-slot weapon on the forearm, not the shoulder', () => {

@@ -21,4 +21,10 @@ Known gaps (for the Sentinel-style check before 3D):
 - The part sheet shows the torso, back and howitzer as one assembled block with the left arm; legs and one pauldron appear
   once, not as a left and right pair; no hands.
 
-No 3D credits spent. Next, after approval: one whole-body model (mesh 20, retexture 10).
+## 3D model (2026-11-04)
+
+Luke approved the turnaround ("build it and put it in the game"); one whole-body model from the three views (front first):
+mesh only (multi-image-to-3d, 20 credits, 2.9M triangles), silhouette checked against the turnaround
+(`tools/meshy/silhouette.py`: howitzer, stacks, arms and stance match), then retexture from the same three views (meshy-7, 10 credits).
+Files: project folder `meshy-sources/artillery/model/` (mesh task `01a1a802...`, textured `01a1a804...`). Total for the Artillery: 45 credits
+(15 for the 2D art, 30 for the model), balance 97. The composite cut is in `docs/artillery-composite/`.
