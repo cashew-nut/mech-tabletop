@@ -816,27 +816,14 @@
         "side": "pair",
         "pair": true
       },
-      "forearm-gun-R": {
+      "forearm-gun": {
         "joint": "elbow",
         "offset": [
           0.0,
           0.0,
           0.0
         ],
-        "side": "R",
-        "hides": [
-          "forearm",
-          "hand"
-        ]
-      },
-      "forearm-gun-L": {
-        "joint": "elbow",
-        "offset": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "side": "L",
+        "side": "loc",
         "hides": [
           "forearm",
           "hand"
@@ -1053,9 +1040,8 @@
       },
       "carapace-gun": {
         "nativeMount": true,
-        "core": [
-          "shoulder-top-L",
-          "shoulder-top-R"
+        "arm": [
+          "shoulder-top"
         ],
         "pose": {
           "default": {
@@ -1067,11 +1053,16 @@
         "classes": {
           "sentinel": {
             "nativeMount": false,
-            "core": [
-              "forearm-gun-R",
-              "forearm-gun-L"
+            "arm": [
+              "forearm-gun"
             ],
             "pose": {}
+          },
+          "paladin": {
+            "nativeMount": false,
+            "arm": [
+              "shoulder-top"
+            ]
           }
         }
       },

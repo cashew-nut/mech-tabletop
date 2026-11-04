@@ -1,6 +1,6 @@
 // Per-browser persistence for lances. Every access is guarded because storage
 // can be unavailable (private windows, blocked site data).
-import { CHASSIS, hasEquipment, type LanceInput } from '@brass-charter/rules';
+import { armItemLimit, CHASSIS, getEquipment, hasEquipment, type LanceInput, type Location } from '@brass-charter/rules';
 
 const DRAFT_KEY = 'brass-charter:draft';
 const SAVED_KEY = 'brass-charter:saved';
@@ -50,8 +50,33 @@ const withoutCutItems = <T extends { walkers: LanceInput['walkers'] }>(lance: T)
   })),
 });
 
+// The Carapace Gun was a core weapon before it became an arm weapon (docs/rules.md, v0.8). A saved walker keeps it by moving it
+// to the first arm with room; with no room it stays in the core and shows as an error to fix.
+const withArmGuns = <T extends { walkers: LanceInput['walkers'] }>(lance: T): T => ({
+  ...lance,
+  walkers: lance.walkers.map((w) => {
+    const chassis = CHASSIS.find((c) => c.id === w.chassis);
+    const guns = (w.loadout.core ?? []).filter((id) => id === 'carapace-gun');
+    if (!chassis || !guns.length) return w;
+    const loadout = { ...w.loadout, core: (w.loadout.core ?? []).filter((id) => id !== 'carapace-gun') };
+    let left = 0;
+    for (const loc of ['armLeft', 'armRight'] as Location[]) {
+      for (; left < guns.length; left++) {
+        const held = loadout[loc] ?? [];
+        const used = held.reduce((n, id) => n + (hasEquipment(id) ? getEquipment(id).slots : 0), 0);
+        if (used + getEquipment('carapace-gun').slots > chassis.slots[loc] || held.length >= (armItemLimit(chassis, loc) ?? Infinity)) break;
+        loadout[loc] = [...held, 'carapace-gun'];
+      }
+    }
+    loadout.core = [...loadout.core, ...guns.slice(left)];
+    return { ...w, loadout };
+  }),
+});
+
 /** Bring an old Company lance up to the faction rules. Gear from another faction stays and shows as an error to fix. */
-export function migrateLance(saved: LanceInput & { company?: string }): LanceInput {
+export const migrateLance = (saved: LanceInput & { company?: string }): LanceInput => withArmGuns(migrateFaction(saved));
+
+function migrateFaction(saved: LanceInput & { company?: string }): LanceInput {
   const lance = withoutCutItems(saved);
   if (lance.faction) return lance;
   const faction = FACTION_OF_COMPANY[lance.company ?? ''] ?? 'foundries';

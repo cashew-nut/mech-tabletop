@@ -12,8 +12,10 @@
             "trait": null
           },
           "loadout": {
+            "armLeft": [
+              "carapace-gun"
+            ],
             "core": [
-              "carapace-gun",
               "reactive-shell"
             ]
           }

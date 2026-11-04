@@ -26,17 +26,17 @@ describe('equipment fit', () => {
     expect([socket.joint, socket.contact]).toEqual(['elbow', ['back']]);
   });
 
-  it("hangs the Sentinel's Carapace Gun as a forearm on the elbow while the Paladin keeps it on the shoulder", () => {
-    // A core item in the rules; the Sentinel's own copy (item_carapace-gun@sentinel) is a whole forearm, so it takes the elbow and
-    // hides the forearm and hand, and a second core item is not pushed off the elbow.
-    expect(names(planLocation('sentinel', 'core', ['carapace-gun'], [true]))).toEqual(['forearm-gun-R:R']);
-    expect(names(planLocation('sentinel', 'core', ['carapace-gun', 'carapace-gun'], [true, true]))).toEqual(['forearm-gun-R:R', 'forearm-gun-L:L']);
-    expect(hardpoint('sentinel', 'forearm-gun-R')).toMatchObject({ joint: 'elbow', hides: ['forearm', 'hand'] });
-    expect(poseOf('carapace-gun', 'forearm-gun-R', 'sentinel').contact).toEqual([]);
-    // unchanged for the Paladin: its own copy takes the numbered mount, the shared model the shoulder pod
-    expect(planLocation('paladin', 'core', ['carapace-gun'], [true])).toEqual([null]);
-    expect(names(planLocation('paladin', 'core', ['carapace-gun'], [false]))).toEqual(['shoulder-top-L:L']);
-    expect(poseOf('carapace-gun', 'shoulder-top-L', 'paladin').contact).toEqual(['bottom']);
+  it("hangs the Carapace Gun on the arm: a forearm on the Sentinel's elbow, a shoulder pod on the Paladin", () => {
+    // An arm item in the rules. The Sentinel's own copy (item_carapace-gun@sentinel) is a whole forearm, so it takes the elbow of
+    // whichever arm holds it and hides the forearm and hand there.
+    expect(names(planLocation('sentinel', 'armLeft', ['carapace-gun'], [true]))).toEqual(['forearm-gun:L']);
+    expect(names(planLocation('sentinel', 'armRight', ['carapace-gun'], [true]))).toEqual(['forearm-gun:R']);
+    expect(hardpoint('sentinel', 'forearm-gun')).toMatchObject({ joint: 'elbow', side: 'loc', hides: ['forearm', 'hand'] });
+    expect(poseOf('carapace-gun', 'forearm-gun', 'sentinel').contact).toEqual([]);
+    // the Paladin's pod sits on the shoulder of the arm that holds it
+    expect(names(planLocation('paladin', 'armLeft', ['carapace-gun'], [true]))).toEqual(['shoulder-top:L']);
+    expect(names(planLocation('paladin', 'armRight', ['carapace-gun'], [false]))).toEqual(['shoulder-top:R']);
+    expect(poseOf('carapace-gun', 'shoulder-top', 'paladin').contact).toEqual(['bottom']);
   });
 
   it("hangs the Brute's own claw and rail cannon on the elbow socket like its gun forearms", () => {
@@ -72,14 +72,14 @@ describe('equipment fit', () => {
   });
 
   it('spreads core items over different hardpoints, away from the neck', () => {
-    const plan = names(planLocation('seer', 'core', ['carapace-gun', 'missile-rack', 'soul-lantern', 'soul-lantern']));
+    const plan = names(planLocation('seer', 'core', ['missile-rack', 'missile-rack', 'soul-lantern', 'soul-lantern']));
     expect(plan).toEqual(['shoulder-top-L:L', 'shoulder-top-R:R', 'waist-L', 'waist-R']);
     expect(new Set(plan).size).toBe(plan.length);
   });
 
   it('lets the Paladin\'s own shield, rack and gun plug into their numbered mounts', () => {
     for (const id of ['carapace-gun', 'missile-rack', 'kinetic-shield']) expect(FIT.items[id].nativeMount, id).toBe(true);
-    expect(planLocation('paladin', 'core', ['missile-rack', 'carapace-gun'], [true, true])).toEqual([null, null]);
+    expect(planLocation('paladin', 'core', ['missile-rack'], [true])).toEqual([null]);
     expect(planLocation('paladin', 'armLeft', ['kinetic-shield'], [true])).toEqual([null]);
     // the faction's shared copy still goes through the hardpoints
     expect(names(planLocation('paladin', 'armLeft', ['kinetic-shield'], [false]))).toEqual(['bracer:L']);

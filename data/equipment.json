@@ -41,7 +41,7 @@
       "faction": "covenant",
       "category": "weapon",
       "mount": [
-        "core"
+        "arm"
       ],
       "slots": 1,
       "pressure": 2,
@@ -55,7 +55,7 @@
       "tags": [
         "pierce"
       ],
-      "rules": "Mounts on the core, not an arm. No ammo. Pierce 1."
+      "rules": "Arm weapon. No ammo. Pierce 1."
     },
     {
       "id": "missile-rack",
