@@ -395,6 +395,12 @@
           5.975
         ]
       },
+      "jointsRight": {
+        "$comment": "The Meshy torso is turned: its right side sits about 0.9 mm (kit) further back than its left, so the mirrored right pauldron looked pushed forward. The right shoulder, elbow and wrist (the left's mirror) move back by that much.",
+        "shoulder": [-5.95, -0.488, 27.99],
+        "elbow": [-7.041, -0.092, 25.213],
+        "wrist": [-8.727, -3.067, 20.85]
+      },
       "mounts": {
         "mount_armLeft_0": [
           "wrist",
@@ -1100,6 +1106,11 @@
         "shoulder-top": {
           "*": {
             "scale": 0.7
+          }
+        },
+        "grip-native": {
+          "*": {
+            "offset": [0, 0.04, 0]
           }
         }
       },
