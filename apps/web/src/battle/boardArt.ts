@@ -550,3 +550,14 @@ export function towerFooting(material: THREE.Material, apothem: number, sides: 8
   });
   return g;
 }
+
+/** Free the GPU copies of everything this module keeps between boards: the shared geometries, materials and textures. They are
+ * uploaded again if another board is shown later. Call it when a board is torn down. */
+export function disposeBoardArt() {
+  const shared: Array<{ dispose: () => void } | null> = [
+    box, cone, hexPrism, rock, tube, scorchGeo, emberMat, scorchMat, bannerBrass, wallTex, bloomTex, bannerTex,
+    ...mats.values(),
+    ...wreckMats.values(),
+  ];
+  for (const r of shared) r?.dispose();
+}

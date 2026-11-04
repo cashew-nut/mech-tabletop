@@ -12,7 +12,8 @@ import { SURVEYOR_ID, hexKey, type GameState, type Hex } from '@brass-charter/ru
 import { HEX_SIZE, hexCentre, type Highlight } from './HexMap';
 import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
 import { WalkerLibrary } from './boardWalkers';
-import { BANNER_CLOTH, PUFF, chimneySmoke, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, objectiveBanner, rippleBanner, rndFrom, rubble, ruinWall, stoneTexture, tower, wreck, type MarkerKind } from './boardArt';
+import { disposeAll, disposeTree, materialResources } from './boardDispose';
+import { BANNER_CLOTH, PUFF, chimneySmoke, disposeBoardArt, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, objectiveBanner, rippleBanner, rndFrom, rubble, ruinWall, stoneTexture, tower, wreck, type MarkerKind } from './boardArt';
 
 // Render scale: 1 draws at full resolution so the walker textures stay crisp (?pixel=2 gives the old half-resolution look).
 const PIXEL = Number(new URLSearchParams(location.search).get('pixel') ?? 1);
@@ -180,7 +181,9 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     const scene = new THREE.Scene();
     // A soft studio environment so the walkers' metal and gilding catch light as they do in the Lance Ledger.
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const roomEnv = new RoomEnvironment();
+    const envTarget = pmrem.fromScene(roomEnv, 0.04);
+    scene.environment = envTarget.texture;
     scene.environmentIntensity = 0.45;
     scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 0.5));
     const sun = new THREE.DirectionalLight(0xffd9a0, 1.4);
@@ -509,10 +512,28 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp);
       controls.dispose();
+      api.current = null;
+      // Free the GPU memory. The scene holds the tiles, props and live walkers; the rest is reached by hand.
+      disposeTree(scene);
+      walkerLib.dispose();
+      kit?.dispose();
+      disposeBoardArt();
+      disposeAll([
+        hexShape,
+        box,
+        planeGeo,
+        ...Object.values(markerTextures),
+        ...Object.values(tileMats).flatMap((list) => list.flatMap(materialResources)),
+        envTarget,
+        roomEnv,
+        pmrem,
+        sun,
+        rim,
+      ]);
       composer.dispose();
       renderer.dispose();
+      renderer.forceContextLoss(); // otherwise the browser keeps the WebGL context until it next collects garbage, and caps how many may be open
       canvas.remove();
-      api.current = null;
     };
   }, []);
 

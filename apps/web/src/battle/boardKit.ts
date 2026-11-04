@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { towerFooting } from './boardArt';
+import { disposeAll, disposeTree } from './boardDispose';
 
 export const KIT_PIECES = [
   'tile_plain_1', 'tile_plain_2', 'tile_cracked_3', 'tile_slab_4', 'tile_moss_5', 'tile_rough_6', 'tile_rubble_7', 'tile_plate_8', 'tile_scorched_9',
@@ -24,6 +25,8 @@ export interface Kit {
   make: (piece: KitPiece) => THREE.Group;
   /** Whether the piece loaded (hero pieces are optional). */
   has: (piece: KitPiece) => boolean;
+  /** Free the GPU copies of every piece. The kit stays usable: they are uploaded again on the next render. */
+  dispose: () => void;
 }
 
 /** Grain, pitting and hairline cracks over the baked vertex colours: a generated granite texture projected from three axes
@@ -150,7 +153,15 @@ export function loadBoardKit(): Promise<Kit | null> {
         wrapper.add(footing!);
         pieces.set(name as KitPiece, wrapper as THREE.Group);
       }
-      return { make: (piece: KitPiece) => pieces.get(piece)!.clone(true) as THREE.Group, has: (piece: KitPiece) => pieces.has(piece) };
+      return {
+        make: (piece: KitPiece) => pieces.get(piece)!.clone(true) as THREE.Group,
+        has: (piece: KitPiece) => pieces.has(piece),
+        // Pieces never hang in a scene themselves (the board adds clones), so reach their shared resources through them.
+        dispose: () => {
+          for (const piece of pieces.values()) disposeTree(piece);
+          disposeAll([detail]);
+        },
+      };
     } catch (e) {
       console.warn('Board kit unavailable, using the procedural board', e);
       return null;

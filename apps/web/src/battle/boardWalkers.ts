@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { getChassis, type WalkerInput, type WalkerState } from '@brass-charter/rules';
 import { FACTION_COLOURS, buildWalkerModel, ensureKitParts, loadPartLibrary, type PartLibrary } from '../model/assemble';
 import { frameOf } from '../model/chassis';
+import { disposeTree } from './boardDispose';
 
 /** Board units per millimetre of model. 0.07 puts a Paladin about 2 hex-widths tall, like the north star. */
 const BOARD_UNITS_PER_MM = Number(new URLSearchParams(location.search).get('scale') ?? 0.07);
@@ -39,6 +40,15 @@ export class WalkerLibrary {
       this.lib = lib;
       onChange();
     });
+  }
+
+  /** Free the GPU memory of every walker built so far, including the ones not on the board right now (the fallen), and of the
+   * shared part library they were cloned from. The library stays usable; its parts are uploaded again when next drawn. */
+  dispose() {
+    for (const w of this.cache.values()) disposeTree(w.group);
+    this.cache.clear();
+    if (!this.lib) return;
+    for (const parts of [this.lib.chassis, this.lib.items, this.lib.kit]) for (const part of parts.values()) disposeTree(part);
   }
 
   /** Walkers need their class's kit parts; fetch them once and ask for a rebuild when they arrive. */
