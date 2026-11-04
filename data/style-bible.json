@@ -15,6 +15,20 @@
         "docs/concept-art/iron-covenant-board.png",
         "models/paladin-assembled.glb"
       ]
+    },
+    "foundries": {
+      "name": "Ashen Foundries",
+      "status": "draft",
+      "feel": "industrial warbands, brutal, hunched and functional, mass-produced and soot-stained",
+      "palette": "rust red lacquered plate (#8d2912), orange lacquer panels (#be6a35), blackened iron (#34322f), worn brass fittings (#6e4d2f), orange furnace glow from vents and cores",
+      "motifs": "riveted hull plates with stencilled white unit numbers, hazard stripes on plate edges, twin smokestacks, glowing furnace cores behind grilles, hydraulic pistons, ammunition belts and chains, welded patch plates, exposed pipes",
+      "silhouette": "low, wide and hunched, heavy forearms and guns, big boxy shoulders",
+      "joints": "chunky riveted collars and brass-sleeved hydraulic pistons, thick ball-and-socket hips and shoulders",
+      "never": "gold filigree, cloth banners, tabards, halos, cathedral spires, teal, thin skeletal limbs, upright elegant poses",
+      "references": [
+        "docs/concept-art/three-factions-board.png",
+        "models/brute-viewer/brute.glb (approved Brute)"
+      ]
     }
   },
   "classes": {
@@ -28,6 +42,17 @@
       "weapons": "a heavy rotary Carapace Gun on the right forearm (gilded barrel shroud, crimson ammunition drum) and an empty armoured left gauntlet that could carry a tower shield",
       "back": "a tall banner standard with a crimson banner and gold cross finial, between two cathedral spires",
       "parts": "legs, torso with pelvis, helm, pauldrons, arms, and the banner back, and the signature weapon"
+    },
+    "artillery": {
+      "faction": "foundries",
+      "role": "long range artillery",
+      "frame": "bulwark",
+      "printHeightMm": 63,
+      "minLimb": "7%",
+      "silhouette": "a walking gun platform: a squat, hunched hull much wider than it is tall, a deep boxy torso, short thick legs set wide apart to take the recoil, heavy riveted shoulder plates, a small armoured head sunk between the shoulders",
+      "weapons": "one very long howitzer barrel (riveted tube with a recoil sleeve and a muzzle brake) slung over the right shoulder on a gimbal cradle, and a heavy clamp hand on each arm, the left holding an artillery shell",
+      "back": "the howitzer's gimbal cradle and a belt-fed ammunition drum, between two smokestacks",
+      "parts": "legs, torso with pelvis, helm, pauldrons, arms, and the back with its howitzer, drum and smokestacks"
     }
   }
 }
