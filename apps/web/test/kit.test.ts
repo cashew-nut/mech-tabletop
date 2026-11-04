@@ -84,7 +84,8 @@ describe('kit part resolution', () => {
     const names = new Set(['covenant_frame_titan', 'covenant_collar_titan', 'covenant_cloth_titan', 'covenant_torso_paladin']);
     const parts = planKit(names, 'covenant', 'paladin', 'titan')!.parts.map((p) => p.component);
     expect(parts).toEqual(['torso']);
-    expect(planKit(names, 'covenant', 'sentinel', 'titan')!.parts.map((p) => p.component)).toContain('collar');
+    expect(planKit(names, 'covenant', 'sentinel', 'titan')!.parts.map((p) => p.component)).not.toContain('collar');
+    expect(planKit(names, 'covenant', 'lancer', 'titan')!.parts.map((p) => p.component)).toContain('collar');
     expect(kitCandidates('covenant', 'paladin', 'titan')).not.toContain('covenant_collar_titan');
   });
 

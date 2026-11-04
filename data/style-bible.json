@@ -1,0 +1,33 @@
+{
+  "$comment": "Machine-readable faction style bible. Read by tools/meshy/prompts.py. Human copy: docs/style-bible/<faction>.md. Draft until Luke approves gate A.",
+  "factions": {
+    "covenant": {
+      "name": "Iron Covenant",
+      "status": "draft",
+      "feel": "cathedral knights, noble, upright and ornate",
+      "palette": "black enamel plate (#262527), aged gold trim (#805830), crimson cloth (#800d14), bone ivory accents (#d2c5bb), amber furnace glow only at the visor and chest",
+      "motifs": "gold filigree trim on every plate edge, sunburst pauldrons, cross and eagle heraldry on crimson cloth, a tabard hanging from the belt, cathedral spires and a banner standard on the back, a glowing furnace chest behind a gothic window, a slit visor under a pointed gothic helm, armoured hands",
+      "silhouette": "tall and upright, broad shoulders, narrow waist, straight legs",
+      "joints": "armoured plate collars, namely gauntlet cuffs, knee and elbow cops, a gorget at the neck, a belt at the waist",
+      "never": "rust, stencilled numbers, exposed pipes or chains, teal, halos, hunched poses, bare thin rods",
+      "references": [
+        "docs/concept-art/three-factions-board.png",
+        "docs/concept-art/iron-covenant-board.png",
+        "models/paladin-assembled.glb"
+      ]
+    }
+  },
+  "classes": {
+    "sentinel": {
+      "faction": "covenant",
+      "role": "defence and support",
+      "frame": "bulwark",
+      "printHeightMm": 63,
+      "minLimb": "7%",
+      "silhouette": "a gatehouse knight: broader and lower than a Paladin, deep chest, big sunburst pauldrons, thick armoured legs, wide stance, heavy slab-like shoulder plates",
+      "weapons": "a heavy rotary Carapace Gun on the right forearm (gilded barrel shroud, crimson ammunition drum) and an empty armoured left gauntlet that could carry a tower shield",
+      "back": "a tall banner standard with a crimson banner and gold cross finial, between two cathedral spires",
+      "parts": "legs, torso with pelvis, helm, pauldrons, arms, and the banner back, and the signature weapon"
+    }
+  }
+}
