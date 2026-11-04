@@ -73,6 +73,18 @@
     2.93
    ]
   },
+  "carapace-gun@sentinel": {
+   "min": [
+    -1.23,
+    -19.15,
+    -3.16
+   ],
+   "max": [
+    4.67,
+    1.48,
+    8.11
+   ]
+  },
   "hellfire-missiles@seer": {
    "min": [
     -1.07,

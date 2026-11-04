@@ -43,6 +43,9 @@ export interface ItemFit {
   core?: string[];
   legs?: string[];
   pose?: Record<string, { contact?: Contact[]; rot?: [number, number, number]; scale?: number }>;
+  /** A class's own take on this item, over the fields above: the Sentinel wears the Carapace Gun as a forearm on the elbow
+   * (a core item in the rules), where the Paladin carries it on its shoulder. Fields it names replace the item's own. */
+  classes?: Record<string, Partial<Omit<ItemFit, 'classes'>>>;
 }
 
 /** A hand adjustment of one item at one hardpoint of one body, made with the sliders in place.html. */
@@ -70,6 +73,13 @@ export interface FitData {
 export const FIT = (kitData as unknown as { fit: FitData }).fit;
 const BOUNDS = (boundsData as unknown as { items: Record<string, { min: number[]; max: number[] }> }).items;
 
+/** The fit of an item on a class: the item's own entry with the class's take over it. */
+export function itemFit(chassisId: string, itemId: string): Omit<ItemFit, 'classes'> | undefined {
+  const base = FIT.items[itemId];
+  const own = base?.classes?.[chassisId];
+  return own ? { ...base, ...own } : base;
+}
+
 export const isCardOnly = (itemId: string) => FIT.cardOnly.includes(itemId);
 
 /** The fit settings for a class, or null when it still uses the numbered mounts. */
@@ -96,8 +106,9 @@ export function planLocation(chassisId: string, loc: string, ids: string[], nati
   const armSide: Side = loc === 'armRight' ? 'R' : 'L';
   const taken = new Set<string>();
   return ids.map((id, index) => {
-    const prefs = FIT.items[id]?.[kind];
-    if (!prefs || (native[index] && FIT.items[id]?.nativeMount)) return null;
+    const fit = itemFit(chassisId, id);
+    const prefs = fit?.[kind];
+    if (!prefs || (native[index] && fit?.nativeMount)) return null;
     // A class's own item (lance@paladin) was cut for the tuned numbered mount, so it keeps that grip.
     const nativeAs = (n: string) => (n === 'grip' ? (hardpoint(chassisId, n)?.nativeAs ?? 'grip-native') : n);
     for (const name of native[index] ? prefs.map(nativeAs) : prefs) {
@@ -142,7 +153,10 @@ export function pivotOf(partName: string, contact: Contact[] = []): [number, num
   return p;
 }
 
-export const poseOf = (id: string, hp: string) => ({ contact: [] as Contact[], scale: 1, ...(FIT.items[id]?.pose?.default ?? {}), ...(FIT.items[id]?.pose?.[hp] ?? {}) });
+export const poseOf = (id: string, hp: string, chassisId?: string) => {
+  const pose = (chassisId ? itemFit(chassisId, id) : FIT.items[id])?.pose;
+  return { contact: [] as Contact[], scale: 1, ...(pose?.default ?? {}), ...(pose?.[hp] ?? {}) };
+};
 
 export const IDENTITY_NUDGE: Required<Nudge> = { offset: [0, 0, 0], rot: [0, 0, 0], scale: 1 };
 

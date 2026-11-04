@@ -266,7 +266,7 @@ function placeAtHardpoint(
   if (mirror) turn.scale.x = -1;
   anchor.add(nudge);
   nudge.add(turn);
-  const pose = poseOf(id, place.hp);
+  const pose = poseOf(id, place.hp, chassisId);
   scale *= pose.scale;
   // Class items are modelled for one hand; on the other side they are flipped (as the numbered mounts always did).
   const nativeRight = libName ? NATIVE_RIGHT.has(libName) : false;

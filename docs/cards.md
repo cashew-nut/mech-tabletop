@@ -1,4 +1,4 @@
-# Collectible cards: the Paladin milestone
+# Collectible cards: the Paladin milestone and the Sentinel's body cards
 
 First milestone of the collectible plan: every class splits into body part cards, and the Paladin's parts and four of its items are printable as 63 x 88 mm cards. Packs, accounts, payments, tier balance and rules-engine changes are not part of this.
 
@@ -37,11 +37,15 @@ A one-off script, `scripts/seed-parts.mjs`, made the first split with the shares
 
 Three example parts, Paladin legs, torso and arms, exist at all five tiers. Tier 1 equals the part. Tiers 2 to 5 add 1 to the primary stat and 1 point per step; this is only so the cards differ, not balance. The other three Paladin parts and four items (Siege Blade, Carapace Gun, Gyro Stabilisers, Targeting Array) exist at tier 1. Gyro Stabilisers and Targeting Array are card-only items (no model), so their art is kept as rendered and the art script no longer redraws it.
 
+## The Sentinel's cards
+
+The Iron Covenant Sentinel (the first walker made with the Meshy-light pipeline, `docs/sentinel-composite/`) has its six body part cards at tier 1, `CV-SEN-LEG-T1` to `CV-SEN-CRB-T1`, with stats equal to its rows in `data/parts.json`. The art is rendered from the published composite parts (`sentinel-legs`, `-torso`, `-helm`, `-pauldrons`, `-arms`, `-crown-back` in `render-card-art.mjs`), the same way as the Paladin's, so each card shows the printable part with its pegs. The concept art they came from is in `docs/concept-art/sentinel/`. The Carapace Gun card still prints the Paladin's art; the Sentinel's own gun forearm (`item_carapace-gun@sentinel`) could be rendered for it later.
+
 ## Art, faces and the sheet
 
 ```sh
 node scripts/render-card-art.mjs            # cards/art/*.jpg from the kit and item GLBs, no Meshy
-node scripts/build-card-sheet.mjs [facesDir] # cards/sheet.html, cards/paladin-cards.pdf, optional PNG faces at 300 dpi
+node scripts/build-card-sheet.mjs [facesDir] # cards/sheet.html, cards/cards.pdf, optional PNG faces at 300 dpi
 ```
 
 `render-card-art.mjs` uses the headless renderer (`apps/web/render.html`) with options in `preview.ts`: `show=` picks the named kit components, `side=L` keeps one side, `solo=1` drops everything else, and `plain=1` drops the floor and skyline. Since the Paladin became closed composite parts (`assets/blender/parts/composite`, published into the game), each body card shows its own parts alone, with the pegs where they plug in. Without `solo=1` the rest of the body is dimmed instead (`dim=`). The art is framed by the shown parts' bounding box, so tall parts (torso with its banner, arm) sit a little left of centre.
