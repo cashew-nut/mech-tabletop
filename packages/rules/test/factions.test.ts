@@ -43,10 +43,10 @@ describe('faction weapons', () => {
     expect(crits(0)).toBeGreaterThan(crits(3) * 1.5);
   });
 
-  it('fires the Carapace Gun from the core', () => {
-    const s = melee(walker('Warden', 'sentinel', { core: ['carapace-gun'] }), 'lancer', 3);
+  it('fires the Carapace Gun from the arm', () => {
+    const s = melee(walker('Warden', 'sentinel', { armLeft: ['carapace-gun'] }), 'lancer', 3);
     const gun = getWalker(s, 's0w0').items[0];
-    expect(gun.location).toBe('core');
+    expect(gun.location).toBe('armLeft');
     expect(previewAttack(s, gun.uid, 's1w0')).toMatchObject({ ok: true, dice: 2 });
   });
 });

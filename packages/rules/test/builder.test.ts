@@ -12,7 +12,7 @@ describe('walker stats', () => {
   });
 
   it('sums Pressure to fire everything, with the Gunner discount', () => {
-    const w = walker('G', 'brute', { armLeft: ['rail-cannon'], core: ['carapace-gun'] });
+    const w = walker('G', 'brute', { armLeft: ['rail-cannon'], armRight: ['carapace-gun'] });
     expect(walkerStats(w).alphaPressure).toBe(4);
     expect(walkerStats({ ...w, driver: { command: 0, trait: 'gunner' } }).alphaPressure).toBe(3);
   });

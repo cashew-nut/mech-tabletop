@@ -10,7 +10,7 @@
     {
       "id": "sentinel", "name": "Sentinel", "faction": "covenant", "role": "Defence and support", "frame": "bulwark",
       "size": 3, "points": 19, "stride": 2, "boiler": 6,
-      "slots": { "armLeft": 1, "armRight": 1, "core": 4, "legs": 1 },
+      "slots": { "armLeft": 2, "armRight": 2, "core": 4, "legs": 1 },
       "armour": { "coreFront": 9, "coreRear": 4, "arm": 4, "legs": 5 },
       "structure": { "core": 5, "other": 4 }
     },

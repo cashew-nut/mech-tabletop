@@ -12,8 +12,10 @@
             "trait": null
           },
           "loadout": {
+            "armLeft": [
+              "carapace-gun"
+            ],
             "core": [
-              "carapace-gun",
               "reactive-shell"
             ]
           }
@@ -52,8 +54,10 @@
               "kinetic-shield"
             ],
             "core": [
-              "missile-rack",
               "targeting-array"
+            ],
+            "armLeft": [
+              "missile-rack"
             ]
           }
         }
@@ -246,7 +250,7 @@
             "trait": null
           },
           "loadout": {
-            "core": [
+            "armLeft": [
               "missile-rack"
             ]
           }

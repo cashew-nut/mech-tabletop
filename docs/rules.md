@@ -47,7 +47,7 @@ aether-fired boilers, brass clockwork and valve-driven logic engines.
 **Slots.** Each class has two arms, a core and legs, each with a number of slots. An item
 uses as many slots as listed and must fit in one location: a 2-slot weapon needs an arm with
 2 free slots. Items list which locations they may use (`arm`, `core`, `legs`, or `any`). The Carapace Gun is
-a weapon that mounts on the core.
+a weapon that mounts on an arm.
 
 The Brute and the Seer have one socket per arm (`armItemLimit` in `data/chassis.json`), so each of their arms carries a single
 item even where the table below shows spare slots; the spare slot cannot be filled. Every other class fills its arms by slots alone.
@@ -294,7 +294,7 @@ the Trial ends at once and the other side wins.
 | Faction | Class | Role | Size | Pts | Stride | Boiler | Slots (arm / arm / core / legs) | Armour (core front / rear / arm / legs) | Structure (core / other) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Covenant | Lancer | Assault | 2 | 16 | 3 | 5 | 2 / 2 / 1 / 1 | 6 / 3 / 3 / 3 | 4 / 3 |
-| Covenant | Sentinel | Defence and support | 3 | 19 | 2 | 6 | 1 / 1 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
+| Covenant | Sentinel | Defence and support | 3 | 19 | 2 | 6 | 2 / 2 / 4 / 1 | 9 / 4 / 4 / 5 | 5 / 4 |
 | Covenant | Paladin | Heavy melee | 4 | 22 | 2 | 6 | 2 / 2 / 2 / 1 | 10 / 5 / 5 / 6 | 6 / 5 |
 | Foundries | Scavenger | Utility and recon | 1 | 6 | 3 | 4 | 1 / 1 / 2 / 1 | 4 / 2 / 2 / 3 | 3 / 2 |
 | Foundries | Brute | Frontline | 3 | 15 | 2 | 6 | 2 / 2 / 2 / 1 | 9 / 4 / 5 / 5 | 5 / 4 |
@@ -308,7 +308,7 @@ the Trial ends at once and the other side wins.
 | Faction | Weapon | Mount | Slots | Pressure | Pts | Range | Dice | Damage | Rules |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Covenant | Siege Blade (id `lance`) | Arm | 1 | 1 | 10 | Melee | 2 | 3 | **Charge:** +1 die if this war-walker has moved 2 or more hexes this activation. |
-| Covenant | Carapace Gun | Core | 1 | 2 | 5 | Medium | 2 | 2 | Pierce 1. No ammo. |
+| Covenant | Carapace Gun | Arm | 1 | 2 | 5 | Medium | 2 | 2 | Pierce 1. No ammo. |
 | Covenant | Missile Rack | Core | 2 | 1 | 6 | Long | 5 | 1 | Indirect. Ammo 4. |
 | Foundries | Autocannon | Arm | 1 | 1 | 3 | Medium | 3 | 1 | Ammo 6. |
 | Foundries | Rail Cannon | Arm | 2 | 2 | 7 | Long | 1 | 4 | Pierce 2. +2 TN instead of +1 after moving. |
@@ -417,3 +417,15 @@ Every item that has a model must plug into a socket its walker was built with (s
 A second item on a Brute or Seer arm had no connector on the model, so those arms now carry one item each (`armItemLimit: 1`).
 Slot counts and costs are unchanged; the builder greys out the arm once it holds an item, and `validateWalker` rejects a second
 one. Ashfall Warband's Anvil lost its second Autocannon (the lance now costs less).
+
+## 22. Changes after v0.7: the Carapace Gun is an arm weapon
+
+The Carapace Gun mounts on an arm instead of the core (still 1 slot, 2 Pressure, 5 points). On the Sentinel it is a whole gun
+forearm on the elbow, replacing the forearm and hand, so an arm holds it in place of a Siege Blade; on the Paladin it sits on the
+shoulder of the arm that holds it. Saved lances move a core Carapace Gun to the first arm with room, or leave it in the core with a
+validation error when both arms are full. The Warden example now carries it on the left arm. No cost changed.
+
+The Sentinel's arms now have 2 slots each (was 1), at the same 19 points, and the Missile Rack (2 slots, 6 points) also mounts on an arm
+instead of the core. On the model it is one launcher pod on the shoulder of the arm that holds it, so a Sentinel carries up to two. A Lancer
+arm already has 2 slots; a Scavenger's has 1 and cannot hold it. A Sentinel can fit a Rack or a Gun plus a Siege Blade on an arm, and
+the example lances Censer and Psalm carry their Rack on the left arm. The Sentinel's body-part card (`CV-SEN-ARM-T1`) shows 2 slots per arm.

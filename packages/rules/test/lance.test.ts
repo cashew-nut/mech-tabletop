@@ -35,12 +35,13 @@ describe('lance building', () => {
     expect(getEquipment('arc-cannon').name).toBe('Arc Spear');
   });
 
-  it('mounts the Missile Rack on the core, so a Lancer (one core slot) cannot carry it', () => {
-    expect(getEquipment('missile-rack').mount).toEqual(['core']);
-    expect(validateLance(lance('Rack', [walker('A', 'sentinel', { core: ['missile-rack'] }), walker('B', 'sentinel'), walker('C', 'sentinel')])).errors.join('\n')).not.toMatch(/Missile Rack/);
-    const bad = validateLance(lance('Rack', [walker('A', 'lancer', { core: ['missile-rack'] }), walker('B', 'lancer', { armLeft: ['missile-rack'] }), walker('C', 'lancer')]));
-    expect(bad.errors.join('\n')).toMatch(/core uses 2 slots/);
-    expect(bad.errors.join('\n')).toMatch(/cannot be mounted in armLeft/);
+  it('mounts the Missile Rack on an arm that has 2 free slots', () => {
+    expect(getEquipment('missile-rack').mount).toEqual(['arm']);
+    expect(validateLance(lance('Rack', [walker('A', 'sentinel', { armLeft: ['missile-rack'] }), walker('B', 'paladin', { armRight: ['missile-rack'] }), walker('C', 'sentinel')])).errors.join('\n')).not.toMatch(/Missile Rack/);
+    // the Sentinel arm has 2 slots: a rack fills it, so a Carapace Gun on the same arm is one slot too many
+    expect(validateWalker(walker('A', 'sentinel', { armLeft: ['missile-rack', 'carapace-gun'] }), 'covenant').join('\n')).toMatch(/armLeft uses 3 slots/);
+    expect(validateWalker(walker('A', 'scavenger', { armLeft: ['missile-rack'] }), null).join('\n')).toMatch(/armLeft uses 2 slots but Scavenger has 1/);
+    expect(validateWalker(walker('B', 'sentinel', { core: ['missile-rack'] }), 'covenant').join('\n')).toMatch(/cannot be mounted in core/);
   });
 
   it('mounts the Hellfire Missiles on the core, so they take no arm slot', () => {
