@@ -16,4 +16,12 @@ per task are in the project folder `meshy-sources/sentinel/`; the ledger is `mes
 Known gaps: the back view draws the legs with exposed pistons where the front has plate, and shows a plain pauldron
 where the front has red inserts; the Carapace Gun is missing from the part sheet (it is in the turnaround); the part
 sheet has no upper arms. The side view shows the gun arm raised, which is also how the hero holds it.
-No 3D credits spent. Balance 172.
+
+## 3D model (2026-11-04)
+
+Luke approved the turnaround; one whole-body model from the three views (front first):
+mesh only (multi-image-to-3d, 20 credits, 3.8M triangles), silhouette checked against the turnaround
+(`tools/meshy/silhouette.py`: spires, pauldrons, gun, tabard and stance all match; the banner flag is not in the mesh),
+then retexture from the same three views (meshy-7, original UVs, PBR, 10 credits). `model-vs-concept.jpg` compares the result
+with the hero. Files are in the project folder `meshy-sources/sentinel/model/` (mesh task `01a1a5cf...`, textured `01a1a5d1...`).
+Total for the Sentinel: 54 credits (24 for the 2D art, 30 for the model), balance 142. Next: composite parts (Blender cut).

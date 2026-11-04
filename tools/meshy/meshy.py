@@ -12,6 +12,9 @@ The key is never printed or stored.
   meshy.py image-to-image PROMPT_FILE --ref IMG [--ref IMG ...] --cls CLASS --stage STAGE [--multi-view] [--out DIR] [--confirm]
       # 1 to 5 reference images + prompt -> new image(s). Prints the price and balance first; spends only with --confirm.
       # Every task is archived under DIR (images, source.json) and logged in the ledger (see LEDGER below).
+  meshy.py multi-image-to-3d IMG [IMG ...] --cls CLASS --out DIR --gate TEXT [--texture] [--confirm]
+      # 1 to 4 views, FIRST = front. Mesh only by default (20 credits); --texture adds PBR texture in one task (30).
+  meshy.py retexture TASK_ID IMG [IMG ...] --cls CLASS --out DIR --gate TEXT [--confirm]   # texture an existing mesh (10 credits)
 """
 import argparse, base64, json, mimetypes, os, sys, time, urllib.request, urllib.error
 
@@ -60,6 +63,12 @@ def main():
     i.add_argument("--multi-view", action="store_true"); i.add_argument("--model", default="nano-banana")
     i.add_argument("--out", required=True); i.add_argument("--confirm", action="store_true")
     i.add_argument("--gate", default="", help="where Luke approved the input (thread message), for the ledger")
+    m = sub.add_parser("multi-image-to-3d")
+    m.add_argument("images", nargs="+"); m.add_argument("--cls", required=True); m.add_argument("--out", required=True)
+    m.add_argument("--gate", required=True); m.add_argument("--texture", action="store_true"); m.add_argument("--confirm", action="store_true")
+    r = sub.add_parser("retexture")
+    r.add_argument("task"); r.add_argument("images", nargs="+", help="1-4 views, first = front"); r.add_argument("--cls", required=True); r.add_argument("--out", required=True)
+    r.add_argument("--gate", required=True); r.add_argument("--confirm", action="store_true")
     g = sub.add_parser("image-to-3d")
     g.add_argument("image"); g.add_argument("--out", default="renders/meshy")
     g.add_argument("--no-texture", action="store_true")
@@ -103,6 +112,38 @@ def main():
         json.dump({"task": tid, "prompt": prompt, "refs": a.ref, "model": a.model, "multi_view": a.multi_view,
                    "stage": a.stage, "cls": a.cls}, open(os.path.join(d, "source.json"), "w"), indent=1)
         ledger_add({"cls": a.cls, "stage": a.stage, "task": tid, "kind": "image-to-image", "credits": price,
+                    "gate": a.gate, "dir": d, "date": time.strftime("%Y-%m-%d")})
+        print("balance now", call("GET", "/balance")["balance"])
+    elif a.cmd in ("multi-image-to-3d", "retexture"):
+        if a.cmd == "multi-image-to-3d":
+            path, price = "/multi-image-to-3d", 30 if a.texture else 20
+            body = {"image_urls": [data_uri(i) for i in a.images], "ai_model": "latest",
+                    "should_texture": a.texture, "enable_pbr": a.texture}
+        else:
+            path, price = "/retexture", 10
+            body = {"input_task_id": a.task, "ai_model": "meshy-7", "enable_pbr": True, "enable_original_uv": True,
+                    "multiview_image_urls": [data_uri(i) for i in a.images]}
+        bal = call("GET", "/balance")["balance"]
+        print(f"{a.cmd}: {price} credits, balance {bal}, gate: {a.gate}")
+        if not a.confirm:
+            sys.exit("not spending without --confirm")
+        tid = call("POST", path, body)["result"]
+        print("task", tid, flush=True)
+        while True:
+            t = call("GET", f"{path}/{tid}")
+            print(t["status"], t.get("progress"), flush=True)
+            if t["status"] in ("SUCCEEDED", "FAILED", "CANCELED"):
+                break
+            time.sleep(10)
+        d = os.path.join(a.out, tid)
+        os.makedirs(d, exist_ok=True)
+        json.dump(t, open(os.path.join(d, "task.json"), "w"), indent=1)
+        if t["status"] != "SUCCEEDED":
+            sys.exit(json.dumps(t.get("task_error")))
+        download(t["model_urls"]["glb"], os.path.join(d, "model.glb"))
+        if t.get("thumbnail_url"):
+            download(t["thumbnail_url"], os.path.join(d, "thumb.png"))
+        ledger_add({"cls": a.cls, "stage": a.cmd, "task": tid, "kind": a.cmd, "credits": price,
                     "gate": a.gate, "dir": d, "date": time.strftime("%Y-%m-%d")})
         print("balance now", call("GET", "/balance")["balance"])
     elif a.cmd == "status":

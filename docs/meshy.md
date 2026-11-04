@@ -45,3 +45,9 @@ Bake: `python3 -I assets/blender/parts/meshy/cut.py extract GLB WORK`, then `~/b
 - `--smoke` adds an empty named `smoke` at the top, which the board uses for chimney smoke.
 - The tile detail texture (`stone_detail.jpg`) is one more 3-credit text-to-image ("seamless tileable granite"), made tileable and high-passed with numpy; the board material projects it from three axes in world space.
 Hero pieces are optional: `boardKit.ts` loads them separately and the procedural towers and walls stand in when a file is missing.
+
+## Whole-body walkers (2026-11-04, Sentinel)
+- Image-to-image (nano-banana, 3 credits) with `--multi-view` returns three views (the order was back, side, front, so check each file); the cloak and scenery can be asked away in the prompt.
+- Multi-image-to-3D: `meshy.py multi-image-to-3d FRONT SIDE BACK --cls X --out DIR --gate TEXT --confirm`, mesh only 20 credits (about 90 s, 3.8M triangles). Then `meshy.py retexture MESH_TASK FRONT SIDE BACK ...` (10 credits, meshy-7 multiview, keeps the UVs). Same 30 credits as a textured one-shot, but the shape can be checked first with `silhouette.py`.
+- Retexture takes `multiview_image_urls` or `image_style_url`/`text_style_prompt`, not `texture_image_url`.
+- A thin flag on the back did not make it into the mesh; cloth on a pole needs to be modelled by hand.
