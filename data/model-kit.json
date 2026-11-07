@@ -161,6 +161,10 @@
       "collar",
       "forearm",
       "hand"
+    ],
+    "goliath": [
+      "cloth",
+      "collar"
     ]
   },
   "spareMounts": {
@@ -703,6 +707,100 @@
           ]
         ]
       }
+    },
+    "reliquary/goliath": {
+      "$comment": "The composite Goliath's own skeleton (mm, left side): the joints assets/blender/parts/composite/goliath.py cut its parts on, shifted 6.18 mm in y so the feet stand near the hex centre. scripts/publish-composite.mjs writes it as reliquary_frame_goliath (a copy of the titan frame) so the Goliath's parts meet at their pegs. The Arc Cannon is a whole forearm on the elbow (like the Sentinel's gun); the arm mounts are the Seer's scaled for the titan, the core mounts the Paladin's.",
+      "joints": {
+        "pelvis": [
+          0.0,
+          0.0,
+          31.43
+        ],
+        "spine": [
+          0.0,
+          0.619,
+          35.447
+        ],
+        "chest": [
+          0.0,
+          1.546,
+          43.173
+        ],
+        "neck": [
+          0.0,
+          -3.708,
+          47.808
+        ],
+        "head": [
+          0.0,
+          -4.326,
+          49.354
+        ],
+        "shoulder": [
+          11.125,
+          2.164,
+          45.645
+        ],
+        "elbow": [
+          12.361,
+          0.928,
+          34.52
+        ],
+        "wrist": [
+          12.361,
+          -1.545,
+          28.649
+        ],
+        "hip": [
+          6.799,
+          0.0,
+          30.194
+        ],
+        "knee": [
+          10.507,
+          0.0,
+          21.85
+        ],
+        "ankle": [
+          12.979,
+          0.0,
+          7.944
+        ]
+      },
+      "mounts": {
+        "mount_armLeft_0": [
+          "wrist",
+          [
+            0.73,
+            -1.94,
+            -2.7
+          ]
+        ],
+        "mount_core_0": [
+          "chest",
+          [
+            7.333,
+            3.333,
+            11.334
+          ]
+        ],
+        "mount_core_1": [
+          "chest",
+          [
+            -7.333,
+            3.333,
+            11.334
+          ]
+        ],
+        "mount_armRight_0": [
+          "wrist",
+          [
+            -0.73,
+            -1.94,
+            -2.7
+          ]
+        ]
+      }
     }
   },
   "fit": {
@@ -721,6 +819,9 @@
         "scale": 1.0
       },
       "artillery": {
+        "scale": 1.0
+      },
+      "goliath": {
         "scale": 1.0
       }
     },
@@ -1105,6 +1206,39 @@
             0.12
           ]
         }
+      },
+      "goliath": {
+        "grip": {
+          "nativeAs": "wrist-socket"
+        },
+        "back-high": {
+          "offset": [
+            0,
+            0.03,
+            -0.1
+          ]
+        },
+        "waist-L": {
+          "offset": [
+            0.15,
+            0.0,
+            0.1
+          ]
+        },
+        "waist-R": {
+          "offset": [
+            -0.15,
+            0.0,
+            0.1
+          ]
+        },
+        "chest-front": {
+          "offset": [
+            0,
+            0.0,
+            0.14
+          ]
+        }
       }
     },
     "items": {
@@ -1197,7 +1331,16 @@
           "grip",
           "forearm-top",
           "shoulder-top"
-        ]
+        ],
+        "classes": {
+          "goliath": {
+            "nativeMount": false,
+            "arm": [
+              "forearm-gun"
+            ],
+            "pose": {}
+          }
+        }
       },
       "kinetic-claws": {
         "arm": [
@@ -1327,11 +1470,15 @@
             "scale": 1
           }
         }
-      }
+      },
+      "goliath": {}
     },
     "itemModels": {
       "artillery": [
         "brute"
+      ],
+      "goliath": [
+        "seer"
       ]
     }
   }

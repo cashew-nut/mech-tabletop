@@ -3,7 +3,7 @@
 The Goliath Meshy model (`meshy-sources/goliath/model/`, mesh `01a1b610...`, textured `01a1b612...`) cut into 12 closed parts by the
 shared composite pipeline (`MODEL=goliath`, settings in `assets/blender/parts/composite/goliath.py`). Printed at Luke's 1.5x scale:
 75 mm to the hood top, about 93 mm to the spire tips. Parts, STLs, game GLBs and the .blend are in the project folder
-`models/goliath-composite/`; renders in `renders/goliath-composite/` (JPEG copies here). Not in the game yet.
+`models/goliath-composite/`; renders in `renders/goliath-composite/` (JPEG copies here). In the game (see below).
 
 | File | What |
 | --- | --- |
@@ -74,7 +74,17 @@ All pass the strict checks (hole walls inside the part, no break-outs, mirrored 
   pass (as for the Artillery) would fix it.
 - **Not test-printed.** Magnet pockets are 0.1 mm over stock size, as on the other walkers.
 
+## In the game (2026-11-07)
+
+`node scripts/publish-composite.mjs DIR/glb goliath` published 11 kit parts, its own frame (`reliquary_frame_goliath`) and the Arc Cannon
+(`item_arc-cannon@goliath`, the re-seated gun forearm on the elbow socket), 3.7 MB compressed. Data is in `data/model-kit.json`:
+`frameTunes["reliquary/goliath"]`, `omit.goliath` (cloth, collar), `fit.classes.goliath`, the Arc Cannon class fit, `fit.overrides.goliath`.
+`fit-check.mjs goliath` shows 0 flagged over 21 placements; `npm test` passes. Render: `in-game.jpg`.
+
+**Borrowed from the Seer:** `fit.itemModels.goliath = ["seer"]`, so the Kinetic Claws, Spear and the like use the Seer's models on the
+Goliath wrist socket. They fit but are not built for the Goliath hand's peg, so they are not magnet-exact for printing.
+
 ## Not done yet
 
-Game publish (`publish-composite.mjs`, a `reliquary/titan` frame tune and fit class), `parts.json` rows and card faces for the six Goliath
-body cards, the Arc Cannon item model for the game, and a Soul Lantern staff if one is wanted (it would be a new model).
+`parts.json` rows and card faces for the six Goliath body cards, Goliath-specific claw and spear item models (rebuilt on the Goliath hand
+peg), a Soul Lantern staff if one is wanted, and a test print of the thin parts. Not checked on a real GPU or the 3D battle board.
