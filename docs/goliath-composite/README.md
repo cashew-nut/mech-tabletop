@@ -11,6 +11,7 @@ shared composite pipeline (`MODEL=goliath`, settings in `assets/blender/parts/co
 | `exploded.jpg` | every part pulled apart, front and back |
 | `parts.jpg` | each part alone |
 | `pose.jpg` | posed by rotating joints (Arc Cannon raised, legs striding) |
+| `items-preview.jpg` | the Seer's kinetic claws and arc spear on the Goliath's wrist in place of the hand (preview only) |
 
 `docs/concept-art/goliath/mesh-vs-turnaround.jpg` is the silhouette check (gate D): the Meshy mesh matched the turnaround in all three views.
 
@@ -48,6 +49,17 @@ looked like gold top hats, so they are 80% of that.
 | shin into thigh, foot / shin | 2.0 | 2.2 | 2 x 1 |
 
 All pass the strict checks (hole walls inside the part, no break-outs, mirrored side clear).
+
+## Cannon pose and wrist items (2026-11-07, Luke: "gun looks weird, how would the claw or spear fit")
+
+- **Cannon.** The assembled view showed the cannon hanging straight down beside the leg, because the parts are cut with the arm
+  hanging. It is now shown held level and forward, as in the concept art (`HOLD` in goliath.py, used by render.py). It is a render pose: the
+  gun sits on the elbow's ball knuckle, so the elbow can be turned that way on the table.
+- **Claws and spear.** The hand plugs into the forearm at the wrist knuckle (1.75 mm peg, 2 x 1 magnet). Wrist items take the hand's place on
+  that same socket, as on the Seer (`seer_wrist.py`): each carries a copy of the hand's half ball and peg and continues the arm.
+  `items-preview.jpg` shows the Seer's kinetic claws and arc spear, scaled 1.25x, on the Goliath's wrist.
+  **That is a preview only**: they are the Seer's STLs with the Seer's peg, not yet rebuilt with the Goliath hand's peg, and the game has
+  no Goliath hardpoints yet (`goliath_items_preview.py` makes the picture).
 
 ## Things to know
 

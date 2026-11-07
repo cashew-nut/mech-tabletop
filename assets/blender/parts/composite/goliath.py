@@ -238,6 +238,7 @@ LABEL = {
     "shin": "Shin", "foot": "Foot", "gun": "Arc Cannon (equipment)",
 }
 EXPLODE, EXPLODE_DROP = 11.0, 4.0
+HOLD = {"gun_R": (-90, 0, 0)}                   # assembled view: the Arc Cannon held level, as in the concept art
 POSE = {
     "gun_R": (-90, 0, 0), "arm_L": (-25, 0, 0), "forearm_L": (-35, 0, 0), "helm": (0, 0, -20),
     "thigh_L": (-18, 0, 0), "shin_L": (22, 0, 0), "foot_L": (-4, 0, 0),
