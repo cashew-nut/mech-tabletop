@@ -1,6 +1,6 @@
 """Shared names and joint positions for the composite models (no Blender needed).
 
-The model comes from the MODEL environment variable: `paladin` (default, paladin.py), `brute` (brute.py) or `seer`
+The model comes from the MODEL environment variable: `paladin` (default, paladin.py), `brute` (brute.py), `seer`, `sentinel`, `artillery` or `goliath`
 (seer.py). Each model module holds its labelling rules, joint tree, budgets and render labels; the pipeline scripts are
 shared.
 
