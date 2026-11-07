@@ -25,7 +25,7 @@ HERO_VARIANTS = [
 
 def hero(f, c, variant=0):
     return (
-        f"Concept art of an {f['name']} war-walker, {c['role']} class. Same faction and art style as the reference images. "
+        f"Concept art of {'an' if f['name'][0] in 'AEIOU' else 'a'} {f['name']} war-walker, {c['role']} class. Same faction and art style as the reference images. "
         f"{f['feel'].capitalize()}. Colours: {f['palette']}. Details: {f['motifs']}. "
         f"Silhouette: {c['silhouette']}. Armed with {c['weapons']}. Back: {c['back']}. "
         f"Full body, {HERO_VARIANTS[variant % len(HERO_VARIANTS)]}, dark moody background, dramatic rim light. "

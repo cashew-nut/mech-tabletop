@@ -29,6 +29,20 @@
         "docs/concept-art/three-factions-board.png",
         "models/brute-viewer/brute.glb (approved Brute)"
       ]
+    },
+    "reliquary": {
+      "name": "Reliquary",
+      "status": "draft",
+      "feel": "ancient relic machines, watchful, gaunt and strange, pilgrims of a forgotten order",
+      "palette": "aged bone-white and gold plate (#a98f77, #94704d), verdigris teal glow (#476766) from lanterns and eye slits, dark frame metal (#263237), tattered dark crimson cloth in small amounts",
+      "motifs": "halo crowns of spikes, hooded gothic masks with glowing teal eye slits, long clawed fingers, ribbed gilded limbs with ball-knuckle joints in gold sleeves, folded bat-wing pauldron spars, tattered banners, hanging lanterns and chains, gothic arched reliquary cages",
+      "silhouette": "tall, gaunt and long-limbed, with a stooped reaching pose",
+      "joints": "gold ball knuckles seated in thick gilded sleeves, wide enough to hide a peg and a magnet",
+      "never": "heavy boxy plate, stencilled numbers, hazard stripes, rust, red lacquer, smokestacks, industrial pipes, short stubby limbs",
+      "references": [
+        "docs/concept-art/three-factions-board.png (right column)",
+        "models/seer-composite (approved Seer render)"
+      ]
     }
   },
   "classes": {
@@ -53,6 +67,17 @@
       "weapons": "one very long howitzer barrel (riveted tube with a recoil sleeve and a muzzle brake) slung over the right shoulder on a gimbal cradle, and a heavy clamp hand on each arm, the left holding an artillery shell",
       "back": "the howitzer's gimbal cradle and a belt-fed ammunition drum, between two smokestacks",
       "parts": "legs, torso with pelvis, helm, pauldrons, arms, and the back with its howitzer, drum and smokestacks"
+    },
+    "goliath": {
+      "faction": "reliquary",
+      "role": "heavy titan",
+      "frame": "titan",
+      "printHeightMm": 75,
+      "minLimb": "7%",
+      "silhouette": "a towering pilgrim colossus, the tallest walker in the game: long digitigrade legs of thick ribbed gold with big ball-knuckle knees, a narrow gothic reliquary-cage torso with a glowing teal soul-light inside, a hooded mask under a large halo crown, folded bat-wing pauldron spars and a stooped, reaching posture, limbs gaunt but chunky enough to carry magnets",
+      "weapons": "a long Arc Cannon forearm on the right arm and a clawed left hand holding a Soul Lantern on a hooked staff",
+      "back": "two tall gilded spires, a tattered dark crimson banner and hanging chains with small lanterns",
+      "parts": "legs, torso with pelvis, hooded helm with halo crown, pauldron wing spars, arms, and the back with its spires and banner"
     }
   }
 }
