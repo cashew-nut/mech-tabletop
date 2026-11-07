@@ -1,0 +1,22 @@
+{
+  "sentinel-legs": ["sentinel/hero.jpg", 490, 800, 560],
+  "sentinel-torso": ["sentinel/hero.jpg", 520, 470, 420],
+  "sentinel-helm": ["sentinel/hero.jpg", 500, 175, 330],
+  "sentinel-pauldrons": ["sentinel/hero.jpg", 680, 260, 340],
+  "sentinel-arms": ["sentinel/hero.jpg", 735, 530, 340],
+  "sentinel-crown-back": ["sentinel/hero.jpg", 650, 150, 460],
+  "artillery-legs": ["artillery/hero.jpg", 560, 790, 540],
+  "artillery-torso": ["artillery/hero.jpg", 520, 440, 440],
+  "artillery-helm": ["artillery/partsheet.jpg", 700, 552, 240],
+  "artillery-pauldrons": ["artillery/hero.jpg", 290, 370, 300],
+  "artillery-arms": ["artillery/hero.jpg", 780, 600, 460],
+  "artillery-crown-back": ["artillery/hero.jpg", 330, 200, 380],
+  "paladin-legs": ["iron-covenant-board.png", 380, 350, 355],
+  "paladin-torso": ["iron-covenant-board.png", 1150, 240, 160],
+  "paladin-helm": ["iron-covenant-board.png", 925, 215, 240],
+  "paladin-pauldrons": ["iron-covenant-board.png", 880, 300, 260],
+  "paladin-arms": ["iron-covenant-board.png", 1150, 90, 150],
+  "paladin-crown-back": ["iron-covenant-board.png", 390, 130, 330],
+  "covenant-lance": ["iron-covenant-board.png", 240, 340, 300],
+  "covenant-carapace-gun": ["sentinel/hero.jpg", 200, 480, 340]
+}

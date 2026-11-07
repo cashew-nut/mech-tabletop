@@ -2,7 +2,7 @@
 //   node scripts/build-card-sheet.mjs [facesDir]
 // Writes cards/sheet.html (A4, 3 x 3 cards of 63 x 88 mm per page, with crop marks) and cards/cards.pdf.
 // With facesDir, also saves each card face as a 300 dpi PNG named by its print id.
-// Render the art first with scripts/render-card-art.mjs. Needs Playwright installed globally.
+// Cut the art first with tools/cards/crop_art.py. Needs Playwright installed globally.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
