@@ -39,8 +39,12 @@ All pass the strict checks (hole walls inside the part, no break-outs, mirrored 
 
 - **Third leg dropped.** Meshy read the three-quarter "side" view as a third, rear leg. The cut keeps the two front legs
   (left cut, mirrored for the right); the rear pelvis carries a flat cap where the third hip was.
-- **Colour.** The turnaround drifted to ochre and brown, so the model is brown. In the game the Foundries paint repaints the hull
-  rust red (see `game.jpg`); the printed parts are as the render shows.
+- **Colour (recoloured 2026-11-07).** The Meshy retexture came out ochre and brown, nothing like the Brute. The base-colour textures are
+  now recoloured to the Brute's scheme (blackened iron, red lacquer plate, worn brass; `tools/recolour/foundry_palette.py`, run per part
+  by `scripts/recolour-foundry-parts.mjs`) and the game's livery shader repaints the red as on the Brute (`colour-before-after.jpg`: top
+  row before with the Brute at right, bottom row after). Recoloured GLBs are in the project folder `models/artillery-composite/glb-brute-palette/`;
+  `glb/` still has the original brown bake. Plate versus brass versus iron is picked by brightness and warmth of the Meshy bake, not by
+  part, so a few panels land differently from the concept art.
 - **Weak joints.** The back is a 4 mm peg under the stacks and pack, and the cupola has a 2.3 mm peg with a 1 x 1 magnet: both
   are the least that fit. The 80 mm howitzer overhangs the torso's front by 37 mm and is the likeliest part to droop.
 - **Right arm not cut.** The figure's own right arm is a heavy autocannon-like block hanging from the elbow. It is not a part (the
