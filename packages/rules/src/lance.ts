@@ -91,6 +91,7 @@ export function validateWalker(walker: WalkerInput, faction: string | null = nul
         errors.push(`${e.name} cannot be mounted in ${loc}`);
       }
       if (faction && e.faction && e.faction !== faction) errors.push(`${e.name} is ${getFaction(e.faction).name} gear`);
+      if (e.chassis && !e.chassis.includes(chassis.id)) errors.push(`${e.name} cannot be fitted to a ${chassis.name}`);
       used += e.slots;
       counts.set(id, (counts.get(id) ?? 0) + 1);
     }

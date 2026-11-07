@@ -112,6 +112,14 @@ export const PARTS: Record<string, PartBuilder> = {
       ...[-0.45, 0.45].map((y) => at(sphere(0.3, p.glow, 10), 0, y, 8.2)),
       at(cyl(0.9, 0.9, 0.5, p.copper, 12), 0, 0, 0.25, Math.PI / 2),
     ),
+  // A fallback when no model is loaded: a shell in a clamp, pointing forward (the Artillery's own model is its shell arm).
+  'shell-arm': (p) =>
+    group(
+      at(plate(3.2, 3.2, 2.2, p.iron, 0.4), 0, 0, 0.8),
+      at(barrel(1.7, 7, p.armour, 16), 0, 0, 3.4),
+      at(torus(1.75, 0.3, p.trim, 16), 0, 0, 3.4),
+      at(spire(1.7, 4.5, p), 0, 0, 9.6, Math.PI / 2),
+    ),
   'kinetic-claws': (p) =>
     group(
       plate(2, 2.2, 2.4, p.iron, 0.4),

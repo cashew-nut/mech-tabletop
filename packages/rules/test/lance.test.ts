@@ -30,6 +30,18 @@ describe('lance building', () => {
     expect(armItemLimit(getChassis('paladin'), 'armLeft')).toBeUndefined();
   });
 
+  it("makes the Artillery's shell arm one weapon among the others for each arm, and only the Artillery can fit it", () => {
+    const errors = (w: ReturnType<typeof walker>) => validateWalker(w, 'foundries');
+    // the shell takes the elbow socket, so a gun on the same arm is an alternative to it, not an addition
+    expect(errors(walker('A', 'artillery', { armLeft: ['shell-arm'], armRight: ['rail-cannon'] }))).toEqual([]);
+    expect(errors(walker('A', 'artillery', { armLeft: ['shell-arm', 'autocannon'] })).join('\n')).toMatch(/armLeft holds 2 items/);
+    expect(errors(walker('A', 'artillery', { armLeft: ['rocket-pod'], armRight: [] }))).toEqual([]);
+    expect(errors(walker('A', 'artillery', {}))).toEqual([]); // the shell arm is optional: an empty arm is legal
+    expect(errors(walker('B', 'brute', { armLeft: ['shell-arm'] })).join('\n')).toMatch(/Shell Arm cannot be fitted to a Brute/);
+    expect(getEquipment('shell-arm').chassis).toEqual(['artillery']);
+    expect(armItemLimit(getChassis('artillery'), 'armRight')).toBe(1);
+  });
+
   it('shows the Siege Blade and Arc Spear names, with the old ids', () => {
     expect(getEquipment('lance').name).toBe('Siege Blade');
     expect(getEquipment('arc-cannon').name).toBe('Arc Spear');

@@ -21,7 +21,7 @@ const SHOWCASE: Record<string, WalkerInput['loadout']> = {
   paladin: { armRight: ['lance'], armLeft: ['kinetic-shield', 'carapace-gun'] },
   scavenger: { armRight: ['autocannon'], armLeft: ['industrial-claw'] },
   brute: { armRight: ['autocannon', 'autocannon'], armLeft: ['industrial-claw'] },
-  artillery: { armRight: ['rail-cannon', 'autocannon'], armLeft: ['rocket-pod', 'autocannon'] },
+  artillery: { armRight: ['rail-cannon'], armLeft: ['shell-arm'] },
   wraith: { armRight: ['kinetic-claws'], armLeft: ['kinetic-claws'] },
   seer: { armRight: ['kinetic-claws'], armLeft: ['arc-cannon'], core: ['soul-lantern'] },
   goliath: { armRight: ['arc-cannon', 'kinetic-claws'], armLeft: ['kinetic-claws'], core: ['soul-lantern'] },

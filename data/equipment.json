@@ -145,6 +145,32 @@
       "rules": "Blast: also roll 1 die against each war-walker adjacent to the target. Minimum range 4."
     },
     {
+      "id": "shell-arm",
+      "name": "Shell Arm",
+      "faction": "foundries",
+      "chassis": [
+        "artillery"
+      ],
+      "category": "weapon",
+      "mount": [
+        "arm"
+      ],
+      "slots": 2,
+      "pressure": 2,
+      "points": 6,
+      "weapon": {
+        "dice": 1,
+        "damage": 4,
+        "range": "long",
+        "ammo": 3,
+        "minRange": 4
+      },
+      "tags": [
+        "blast"
+      ],
+      "rules": "An artillery shell held in a clamp, fitted in place of a gun forearm. Blast: also roll 1 die against each war-walker adjacent to the target. Minimum range 4."
+    },
+    {
       "id": "industrial-claw",
       "name": "Industrial Claw",
       "faction": "foundries",

@@ -29,6 +29,7 @@ import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'no
 import { join, resolve } from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { mergeDocuments, unpartition } from '@gltf-transform/functions';
 
 const PARTS = resolve('apps/web/public/parts');
 const MODELS = {
@@ -83,8 +84,10 @@ const MODELS = {
   artillery: {
     // Its own frame, a copy of the bulwark frame with the joints the parts were cut on (like the Brute's). The howitzer is part of the torso.
     faction: 'foundries', cls: 'artillery', tunes: 'foundries/artillery', itemScale: 1.4, frame: 'foundries_frame_artillery', frameFrom: 'foundries_frame_bulwark',
-    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
-    items: {},
+    // Its shell arm (forearm + clamp with the shell) is an item, the Shell Arm weapon, not a body part: the elbow holds one forearm,
+    // the shell or another weapon. "forearm+hand" merges the two parts into one item with its origin on the elbow.
+    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'thigh', 'shin', 'foot'],
+    items: { 'forearm+hand': ['shell-arm@artillery', ['elbow', [0, 0, 0]], 'elbow', undefined, { forearm: 'elbow', hand: 'wrist' }] },
   },
 };
 
@@ -189,9 +192,61 @@ for (const k of itemsOnly ? [] : KIT) {
   const host = itemsDir && model.hosts?.[k];
   written.push(await convert(join(src, `${k}.glb`), name, join(PARTS, 'kit', `${name}.glb`), delta && ((p) => p.map((c, i) => c + delta[i])), host));
 }
-for (const [k, [id, mount, originJoint, from_]] of Object.entries(ITEMS)) {
+/** Merge several parts (each cut on its own joint) into one item GLB: `joints` names the joint each part's origin sits on. */
+async function convertMerged(k, joints, name, out, vertexFix) {
+  const doc = await io.read(join(src, `${k.split('+')[0]}.glb`));
+  const root = doc.createNode(name);
+  const first = doc.getRoot().getDefaultScene();
+  for (const n of first.listChildren()) {
+    first.removeChild(n);
+    root.addChild(n);
+  }
+  first.addChild(root);
+  const fixed = new Set();
+  const fixMeshes = (d, fix) => {
+    for (const mesh of d.getRoot().listMeshes())
+      for (const prim of mesh.listPrimitives()) {
+        const pos = prim.getAttribute('POSITION');
+        const v = [0, 0, 0];
+        for (let i = 0; i < pos.getCount(); i++) pos.setElement(i, fix(pos.getElement(i, v)));
+      }
+  };
+  fixMeshes(doc, vertexFix(joints[k.split('+')[0]]));
+  for (const part of k.split('+').slice(1)) {
+    const other = await io.read(join(src, `${part}.glb`));
+    fixMeshes(other, vertexFix(joints[part]));
+    const before = new Set(doc.getRoot().listScenes());
+    mergeDocuments(doc, other);
+    for (const scene of doc.getRoot().listScenes()) {
+      if (before.has(scene)) continue;
+      for (const n of scene.listChildren()) {
+        scene.removeChild(n);
+        root.addChild(n);
+      }
+      scene.dispose();
+    }
+  }
+  for (const mat of doc.getRoot().listMaterials()) mat.setName(`hull_${name}_livery`);
+  await doc.transform(unpartition());
+  await io.write(out, doc);
+  return out;
+}
+
+for (const [k, [id, mount, originJoint, from_, partJoints]] of Object.entries(ITEMS)) {
   if (from_ === 'items' && !itemsDir) continue; // needs paladin_items_build.py's folder
-  if (itemsOnly && !existsSync(join(from_ === 'items' ? itemsDir : src, `${k}.glb`))) continue;
+  if (itemsOnly && !existsSync(join(from_ === 'items' ? itemsDir : src, `${k.split('+')[0]}.glb`))) continue;
+  if (partJoints) {
+    // Each part's vertices are moved from its own joint to the mount, like a single part's below.
+    const [mountJoint, [dx, dy, dz]] = Array.isArray(mount) ? mount : tunes.mounts[mount];
+    const to = tunes.joints[mountJoint];
+    const vertexFix = (joint) => {
+      const from = tunes.joints[joint];
+      const off = toGltf([to[0] - from[0] + dx, to[1] - from[1] + dy, to[2] - from[2] + dz]);
+      return (p) => p.map((c, i) => (c - off[i]) / ITEM_SCALE);
+    };
+    written.push(await convertMerged(k, partJoints, `item_${id}`, join(PARTS, `item_${id}.glb`), vertexFix));
+    continue;
+  }
   const [mountJoint, [dx, dy, dz]] = Array.isArray(mount) ? mount : tunes.mounts[mount]; // Blender axes, mm, relative to the mount's joint
   // Where the mount is relative to the joint the part's origin sits on (nowhere if the origin is the mount).
   const from = tunes.joints[originJoint ?? mountJoint];
@@ -251,7 +306,7 @@ for (const key of itemsOnly ? [] : Object.keys(manifest.kit)) {
 if (!itemsOnly) for (const k of KIT) manifest.kit[kitName(k)] = `kit/${kitName(k)}.glb`;
 if (model.frameFrom && !itemsOnly) manifest.kit[model.frame] = `kit/${model.frame}.glb`;
 for (const [k, [id, , , from_]] of Object.entries(ITEMS))
-  if (from_ === 'items' ? itemsDir && existsSync(join(itemsDir, `${k}.glb`)) : !itemsOnly || existsSync(join(src, `${k}.glb`))) manifest.items[id] = `item_${id}.glb`;
+  if (from_ === 'items' ? itemsDir && existsSync(join(itemsDir, `${k}.glb`)) : !itemsOnly || existsSync(join(src, `${k.split('+')[0]}.glb`))) manifest.items[id] = `item_${id}.glb`;
 for (const kind of ['items', 'kit']) manifest[kind] = Object.fromEntries(Object.entries(manifest[kind]).sort(([a], [b]) => (a < b ? -1 : 1)));
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 

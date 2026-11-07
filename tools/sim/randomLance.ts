@@ -32,7 +32,7 @@ function randomWalker(rng: Rng, name: string, budget: number, faction: Faction):
   for (let tries = 0; tries < 30; tries++) {
     const loc = tries < 2 ? pick(rng, ['armLeft', 'armRight'] as Location[]) : pick(rng, LOCS);
     const options = mountableItems(loc, EQUIPMENT).filter(
-      (e) => (!e.faction || e.faction === faction.id) && e.slots <= free[loc] && (tries >= 2 || e.weapon),
+      (e) => (!e.faction || e.faction === faction.id) && (!e.chassis || e.chassis.includes(c.id)) && e.slots <= free[loc] && (tries >= 2 || e.weapon),
     );
     if (!options.length) continue;
     const item = pick(rng, options);

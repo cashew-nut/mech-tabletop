@@ -107,6 +107,10 @@ for (const c of chassis) {
 }
 for (const e of equipment) {
   if (e.faction !== undefined && !factionsById.has(e.faction)) fail(`equipment "${e.id}"`, `unknown faction "${e.faction}"`);
+  for (const id of e.chassis ?? []) {
+    if (!chassisById.has(id)) fail(`equipment "${e.id}"`, `chassis list names unknown class "${id}"`);
+    else if (e.faction && chassisById.get(id).faction !== e.faction) fail(`equipment "${e.id}"`, `${id} is not a ${e.faction} class`);
+  }
 }
 
 // Scenarios
@@ -176,6 +180,7 @@ function walkerCost(walker, faction, where) {
         fail(where, `${e.name} cannot be mounted in ${loc}`);
       }
       if (faction && e.faction && e.faction !== faction.id) fail(where, `${e.name} is ${e.faction} gear, not ${faction.id}`);
+      if (e.chassis && !e.chassis.includes(c.id)) fail(where, `${e.name} cannot be fitted to a ${c.name}`);
       used += e.slots;
       counts.set(id, (counts.get(id) ?? 0) + 1);
       total += Math.max(1, e.points + (faction?.pointModifiers?.[id] ?? 0));
