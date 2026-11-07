@@ -133,7 +133,7 @@ export function WalkerControls(props: Props) {
           const limit = armItemLimit(chassis, loc);
           const full = limit !== undefined && items.length >= limit;
           const free = full ? 0 : stats.slotsFree[loc];
-          const options = mountableItems(loc, EQUIPMENT).filter((o) => !o.faction || o.faction === faction.id);
+          const options = mountableItems(loc, EQUIPMENT).filter((o) => (!o.faction || o.faction === faction.id) && (!o.chassis || o.chassis.includes(chassis.id)));
           return (
             <div key={loc} className={`location loc-${loc} ${free < 0 ? 'overfull' : ''}`}>
               <div className="location-head">

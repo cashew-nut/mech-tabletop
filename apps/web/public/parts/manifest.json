@@ -23,6 +23,7 @@
     "rail-cannon@brute": "item_rail-cannon@brute.glb",
     "rocket-pod": "item_rocket-pod.glb",
     "rocket-pod@brute": "item_rocket-pod@brute.glb",
+    "shell-arm@artillery": "item_shell-arm@artillery.glb",
     "soul-lantern": "item_soul-lantern.glb"
   },
   "kit": {
@@ -100,7 +101,6 @@
     "foundries_foot_brute": "kit/foundries_foot_brute.glb",
     "foundries_foot_bulwark": "kit/foundries_foot_bulwark.glb",
     "foundries_foot_scout": "kit/foundries_foot_scout.glb",
-    "foundries_forearm_artillery": "kit/foundries_forearm_artillery.glb",
     "foundries_forearm_bulwark": "kit/foundries_forearm_bulwark.glb",
     "foundries_forearm_scout": "kit/foundries_forearm_scout.glb",
     "foundries_frame_artillery": "kit/foundries_frame_artillery.glb",
@@ -109,7 +109,6 @@
     "foundries_frame_scout": "kit/foundries_frame_scout.glb",
     "foundries_frame_striker": "kit/foundries_frame_striker.glb",
     "foundries_frame_titan": "kit/foundries_frame_titan.glb",
-    "foundries_hand_artillery": "kit/foundries_hand_artillery.glb",
     "foundries_hand_bulwark": "kit/foundries_hand_bulwark.glb",
     "foundries_hand_scout": "kit/foundries_hand_scout.glb",
     "foundries_helm_artillery": "kit/foundries_helm_artillery.glb",

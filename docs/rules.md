@@ -49,7 +49,7 @@ uses as many slots as listed and must fit in one location: a 2-slot weapon needs
 2 free slots. Items list which locations they may use (`arm`, `core`, `legs`, or `any`). The Carapace Gun is
 a weapon that mounts on an arm.
 
-The Brute and the Seer have one socket per arm (`armItemLimit` in `data/chassis.json`), so each of their arms carries a single
+The Brute, the Seer and the Artillery have one socket per arm (`armItemLimit` in `data/chassis.json`), so each of their arms carries a single
 item even where the table below shows spare slots; the spare slot cannot be filled. Every other class fills its arms by slots alone.
 
 **Limits.** At most one Targeting Array per war-walker. Fitting two or more Ablative Plating on
@@ -314,6 +314,7 @@ the Trial ends at once and the other side wins.
 | Foundries | Rail Cannon | Arm | 2 | 2 | 7 | Long | 1 | 4 | Pierce 2. +2 TN instead of +1 after moving. |
 | Foundries | Rocket Pod | Arm | 2 | 2 | 4 | Long | 2 | 2 | Blast. Minimum range 4. |
 | Foundries | Industrial Claw | Arm | 1 | 1 | 5 | Melee | 2 | 3 | Push the target 1 hex away on a hit. |
+| Foundries (Artillery only) | Shell Arm | Arm | 2 | 2 | 6 | Long | 1 | 4 | Blast. Minimum range 4. Ammo 3. |
 | Reliquary | Arc Spear (id `arc-cannon`) | Arm | 1 | 1 | 6 | Medium | 3 | 1 | Each hit drains 1 Pressure from the target's next activation. No ammo. |
 | Reliquary | Hellfire Missiles | Core (shoulder sockets) | 2 | 1 | 5 | Long | 3 | 1 | Indirect. Each hit adds 1 Overpressure. Ammo 3. |
 | Reliquary | Kinetic Claws | Arm | 1 | 1 | 6 | Melee | 4 | 1 | **Backstab:** rolls of 5 or 6 are criticals from the target's rear arc. |
@@ -429,3 +430,14 @@ The Sentinel's arms now have 2 slots each (was 1), at the same 19 points, and th
 instead of the core. On the model it is one launcher pod on the shoulder of the arm that holds it, so a Sentinel carries up to two. A Lancer
 arm already has 2 slots; a Scavenger's has 1 and cannot hold it. A Sentinel can fit a Rack or a Gun plus a Siege Blade on an arm, and
 the example lances Censer and Psalm carry their Rack on the left arm. The Sentinel's body-part card (`CV-SEN-ARM-T1`) shows 2 slots per arm.
+
+## 23. Changes after v0.7: the Artillery's shell arm is an optional weapon
+
+The Artillery's big shell arms used to be part of its body, with every other weapon hung on top of them. The shell arm is now a
+weapon, the **Shell Arm** (Foundries, Artillery only, `chassis: ["artillery"]` in `data/equipment.json`): 2 slots, 2 Pressure,
+6 points, 1 die of 4 damage at long range, Blast, minimum range 4, ammo 3. It sits on the arm's elbow socket, and so does every other
+arm weapon, in its place. An Artillery arm therefore carries one item (`armItemLimit: 1`, like the Brute's and the Seer's): a Shell
+Arm, an Autocannon, a Rail Cannon, a Rocket Pod, an Industrial Claw or a Kinetic Shield, or nothing. Slot counts did not change.
+`validateWalker` rejects a second item on an arm and a Shell Arm on any other class. The numbers are a first pass and have not been
+simulated. Long Tom (Ashfall Warband) lost its two Autocannons and its Rocket Pod: it now carries a Rail Cannon and a Shell Arm,
+and a Gunner driver with Command 1 makes up the points, so it still costs 39 and the lance 96.

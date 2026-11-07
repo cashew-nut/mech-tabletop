@@ -26,6 +26,18 @@ describe('equipment fit', () => {
     expect([socket.joint, socket.contact]).toEqual(['elbow', ['back']]);
   });
 
+  it("gives the Artillery's elbow socket to one forearm: the shell arm, or a gun that takes its place", () => {
+    // The shell arm is a whole forearm (an item), so it and every other arm weapon sit on the same elbow hardpoint, which hides the
+    // forearm and hand; the Artillery no longer has a body forearm for a weapon to hang from.
+    expect(names(planLocation('artillery', 'armLeft', ['shell-arm'], [true]))).toEqual(['forearm-gun:L']);
+    expect(names(planLocation('artillery', 'armRight', ['rail-cannon'], [false]))).toEqual(['forearm-gun:R']);
+    expect(names(planLocation('artillery', 'armRight', ['industrial-claw'], [false]))).toEqual(['forearm-gun:R']);
+    expect(hardpoint('artillery', 'forearm-gun')).toMatchObject({ joint: 'elbow', hides: ['forearm', 'hand'] });
+    // the shell is cut on the elbow, so it needs no nudge; the Brute's gun forearms it shares the socket with do
+    expect(nudgeOf('artillery', 'forearm-gun', 'shell-arm')).toBeNull();
+    expect(nudgeOf('artillery', 'forearm-gun', 'autocannon')).not.toBeNull();
+  });
+
   it("hangs the Carapace Gun on the arm: a forearm on the Sentinel's elbow, a shoulder pod on the Paladin", () => {
     // An arm item in the rules. The Sentinel's own copy (item_carapace-gun@sentinel) is a whole forearm, so it takes the elbow of
     // whichever arm holds it and hides the forearm and hand there.

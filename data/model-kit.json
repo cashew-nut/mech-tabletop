@@ -136,7 +136,7 @@
     }
   ],
   "omit": {
-    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron. The composite Sentinel's torso carries its gorget and its pelvis the tabard. The composite Artillery's howitzer is part of its torso.",
+    "$comment": "Components a class never shows, so the frame's part does not fill in. The composite Paladin's torso carries its own collar and tabard. The composite Brute has no arm, forearm or hand: each gun is a whole forearm (an item, origin on the elbow mount) and the pauldron carries the upper-arm stub. The composite Seer's torso carries its collar. Omitted components also lose the frame's stand-ins. The Brute's elbow socket holds one forearm: a gun forearm (grip-native) or a held item such as the claw (fit.overrides.brute.grip, seated on the socket); a second weapon on that arm goes on the pauldron. The composite Sentinel's torso carries its gorget and its pelvis the tabard. The composite Artillery's howitzer is part of its torso, and it has no forearm or hand either: its shell arm (forearm and clamp with the shell) is the Shell Arm weapon, an item on the elbow socket, and the other arm weapons take the same socket in its place (fit.itemModels).",
     "paladin": [
       "cloth",
       "collar"
@@ -158,7 +158,9 @@
     ],
     "artillery": [
       "cloth",
-      "collar"
+      "collar",
+      "forearm",
+      "hand"
     ]
   },
   "spareMounts": {
@@ -1139,28 +1141,56 @@
           "grip",
           "forearm-top",
           "shoulder-top"
-        ]
+        ],
+        "classes": {
+          "artillery": {
+            "arm": [
+              "forearm-gun"
+            ]
+          }
+        }
       },
       "rail-cannon": {
         "arm": [
           "grip",
           "forearm-top",
           "shoulder-top"
-        ]
+        ],
+        "classes": {
+          "artillery": {
+            "arm": [
+              "forearm-gun"
+            ]
+          }
+        }
       },
       "rocket-pod": {
         "arm": [
           "grip",
           "forearm-top",
           "shoulder-top"
-        ]
+        ],
+        "classes": {
+          "artillery": {
+            "arm": [
+              "forearm-gun"
+            ]
+          }
+        }
       },
       "industrial-claw": {
         "arm": [
           "grip",
           "forearm-top",
           "shoulder-top"
-        ]
+        ],
+        "classes": {
+          "artillery": {
+            "arm": [
+              "forearm-gun"
+            ]
+          }
+        }
       },
       "arc-cannon": {
         "arm": [
@@ -1235,6 +1265,11 @@
         "core": [
           "shoulder-sockets"
         ]
+      },
+      "shell-arm": {
+        "arm": [
+          "forearm-gun"
+        ]
       }
     },
     "placements": {
@@ -1263,7 +1298,41 @@
       },
       "seer": {},
       "sentinel": {},
-      "artillery": {}
+      "artillery": {
+        "forearm-gun": {
+          "*": {
+            "offset": [
+              0.0199,
+              -0.0464,
+              0.1596
+            ],
+            "rot": [
+              -47,
+              0,
+              -15
+            ],
+            "scale": 1.3
+          },
+          "shell-arm": {
+            "offset": [
+              0,
+              0,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ],
+            "scale": 1
+          }
+        }
+      }
+    },
+    "itemModels": {
+      "artillery": [
+        "brute"
+      ]
     }
   }
 }

@@ -61,6 +61,9 @@ export interface Nudge {
 export interface FitData {
   classes: Record<string, { scale: number }>;
   nativeRight: string[];
+  /** A class's item models borrowed from other classes of its faction, after its own: `artillery: ["brute"]` seats the Brute's
+   * gun forearms (item_autocannon@brute) on the Artillery's elbow. */
+  itemModels?: Record<string, string[]>;
   /** Items with a card and rules but no model (internal systems and effects): they take no mount and no hardpoint. */
   cardOnly: string[];
   hardpoints: Record<string, HardpointDef>;
@@ -79,6 +82,9 @@ export function itemFit(chassisId: string, itemId: string): Omit<ItemFit, 'class
   const own = base?.classes?.[chassisId];
   return own ? { ...base, ...own } : base;
 }
+
+/** The classes whose own item models a class uses, its own first: the Artillery fits the Brute's gun forearms on its elbow socket. */
+export const itemModelClasses = (chassisId: string) => [chassisId, ...(FIT.itemModels?.[chassisId] ?? [])];
 
 export const isCardOnly = (itemId: string) => FIT.cardOnly.includes(itemId);
 

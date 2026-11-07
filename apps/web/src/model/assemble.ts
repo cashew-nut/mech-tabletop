@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { LOCATIONS, getChassis, getEquipment, type Location, type WalkerInput } from '@brass-charter/rules';
 import { bake } from './kit';
-import { FIT, fitClass, hardpoint, isCardOnly, nudgeOf, planLocation, pivotOf, poseOf, type Placement } from './fit';
+import { FIT, fitClass, hardpoint, isCardOnly, itemModelClasses, nudgeOf, planLocation, pivotOf, poseOf, type Placement } from './fit';
 import { itemPartName, kitCandidates, planKit } from './kitparts';
 import { PARTS, buildChassis, makePalette, partScale, type ChassisModel, type Palette } from './parts';
 
@@ -305,7 +305,7 @@ export function buildWalkerModel(walker: WalkerInput, hullColour: string, lib: P
     // Always the item's best model for this class (lance@paladin, then the faction's, then the shared one). It never
     // depends on what else is fitted or in which order: a second item on the same arm used to fall back to the shared
     // model, which is the pre-rework look, so the same loadout showed different weapons depending on the order it was built.
-    const libNames = ids.map((id) => (lib ? itemPartName(lib.items, id, c.faction, c.id) : null));
+    const libNames = ids.map((id) => (lib ? itemPartName(lib.items, id, c.faction, itemModelClasses(c.id)) : null));
     const native = libNames.map((n) => !!n?.endsWith(`@${c.id}`));
     const plan = fit && height > 0 ? planLocation(c.id, loc, ids, native) : null;
     ids.forEach((id, index) => {

@@ -46,6 +46,8 @@ export interface EquipmentDef {
   name: string;
   /** Signature gear only that faction can fit. Shared gear has none. */
   faction?: string;
+  /** Only these classes can fit it (the Artillery's Shell Arm, which only its model has). Absent: any class of the faction. */
+  chassis?: string[];
   category: 'weapon' | 'defence' | 'mobility' | 'system';
   mount: Array<'arm' | 'core' | 'legs' | 'any'>;
   slots: number;

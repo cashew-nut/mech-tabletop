@@ -57,4 +57,19 @@ Published with `node scripts/publish-composite.mjs models/artillery-composite/gl
 `KTX2_NORMAL=etc1s KTX2_BASE_Q=150`: the eleven body parts as `kit/foundries_<part>_artillery.glb` (left side only, the web mirrors the
 right) and the class frame `foundries_frame_artillery.glb` (a copy of the Foundries bulwark frame), 3.6 MB in all.
 `data/model-kit.json` has `frameTunes["foundries/artillery"]` (joints shifted 4.35 mm in y), `omit.artillery` and a `fit` class with
-the Sentinel's overrides. Items still use the shared models on the hardpoints; they were not retuned for the forward-held shell arm.
+the Sentinel's overrides. 
+## Shell arm as a weapon (2026-11-07)
+
+The shell arm (forearm and clamp with its shell) is no longer a body part: it is the **Shell Arm** weapon, an optional item on the
+elbow socket, and every other arm weapon sits on the same socket in its place (`shell-arm.jpg`: shells on both arms, a gun and a
+shell, two guns, empty arms). An Artillery arm holds one item (`armItemLimit: 1`), so a gun no longer hangs from a shell.
+
+- The shell arm item is built from the recoloured parts (`models/artillery-composite/glb-brute-palette/`). `forearm` and `hand` leave the kit (`omit.artillery` in `data/model-kit.json`; `foundries_forearm_artillery` and
+  `foundries_hand_artillery` are gone) and come back as one item, `item_shell-arm@artillery.glb` (merged by
+  `node scripts/publish-composite.mjs models/artillery-composite/glb-brute-palette artillery --items`, then `compress-parts.mjs`), origin on the elbow.
+  The printed parts are unchanged: forearm and clamp are still two parts with a 5 mm peg between them.
+- The Artillery borrows the Brute's gun forearms (`fit.itemModels.artillery = ["brute"]`: `item_autocannon@brute` and the other three), seated on
+  the elbow at 1.3x, turned level and a little inward by a placement row (`fit.placements.artillery["forearm-gun"]`). These are the Brute's
+  models and textures (the Artillery is now in the Brute's colours too); no Artillery-specific gun forearms exist yet.
+- The Shell Arm is Artillery-only gear (`chassis` in `data/equipment.json`), 6 points, a first-pass stat line that has not been simulated.
+- Not changed: the Artillery's body card art (`AF-ART-ARM-T1`) and the printable parts.

@@ -40,6 +40,7 @@
       "id": "artillery", "name": "Artillery", "faction": "foundries", "role": "Long range", "frame": "bulwark",
       "size": 3, "points": 12, "stride": 1, "boiler": 7,
       "slots": { "armLeft": 3, "armRight": 3, "core": 2, "legs": 1 },
+      "armItemLimit": 1,
       "armour": { "coreFront": 7, "coreRear": 3, "arm": 3, "legs": 5 },
       "structure": { "core": 5, "other": 4 }
     },

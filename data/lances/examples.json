@@ -94,17 +94,15 @@
           "name": "Long Tom",
           "chassis": "artillery",
           "driver": {
-            "command": 0,
-            "trait": null
+            "command": 1,
+            "trait": "gunner"
           },
           "loadout": {
             "armLeft": [
-              "rail-cannon",
-              "autocannon"
+              "rail-cannon"
             ],
             "armRight": [
-              "rocket-pod",
-              "autocannon"
+              "shell-arm"
             ],
             "core": [
               "targeting-array",

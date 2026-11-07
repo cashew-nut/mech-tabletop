@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { WalkerInput } from '@brass-charter/rules';
 import { buildWalkerModel, emptyLibrary, type PartLibrary } from '../src/model/assemble';
 import { stlBytes } from '../src/model/exporters';
-import { COMPONENTS, SPARE_MOUNTS, jointName, kitCandidates, planKit, resolvePart } from '../src/model/kitparts';
+import { COMPONENTS, SPARE_MOUNTS, itemPartName, jointName, kitCandidates, planKit, resolvePart } from '../src/model/kitparts';
 
 const JOINTS = ['root', 'pelvis', 'spine', 'chest', 'neck', 'head', 'shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle'];
 
@@ -119,6 +119,23 @@ describe('kit part resolution', () => {
     const right = plan.parts.filter((p) => p.side === 'R');
     for (const c of ['pauldron', 'arm', 'forearm', 'hand']) expect(right.find((p) => p.component === c)).toMatchObject({ name: `reliquary_${c}-right_seer`, mirror: false });
     for (const c of ['thigh', 'shin', 'foot']) expect(right.find((p) => p.component === c)).toMatchObject({ name: `reliquary_${c}_seer`, mirror: true });
+  });
+
+  it("leaves the Artillery's forearm and hand to its Shell Arm item, and lets it use the Brute's gun forearms", () => {
+    const names = new Set(['foundries_frame_artillery']);
+    for (const c of ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'thigh', 'shin', 'foot']) names.add(`foundries_${c}_artillery`);
+    const plan = planKit(names, 'foundries', 'artillery', 'bulwark')!;
+    expect(plan.missing).toEqual([]);
+    expect(plan.parts.map((p) => p.component)).not.toContain('forearm');
+    expect(plan.parts.map((p) => p.component)).not.toContain('hand');
+    expect(plan.omitted).toEqual(expect.arrayContaining(['forearm', 'hand']));
+    expect(kitCandidates('foundries', 'artillery', 'bulwark')).not.toContain('foundries_forearm_artillery');
+    const items = new Set(['shell-arm@artillery', 'autocannon', 'autocannon@brute', 'rocket-pod']);
+    expect(itemPartName(items, 'shell-arm', 'foundries', ['artillery', 'brute'])).toBe('shell-arm@artillery');
+    expect(itemPartName(items, 'autocannon', 'foundries', ['artillery', 'brute'])).toBe('autocannon@brute');
+    expect(itemPartName(items, 'autocannon', 'foundries', 'brute')).toBe('autocannon@brute');
+    expect(itemPartName(items, 'rocket-pod', 'foundries', ['artillery', 'brute'])).toBe('rocket-pod');
+    expect(itemPartName(items, 'autocannon', 'foundries', 'scavenger')).toBe('autocannon');
   });
 
   it('needs the frame skeleton', () => {
