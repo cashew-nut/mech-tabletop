@@ -1,5 +1,5 @@
-// Render the art for the Paladin, Sentinel and Artillery card faces from the existing GLBs, with the headless renderer.
-//   node scripts/render-card-art.mjs [outDir] [artKey...]      (default outDir: cards/art)
+// (No longer the card art: kept as an alternative.) Render the art for the Paladin, Sentinel and Artillery card faces from the existing GLBs, with the headless renderer.
+//   node scripts/render-card-art.mjs [outDir] [artKey...]      (default outDir: cards/art-renders; the card sheet uses cards/art, cut from the concept art by tools/cards/crop_art.py)
 // Body parts are the Paladin's composite kit parts, each shown alone (solo=1: closed solids, no body behind them); items are the class's own item GLB
 // on its own. Both go through apps/web/render.html (see apps/web/src/model/preview.ts). Needs Playwright installed
 // globally, like scripts/render-walkers.mjs. Costs nothing: no Meshy.
@@ -37,7 +37,7 @@ const SPECS = {
   // kept as it was rendered and cannot be re-rendered here.
 };
 
-const [outDir = 'cards/art', ...picked] = process.argv.slice(2);
+const [outDir = 'cards/art-renders', ...picked] = process.argv.slice(2);
 const keys = picked.length ? picked : Object.keys(SPECS);
 mkdirSync(outDir, { recursive: true });
 

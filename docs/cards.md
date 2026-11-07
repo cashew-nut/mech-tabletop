@@ -33,25 +33,40 @@ A one-off script, `scripts/seed-parts.mjs`, made the first split with the shares
 | `stats` | Same shape as the part's stats (equipment: the `equipment.json` fields) |
 | `statsPlaceholder` | `true` for tiers 2 to 5 |
 | `printRun` | Relics only; placeholder number for the numbered run |
-| `art` | File in `cards/art/` |
+| `art` | File in `cards/art/`, cut from the concept art (see below) |
 
 Three example parts, Paladin legs, torso and arms, exist at all five tiers. Tier 1 equals the part. Tiers 2 to 5 add 1 to the primary stat and 1 point per step; this is only so the cards differ, not balance. The other three Paladin parts and four items (Siege Blade, Carapace Gun, Gyro Stabilisers, Targeting Array) exist at tier 1. Gyro Stabilisers and Targeting Array are card-only items (no model), so their art is kept as rendered and the art script no longer redraws it.
 
 ## The Sentinel's cards
 
-The Iron Covenant Sentinel (the first walker made with the Meshy-light pipeline, `docs/sentinel-composite/`) has its six body part cards at tier 1, `CV-SEN-LEG-T1` to `CV-SEN-CRB-T1`, with stats equal to its rows in `data/parts.json`. The art is rendered from the published composite parts (`sentinel-legs`, `-torso`, `-helm`, `-pauldrons`, `-arms`, `-crown-back` in `render-card-art.mjs`), the same way as the Paladin's, so each card shows the printable part with its pegs. The concept art they came from is in `docs/concept-art/sentinel/`. The Carapace Gun card still prints the Paladin's art; the Sentinel's own gun forearm (`item_carapace-gun@sentinel`) could be rendered for it later.
+The Iron Covenant Sentinel (the first walker made with the Meshy-light pipeline, `docs/sentinel-composite/`) has its six body part cards at tier 1, `CV-SEN-LEG-T1` to `CV-SEN-CRB-T1`, with stats equal to its rows in `data/parts.json`. The art is cut from the Sentinel's concept art (`docs/concept-art/sentinel/hero.jpg`), see "Card art" below. The Carapace Gun card prints the same hero's gun arm.
 
 ## The Artillery's cards
 
-The Ashen Foundries Artillery (`docs/artillery-composite/`) has its six body part cards at tier 1, `AF-ART-LEG-T1` to `AF-ART-CRB-T1` (`AF` is the Ashen Foundries' code), with stats equal to its rows in `data/parts.json`. The art is rendered from the published composite parts (`artillery-legs`, `-torso`, `-helm`, `-pauldrons`, `-arms`, `-crown-back` in `render-card-art.mjs`), so each card shows the printable part with its pegs; the torso card carries the howitzer, and the helm card is the cupola dome. The parts are the model's own brown, not the in-game rust red. The concept art they came from is in `docs/concept-art/artillery/`. The Foundries have no equipment cards yet.
+The Ashen Foundries Artillery (`docs/artillery-composite/`) has its six body part cards at tier 1, `AF-ART-LEG-T1` to `AF-ART-CRB-T1` (`AF` is the Ashen Foundries' code), with stats equal to its rows in `data/parts.json`. The art is cut from the Artillery's concept art (`docs/concept-art/artillery/hero.jpg`; the helm from `partsheet.jpg`, because the hero shows no head), see "Card art" below. The torso card carries the howitzer, the arms card the shell arm. The Foundries have no equipment cards yet.
 
-## Art, faces and the sheet
+## Card art
+
+Card art is cut from the concept art, not rendered from the 3D models (decided by Luke, 2026-11-07). `tools/cards/crop_art.py` reads `tools/cards/crops.json` (one entry per `art` key: source image under `docs/concept-art/`, crop centre in source pixels, crop width) and writes `cards/art/<key>.jpg` at 1100 x 850, the 55 x 46 mm art window. Edit a crop by changing its numbers and rerunning; no Meshy credits, no renderer.
+
+| Cards | Source |
+| --- | --- |
+| Sentinel (six body cards), Carapace Gun | `sentinel/hero.jpg` |
+| Artillery (six body cards) | `artillery/hero.jpg`, helm from `artillery/partsheet.jpg` |
+| Paladin (six body cards, all five tiers share the art), Siege Blade | `iron-covenant-board.png`: the hero shot, helm close-up, furnace chest and hand tiles |
+| Gyro Stabilisers, Targeting Array | Card-only items with no concept art; they keep their earlier render |
+
+The art is made one image per class, so a card shows a part in the painting, not a separate studio picture of it. The Paladin has no hero or part sheet of its own, only the faction board (1312 px wide), so its crops are enlarged 4 to 7 times and are the softest. Art made for one card at a time is not needed now.
+
+The old 3D-render art is kept in `cards/art-renders/`; `render-card-art.mjs` writes there and the sheet does not use it.
+
+## Faces and the sheet
 
 ```sh
-node scripts/render-card-art.mjs            # cards/art/*.jpg from the kit and item GLBs, no Meshy
+python3 tools/cards/crop_art.py             # cards/art/*.jpg cut from docs/concept-art, no Meshy
 node scripts/build-card-sheet.mjs [facesDir] # cards/sheet.html, cards/cards.pdf, optional PNG faces at 300 dpi
 ```
 
-`render-card-art.mjs` uses the headless renderer (`apps/web/render.html`) with options in `preview.ts`: `show=` picks the named kit components, `side=L` keeps one side, `solo=1` drops everything else, and `plain=1` drops the floor and skyline. Since the Paladin became closed composite parts (`assets/blender/parts/composite`, published into the game), each body card shows its own parts alone, with the pegs where they plug in. Without `solo=1` the rest of the body is dimmed instead (`dim=`). The art is framed by the shown parts' bounding box, so tall parts (torso with its banner, arm) sit a little left of centre.
+`render-card-art.mjs` (the earlier art, now kept in `cards/art-renders/`) uses the headless renderer (`apps/web/render.html`) with options in `preview.ts`: `show=` picks the named kit components, `side=L` keeps one side, `solo=1` drops everything else, and `plain=1` drops the floor and skyline. Since the Paladin became closed composite parts (`assets/blender/parts/composite`, published into the game), each body card shows its own parts alone, with the pegs where they plug in. Without `solo=1` the rest of the body is dimmed instead (`dim=`). The art is framed by the shown parts' bounding box, so tall parts (torso with its banner, arm) sit a little left of centre.
 
 The PDF is A4, nine cards per page with crop marks. Cards have no bleed yet; print at 100%.
