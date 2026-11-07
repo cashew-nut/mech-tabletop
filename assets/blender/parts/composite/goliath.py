@@ -14,8 +14,8 @@ to this figure:
   at Luke's 1.5x that is 75 mm to the hood top and about 93 mm to the spire tips.
 * **The Arc Cannon.** The figure's right forearm is the cannon, held level and pointing forward. Like the Sentinel's gun
   it is cut from the right, mirrored, and re-seated on the forearm's socket (RESEAT), so it fits an elbow of either side.
-* **The staff.** The left hand holds the hooked Soul Lantern staff. It is cut with the hand as one part ("Hand + staff"):
-  a swappable staff item on the wrist needs a socket the figure does not have (follow-up).
+* **The staff.** The left hand holds a hooked staff in the mesh. Luke did not like the long white blade it made on both
+  hands (the hand is mirrored), so it is dropped: the hand is a bare clawed hand. A staff item would be a new model (follow-up).
 * **Dropped.** The tattered cloth, hanging chains and small lanterns that Meshy added to the wing spars and the gun
   (they would not print) are labelled `drop`, as is anything hanging below the elbows away from the legs. The central
   banner stays with the pelvis, as the Sentinel's tabard does.
@@ -50,7 +50,7 @@ BONES_C = {
 }
 BONES_S = {
     "pauldron": ((0.34, 0.27, 0.44), (0.50, 0.27, 0.40), 0.16),
-    "arm": ((0.36, 0.27, 0.38), (0.40, 0.23, 0.02), 0.09),
+    "arm": ((0.36, 0.27, 0.38), (0.40, 0.23, 0.02), 0.06),
     "forearm": ((0.40, 0.23, 0.02), (0.40, 0.15, -0.17), 0.10),
     "hand": ((0.40, 0.14, -0.17), (0.40, 0.05, -0.27), 0.10),
     "thigh": ((0.22, 0.20, -0.12), (0.34, 0.20, -0.38), 0.13),
@@ -64,7 +64,7 @@ HELM = ((0.0, 0.05, 0.52), (0.115, 0.14, 0.12))               # hood: centre, ra
 
 PARTS = {
     "torso": ["torso"], "pelvis": ["pelvis", "tabard"], "helm": ["helm"], "back": ["back"],
-    "pauldron": ["pauldron_L"], "arm": ["arm_L"], "forearm": ["forearm_L"], "hand": ["hand_L", "staff"],
+    "pauldron": ["pauldron_L"], "arm": ["arm_L"], "forearm": ["forearm_L"], "hand": ["hand_L"],
     "thigh": ["thigh_L"], "shin": ["shin_L"], "foot": ["foot_L"], "gun": ["gun"],
     "_pauldron_R": ["pauldron_R"], "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"],
     "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"], "_drop": ["drop"],
@@ -108,10 +108,12 @@ def _toward(a, b):
 
 # Ball knuckles in gilded sleeves (the Seer's standard, seer.py): the Goliath's limbs are gaunt, so every limb joint gets
 # one, designed in rather than found. child part -> (joint, axis from the child into its parent, radius in figure units).
+HAND_DIR = np.array([0.0, -0.97, -0.24])   # the claws reach forward and a little down, clear of the thigh
+ARM_ROD_R = 2.2             # mm at print scale
 KG = 0.8                     # first cut at 1.0 looked like gold top hats on the gaunt limbs
 KNUCKLES = {
     "helm": ("neck", (0.0, 0.0, -1.0), 0.055),
-    "arm": ("shoulder", (-1.0, 0.0, 0.2), 0.080),
+    "arm": ("shoulder", (-1.0, 0.0, 0.2), 0.098),   # bigger: the shoulder peg needs depth for a magnet
     "forearm": ("elbow", _toward("elbow", "shoulder"), 0.068),
     "hand": ("wrist", _toward("wrist", "elbow"), 0.060),
     "thigh": ("hip", _toward("knee", "hip"), 0.078),
@@ -164,16 +166,41 @@ def extra_solids(mf, to_mm):
             Rm = np.eye(3) + vx + vx @ vx * ((1 - cth) / sn ** 2)
         Mx = np.concatenate([Rm, c[:, None]], 1)
         out.append(k.transform(Mx.tolist()))
+    # the upper arm: a gilded rod with two bands between the shoulder and elbow knuckles (both sides)
+    A, B = to_mm(np.array(JOINTS["shoulder"])), to_mm(np.array(JOINTS["elbow"]))
+    for sx in (1, -1):
+        a, b = A * (sx, 1, 1), B * (sx, 1, 1)
+        out.append(_capsule(mf, a, b, ARM_ROD_R))
+        for t in (0.38, 0.62):
+            c = a + (b - a) * t
+            d = (b - a) / np.linalg.norm(b - a)
+            out.append(_capsule(mf, c - d * 0.45, c + d * 0.45, ARM_ROD_R * 1.3))
+    # the hand: the mesh has almost none (the staff hid it), so it is a gilded palm with four long clawed fingers
+    Wr = to_mm(np.array(JOINTS["wrist"]))
+    d = HAND_DIR
+    for sx in (1, -1):
+        w = Wr * (sx, 1, 1)
+        dd = d * (sx, 1, 1)
+        e1 = np.array([sx, 0.0, 0.0])
+        out.append(mf.Manifold.sphere(2.7, 32).translate(tuple(w + dd * 1.5)))
+        for off in (-2.1, -0.7, 0.7, 2.1):
+            p0 = w + dd * 2.2 + e1 * off
+            p1 = p0 + dd * 4.0 - e1 * off * 0.1
+            bend = dd * np.cos(np.radians(38)) + np.array([0.0, 0.0, -np.sin(np.radians(38))])
+            p2 = p1 + bend * 3.6
+            out.append(_capsule(mf, p0, p1, 0.8, r1=0.65))
+            out.append(mf.Manifold.sphere(0.65, 16).translate(tuple(p1)))
+            out.append(_capsule(mf, p1, p2, 0.65, r1=0.18))
     solid = mf.Manifold.batch_boolean(out, mf.OpType.Add)
     return solid.set_properties(2, lambda p, old: (-2.0, -2.0))
 
 
-def _capsule(mf, A, B, r):
+def _capsule(mf, A, B, r, props=False, r1=None):
     A, B = np.asarray(A, float), np.asarray(B, float)
     d = B - A
     h = np.linalg.norm(d)
     a = d / h
-    cyl = mf.Manifold.cylinder(h, r, r, 24)
+    cyl = mf.Manifold.cylinder(h, r, r if r1 is None else r1, 24)
     zc = np.array([0.0, 0.0, 1.0])
     v = np.cross(zc, a)
     sn, cth = np.linalg.norm(v), zc @ a
@@ -182,11 +209,12 @@ def _capsule(mf, A, B, r):
     else:
         vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
         Rm = np.eye(3) + vx + vx @ vx * ((1 - cth) / sn ** 2)
-    return cyl.transform(np.concatenate([Rm, A[:, None]], 1).tolist()).set_properties(2, lambda p, old: (-2.0, -2.0))
+    out = cyl.transform(np.concatenate([Rm, A[:, None]], 1).tolist())
+    return out.set_properties(2, lambda p, old: (-2.0, -2.0)) if props else out
 
 
 def design(solid, mf):
-    """Drop the floating bits that Meshy's hanging chains and lanterns leave on a part, and join the upper arm."""
+    """Drop the floating bits that Meshy's hanging chains and lanterns leave on a part."""
     from layout import joint
     out = {}
     for k, m in solid.items():
@@ -195,11 +223,6 @@ def design(solid, mf):
         out[k] = mf.Manifold.batch_boolean(keep, mf.OpType.Add) if len(keep) > 1 else keep[0]
         if len(keep) < len(ps):
             print(f"  {k}: dropped {len(ps) - len(keep)} floating piece(s)")
-    # the upper arm's shaft and its shoulder knuckle meet through a hair of mesh: bridge them with a plain rod
-    if "arm" in out and len(out["arm"].decompose()) > 1:
-        A, B = np.array(joint("shoulder")), np.array(joint("elbow"))
-        out["arm"] = out["arm"] + _capsule(mf, A + (B - A) * 0.17, A + (B - A) * 0.62, 3.3)
-        print("  arm: bridged,", len(out["arm"].decompose()), "piece(s)")
     return out
 
 
@@ -211,7 +234,7 @@ BUDGET = {
 }
 LABEL = {
     "pelvis": "Pelvis + banner", "torso": "Reliquary torso", "helm": "Hood", "back": "Spires + halo + pack",
-    "pauldron": "Wing pauldron", "arm": "Upper arm", "forearm": "Forearm", "hand": "Hand + staff", "thigh": "Thigh",
+    "pauldron": "Wing pauldron", "arm": "Upper arm", "forearm": "Forearm", "hand": "Hand", "thigh": "Thigh",
     "shin": "Shin", "foot": "Foot", "gun": "Arc Cannon (equipment)",
 }
 EXPLODE, EXPLODE_DROP = 11.0, 4.0
@@ -255,6 +278,10 @@ def label_points(P, _cloth=None):
     setl((a > 0.28) & (y < 0.08) & (z < -0.27) & (z > -0.86), "drop")
     setl((a > 0.28) & (y > 0.33) & (z < 0.12) & (z > -0.70), "drop")
     setl((a > 0.52) & (z < 0.20) & (z > -0.86), "drop")
+    # the Meshy upper arm is a hollow shell half hidden by cloth: only a thin tube round the bone is kept (the designed
+    # gilded rod, see extra_solids); the shell round it is dropped. The cannon and the knuckles are labelled after this.
+    dshell = seg_d(Pm, *BONES_S["arm"][:2])
+    setl((dshell > 0.062) & (dshell < 0.12) & (z > 0.04) & (z < 0.34) & (a > 0.31), "drop")
     (px0, px1), (py0, py1), (pz0, pz1) = PAULDRON_BOX
     paul = (a >= px0) & (a < px1) & (y >= py0) & (y < py1) & (z >= pz0) & (z < pz1)
     setl(paul & L, "pauldron_L")
@@ -271,7 +298,17 @@ def label_points(P, _cloth=None):
     (gx0, gx1), (gy0, gy1), (gz0, gz1) = GUN
     setl((x >= gx0) & (x < gx1) & (y >= gy0) & (y < gy1) & (z >= gz0) & (z < gz1), "gun")
     (sx0, sx1), (sy0, sy1), (sz0, sz1) = STAFF
-    setl((x >= sx0) & (x < sx1) & (y >= sy0) & (y < sy1) & (z >= sz0) & (z < sz1), "staff")
+    setl((x >= sx0) & (x < sx1) & (y >= sy0) & (y < sy1) & (z >= sz0) & (z < sz1), "drop")   # Luke: no white staff blades
+    # the designed claw hand: a short capsule from the wrist along the claws' direction (clear of the thigh: y < 0.09)
+    wr = np.array(JOINTS["wrist"], np.float32)
+    dh = HAND_DIR.astype(np.float32)
+    dh = dh / np.linalg.norm(dh)
+    Wm = wr * np.array([1, 1, 1], np.float32)
+    t = np.clip(((Pm - Wm) @ dh) / 0.34, 0, 1)
+    dist = np.linalg.norm(Pm - (Wm + t[:, None] * 0.34 * dh), axis=1)
+    claw = (dist < 0.09) & (y < 0.09) & (a > 0.30)
+    setl(claw & L, "hand_L")
+    setl(claw & ~L, "hand_R")
     # knuckles: inside a ball (and its sleeve), the cut is the plane through its centre, square to the bone
     for child, side, c, a, R in knuckles():
         lab_c, lab_p = _knuckle_labels(child, side)
