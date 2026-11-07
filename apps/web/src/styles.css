@@ -1517,3 +1517,79 @@ button.end {
 .part-list .item {
   color: #d98a5a;
 }
+
+/* ---------- Phones and touch screens ---------- */
+
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 4px 2px;
+  padding: 8px 10px;
+  background: #2a2724;
+  color: #f3e6c4;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.confirm-bar span {
+  flex: 1;
+}
+
+@media (pointer: coarse) {
+  button,
+  a.button {
+    min-height: 44px;
+  }
+  .tabs button {
+    min-height: 44px;
+  }
+  .legend {
+    display: none;
+  }
+  .board3d {
+    overscroll-behavior: contain;
+  }
+  .hud-map {
+    display: none; /* the minimap covers too much of a phone-sized board */
+  }
+  .hud-unit {
+    max-width: 70%;
+    font-size: 0.8em;
+  }
+}
+
+/* Portrait phone: the board stays pinned at the top while the controls scroll beneath it. */
+@media (pointer: coarse) and (max-width: 980px) and (orientation: portrait) {
+  .trial .board.board-3d {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+}
+
+/* Landscape phone: board on the left, controls scrolling on the right. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
+  .trial {
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+    gap: 8px;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .trial .board.board-3d {
+    position: sticky;
+    top: 0;
+  }
+  .side-panel {
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+  .masthead {
+    display: none;
+  }
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}

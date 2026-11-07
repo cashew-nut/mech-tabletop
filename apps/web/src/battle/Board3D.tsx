@@ -457,7 +457,11 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
 
     const resize = () => {
       const w = el.clientWidth;
-      const h = Math.max(260, Math.round(w * 0.72));
+      // Desktop keeps the wide board. On a phone the board is taller, and in landscape it fills the screen height, so the walkers are big enough to tap.
+      const landscape = window.innerWidth > window.innerHeight;
+      const h = low
+        ? Math.max(240, Math.round(landscape ? window.innerHeight - 90 : Math.min(w * 1.05, window.innerHeight * 0.42)))
+        : Math.max(260, Math.round(w * 0.72));
       el.style.height = `${h}px`;
       renderer.setSize(Math.ceil((w * scale) / PIXEL), Math.ceil((h * scale) / PIXEL), false);
       composer?.setSize(Math.ceil((w * scale) / PIXEL), Math.ceil((h * scale) / PIXEL));
@@ -467,6 +471,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(el);
+    window.addEventListener('resize', resize); // a rotation changes the height without changing the width
 
     // A click is a pointer up that did not travel far from its pointer down (otherwise it was an orbit drag).
     const ray = new THREE.Raycaster();
@@ -522,6 +527,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       disposed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener('resize', resize);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp);
       controls.dispose();

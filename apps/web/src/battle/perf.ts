@@ -17,6 +17,9 @@ export function qualityTier(): Quality {
   return coarse && shortSide <= 900 ? 'low' : 'high';
 }
 
+/** A touch screen as the main pointer (phones, tablets). `?touch=1` forces it on a desktop for testing. */
+export const isTouch = () => params().get('touch') === '1' || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+
 export const statsEnabled = () => params().get('stats') === '1';
 
 /** Milliseconds the AI spent on its last decision, shown in the read-out. Written by Battle, read by the overlay. */

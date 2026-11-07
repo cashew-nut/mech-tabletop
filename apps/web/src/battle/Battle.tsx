@@ -1,7 +1,7 @@
 // The Charter Trial tab: setup, then the battle against the AI on the 2D or 3D board.
 import { useEffect, useMemo, useState } from 'react';
 import { chooseAction } from '@brass-charter/ai';
-import { timeAi } from './perf';
+import { isTouch, timeAi } from './perf';
 import {
   IllegalAction,
   SURVEYOR_ID,
@@ -61,6 +61,8 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   const [targetId, setTargetId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('move');
   const [error, setError] = useState<string | null>(null);
+  // On a touch screen the first tap on a hex only previews it (gold path and a Confirm bar); a second tap on it, or Confirm, commits.
+  const [pending, setPending] = useState<Hex | null>(null);
   const [view, setView] = useState<'3d' | '2d'>(() => (localStorage.getItem('boardView') === '2d' || !webglAvailable() ? '2d' : '3d'));
   const chooseView = (v: '3d' | '2d') => {
     localStorage.setItem('boardView', v);
@@ -122,7 +124,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
 
   const smokeUid = mineActive ? workingItems(mineActive, 'smoke-launcher')[0]?.uid : undefined;
 
-  const highlights = useMemo(() => {
+  const baseHighlights = useMemo(() => {
     const h = new Map<string, Highlight>();
     if (deploying && selectedId) {
       for (const hex of deploymentZone(state, HUMAN)) {
@@ -142,6 +144,16 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     return h;
   }, [mode, moves, escorts, state, mineActive, smokeUid, deploying, selectedId]);
 
+  // The previewed move or escort path shows in gold over the blue reach hexes.
+  const highlights = useMemo(() => {
+    if (!pending) return baseHighlights;
+    const h = new Map(baseHighlights);
+    const path = mode === 'move' ? moves.get(hexKey(pending)) : mode === 'escort' ? escorts.get(hexKey(pending)) : undefined;
+    for (const p of path ?? [pending]) h.set(hexKey(p), 'jump');
+    return h;
+  }, [baseHighlights, pending, mode, moves, escorts]);
+  useEffect(() => setPending(null), [state, mode, selectedId, mineActive?.id]);
+
   // Red target rings: everything within short range of the active walker.
   const threat = useMemo(() => {
     const t = new Set<string>();
@@ -154,9 +166,22 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     return t;
   }, [state, mineActive, mode]);
 
+  const commitKey = (key: string) =>
+    deploying
+      ? !!selectedId && baseHighlights.has(key)
+      : !!mineActive && (mode === 'escort' ? escorts.has(key) : mode === 'move' ? moves.has(key) : mode === 'smoke' && !!smokeUid && baseHighlights.has(key));
+  const commitLabel = deploying ? 'Deploy here' : mode === 'escort' ? 'Escort the surveyor here' : mode === 'smoke' ? 'Throw smoke here' : 'Move here';
   const onHex = (hex: Hex) => {
+    if (isTouch() && commitKey(hexKey(hex)) && (!pending || hexKey(pending) !== hexKey(hex))) {
+      setPending(hex);
+      return;
+    }
+    setPending(null);
+    commitHex(hex);
+  };
+  const commitHex = (hex: Hex) => {
     const key = hexKey(hex);
-    if (deploying && selectedId && highlights.has(key)) {
+    if (deploying && selectedId && baseHighlights.has(key)) {
       act({ type: 'deploy', walkerId: selectedId, hex });
       return;
     }
@@ -169,7 +194,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
     if (mode === 'move' && moves.has(key)) {
       const enemy = aliveWalkers(state, 1).sort((a, b) => distance(a.pos, hex) - distance(b.pos, hex))[0];
       act({ type: 'move', path: moves.get(key)!, facing: enemy ? facingTowards(hex, enemy.pos) : undefined });
-    } else if (mode === 'smoke' && smokeUid && highlights.has(key)) {
+    } else if (mode === 'smoke' && smokeUid && baseHighlights.has(key)) {
       act({ type: 'useItem', itemUid: smokeUid, hex });
       setMode('move');
     }
@@ -197,7 +222,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
 
   return (
     <div className="trial">
-      <div className="board panel">
+      <div className={view === '3d' ? 'board panel board-3d' : 'board panel'}>
         <div className="scoreline">
           <span className="side0">
             {state.lances[0].name} <strong>{state.vp[0]}</strong>
@@ -226,6 +251,13 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
         ) : (
           <HexMap state={state} highlights={highlights} selectedId={selectedId} targetId={targetId} onHex={onHex} onWalker={onWalker} />
         )}
+        {pending && (
+          <div className="confirm-bar" role="group" aria-label="Confirm the previewed hex">
+            <span>{commitLabel}?</span>
+            <button onClick={() => { setPending(null); commitHex(pending); }}>Confirm</button>
+            <button className="secondary" onClick={() => setPending(null)}>Cancel</button>
+          </div>
+        )}
         <p className="legend">
           Rough ∴ costs 2 to enter · Light cover ♣ +1 TN · Heavy cover ▲ +2 TN, blocks sight through it · Dark hexes are impassable · Rings
           mark high ground · Gold circles are objectives{sv ? ' · The brass diamond is the surveyor' : ''}
@@ -244,7 +276,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
         ) : deploying ? (
           <div className="panel">
             <h3>Deploy your war-walkers</h3>
-            <p className="hint">Pick a war-walker, then click a highlighted hex in your zone. The sides take turns.</p>
+            <p className="hint">Pick a war-walker, then {isTouch() ? 'tap' : 'click'} a highlighted hex in your zone. The sides take turns.</p>
             <ul className="activate-list">
               {toDeploy.map((w) => (
                 <li key={w.id} className={w.id === selectedId ? 'active' : ''}>
