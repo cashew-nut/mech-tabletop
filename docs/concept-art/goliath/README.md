@@ -1,6 +1,6 @@
 # Goliath concept art (Reliquary titan, 2026-11-07)
 
-Gate B done: Luke picked hero roll 3 (2026-11-07). Turnaround and part sheet made from it (gate C, waiting for Luke). No 3D credits spent.
+Gate B done: Luke picked hero roll 3 (2026-11-07). Turnaround and part sheet made from it, and Luke said "Build it" (gate C). The 3D model is built (see below and `docs/goliath-composite/`).
 
 Made with Meshy image-to-image (nano-banana, 3 credits each, 9 in all, balance 97 to 88) from `docs/style-bible/reliquary.md`
 through `tools/meshy/prompts.py goliath hero --variant 0|1|2`. References: the Reliquary hero, Goliath and Seer tiles from
@@ -57,3 +57,10 @@ Cost 6 credits, balance 88 to 82. Meshy returned back, side, front in that order
 
 **Next after approval.** Turnaround and part sheet (6 credits), then mesh (20) and retexture (10): about 36 more credits, balance
 88 to about 52. Nothing 3D runs until approval.
+
+## 3D model (2026-11-07)
+
+One whole-body model from the three views (front first): mesh only (multi-image-to-3d, 20 credits, 2.2M triangles), silhouette checked
+against the turnaround (`mesh-vs-turnaround.jpg`: wing spars, spires, halo, cannon, staff and stance all match), then retexture from the
+same three views (meshy-7, 10 credits). Files: project folder `meshy-sources/goliath/model/` (mesh task `01a1b610...`, textured `01a1b612...`).
+Total for the Goliath: 45 credits (15 for the 2D art, 30 for the model), balance 52. The composite cut is in `docs/goliath-composite/`.
