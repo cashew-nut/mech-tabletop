@@ -13,6 +13,7 @@ import { HEX_SIZE, hexCentre, type Highlight } from './HexMap';
 import { loadBoardKit, type Kit, type KitPiece } from './boardKit';
 import { WalkerLibrary } from './boardWalkers';
 import { disposeAll, disposeTree, materialResources } from './boardDispose';
+import { createPerfOverlay, qualityTier } from './perf';
 import { BANNER_CLOTH, PUFF, chimneySmoke, disposeBoardArt, MARKER_HEX, bloomTexture, card, crate, die, markerTexture, objectiveBanner, rippleBanner, rndFrom, rubble, ruinWall, stoneTexture, tower, wreck, type MarkerKind } from './boardArt';
 
 // Render scale: 1 draws at full resolution so the walker textures stay crisp (?pixel=2 gives the old half-resolution look).
@@ -168,14 +169,19 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
 
   useEffect(() => {
     const el = host.current!;
-    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    // Phones get the cheap tier: no post-processing, a smaller shadow map, a pixel ratio of up to 1.5 and native anti-aliasing.
+    const tier = qualityTier();
+    const low = tier === 'low';
+    const scale = low ? Math.min(window.devicePixelRatio || 1, 1.5) : 1;
+    const renderer = new THREE.WebGLRenderer({ antialias: low });
     renderer.setClearColor(0x232a36);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = low ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     const canvas = renderer.domElement;
     canvas.className = 'board3d-canvas';
+    if (low) canvas.style.imageRendering = 'auto'; // the pixelated upscale is for the high tier's whole-number pixel ratios
     el.appendChild(canvas);
 
     const scene = new THREE.Scene();
@@ -188,7 +194,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x4a4036, 0.5));
     const sun = new THREE.DirectionalLight(0xffd9a0, 1.4);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(low ? 1024 : 2048, low ? 1024 : 2048);
     Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 60 });
     sun.shadow.bias = -0.0008;
     sun.shadow.normalBias = 0.02;
@@ -210,11 +216,14 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
     // Bloom picks up only the brightest things: hex markers, furnace mouths and the walkers' glowing eyes.
-    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 }));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.35, 0.5, 0.92);
-    composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(bloom);
-    composer.addPass(new OutputPass());
+    // The low tier skips the composer (a half-float multisampled target plus bloom is the costliest part) and draws straight to the screen;
+    // the hex markers keep a cheap glow from their additive sprites.
+    const composer = low ? null : new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 }));
+    if (composer) {
+      composer.addPass(new RenderPass(scene, camera));
+      composer.addPass(new UnrealBloomPass(new THREE.Vector2(2, 2), 0.35, 0.5, 0.92));
+      composer.addPass(new OutputPass());
+    }
     const controls = new OrbitControls(camera, canvas);
     controls.enablePan = false;
     controls.maxPolarAngle = Math.PI * 0.42;
@@ -450,8 +459,8 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       const w = el.clientWidth;
       const h = Math.max(260, Math.round(w * 0.72));
       el.style.height = `${h}px`;
-      renderer.setSize(Math.ceil(w / PIXEL), Math.ceil(h / PIXEL), false);
-      composer.setSize(Math.ceil(w / PIXEL), Math.ceil(h / PIXEL));
+      renderer.setSize(Math.ceil((w * scale) / PIXEL), Math.ceil((h * scale) / PIXEL), false);
+      composer?.setSize(Math.ceil((w * scale) / PIXEL), Math.ceil((h * scale) / PIXEL));
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
@@ -478,6 +487,7 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointerup', onUp);
 
+    const perf = createPerfOverlay(el, renderer, tier);
     let disposed = false;
     let raf = 0;
     const loop = (t: number) => {
@@ -501,7 +511,10 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
       sun.target.position.copy(controls.target);
       sun.position.copy(controls.target).add(sunOffset);
       controls.update();
-      composer.render();
+      perf?.begin();
+      if (composer) composer.render();
+      else renderer.render(scene, camera);
+      perf?.frame(t);
     };
     raf = requestAnimationFrame(loop);
 
@@ -530,7 +543,8 @@ export function Board3D({ state, highlights, selectedId, targetId, threat, onHex
         sun,
         rim,
       ]);
-      composer.dispose();
+      perf?.dispose();
+      composer?.dispose();
       renderer.dispose();
       renderer.forceContextLoss(); // otherwise the browser keeps the WebGL context until it next collects garbage, and caps how many may be open
       canvas.remove();

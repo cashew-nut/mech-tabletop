@@ -1,6 +1,7 @@
 // The Charter Trial tab: setup, then the battle against the AI on the 2D or 3D board.
 import { useEffect, useMemo, useState } from 'react';
 import { chooseAction } from '@brass-charter/ai';
+import { timeAi } from './perf';
 import {
   IllegalAction,
   SURVEYOR_ID,
@@ -81,7 +82,7 @@ function Trial({ initial, onQuit }: { initial: GameState; onQuit: () => void }) 
   useEffect(() => {
     // Hold the AI back while a dice roll is being shown so each exchange can be followed.
     if (state.phase === 'over' || state.activeSide === HUMAN || replay.busy) return;
-    const t = setTimeout(() => setState((s) => (s.activeSide === HUMAN || s.phase === 'over' ? s : applyAction(s, chooseAction(s)).state)), AI_DELAY_MS);
+    const t = setTimeout(() => setState((s) => (s.activeSide === HUMAN || s.phase === 'over' ? s : applyAction(s, timeAi(() => chooseAction(s))).state)), AI_DELAY_MS);
     return () => clearTimeout(t);
   }, [state, replay.busy]);
 
