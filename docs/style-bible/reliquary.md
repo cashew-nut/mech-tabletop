@@ -36,7 +36,9 @@ is high and thin.
 
 ## Joints (for the print)
 
-Gold ball knuckles in thick gilded sleeves (the Seer's standard). Thin Reliquary limbs are the hardest part to print, so every
+Aged-gold ball knuckles in darker bronze housings with a gold collar and band, the two parts meeting at a seam band round
+the ball (the Seer's standard since its 2026-11-08 polish: plain gold cans as wide as the ball read as tin cans next to
+the filigree, and near-black housings as black cans). Thin Reliquary limbs are the hardest part to print, so every
 class brief sets a minimum limb thickness and the cut map plans ball knuckles from the start.
 
 ## Never
