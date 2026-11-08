@@ -1,5 +1,5 @@
 // Publish a composite walker (assets/blender/parts/composite) into the game, without Blender.
-//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery]   (DIR is the build.py output, e.g. models/paladin-composite)
+//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery|goliath]   (DIR is the build.py output, e.g. models/paladin-composite)
 //   node scripts/publish-composite.mjs DIR/glb brute --items   (only the items present in DIR/glb: the Brute's claw and rail cannon)
 //   node scripts/compress-parts.mjs <the files this prints>   (KTX2 and quantisation; see assets/blender/parts/meshy/README.md)
 //
@@ -89,6 +89,14 @@ const MODELS = {
     kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'thigh', 'shin', 'foot'],
     items: { 'forearm+hand': ['shell-arm@artillery', ['elbow', [0, 0, 0]], 'elbow', undefined, { forearm: 'elbow', hand: 'wrist' }] },
   },
+  goliath: {
+    // Its own frame, a copy of the titan frame with the joints the parts were cut on. The Arc Cannon is its right forearm, cut as a
+    // whole forearm on the elbow (RESEAT in goliath.py), modelled for the left; the web hangs it on the right elbow
+    // (fit.items.arc-cannon.classes.goliath) and hides the forearm and hand there. The hand is a bare gilded claw.
+    faction: 'reliquary', cls: 'goliath', tunes: 'reliquary/goliath', itemScale: 1.7, frame: 'reliquary_frame_goliath', frameFrom: 'reliquary_frame_titan',
+    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    items: { gun: ['arc-cannon@goliath', ['elbow', [0, 0, 0]], 'elbow'] },
+  },
 };
 
 const src = process.argv[2];
@@ -96,7 +104,7 @@ const itemsOnly = process.argv.includes('--items');
 const model = MODELS[process.argv[3] ?? 'paladin'];
 const itemsDir = process.argv[4];
 if (!src || !existsSync(src) || !model) {
-  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery] [ITEMS_DIR]');
+  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery|goliath] [ITEMS_DIR]');
   process.exit(1);
 }
 const { faction, cls, itemScale: ITEM_SCALE, kit: KIT, items: ITEMS, component: COMPONENT = {}, origin: ORIGIN = {} } = model;

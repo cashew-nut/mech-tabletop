@@ -81,6 +81,11 @@ def main(a):
 
     if only in (None, "assembled"):
         hide_all_but(meshes())
+        hold = getattr(M, "HOLD", {})      # how the figure stands in the assembled view (the Goliath holds its cannon level)
+        for name, rot in hold.items():
+            if name in obs:
+                obs[name].rotation_euler = Euler([math.radians(v) for v in rot])
+        bpy.context.view_layer.update()
         paths = []
         for az in (0, 35, 90, 180):
             p = rd / f"_asm_{az}.png"
@@ -88,6 +93,10 @@ def main(a):
             post(p)
             paths.append(p)
         sheet(paths, rd / "assembled.png", 4, ["front", "three-quarter", "side", "back"])
+        for name in hold:
+            if name in obs:
+                obs[name].rotation_euler = Euler((0, 0, 0))
+        bpy.context.view_layer.update()
 
     if only in (None, "exploded"):
         hide_all_but(meshes())
