@@ -26,7 +26,7 @@ from mathutils import Matrix, Vector
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1]))           # assets/blender, for kit
-from layout import M, NAME, PS, TREE, SIDED, LOADOUT, joint  # noqa: E402
+from layout import M, NAME, PS, TREE, SIDED, LOADOUT, NATIVE_RIGHT, SIDE_OF, joint  # noqa: E402
 
 BUDGET = M.BUDGET         # part: (game triangles, texture size)
 GAME_SCALE = PS           # print size / kit size: the .blend and STLs are print size, the game GLBs kit size
@@ -256,8 +256,8 @@ def build_part(k, work, out, mats, size_override, do_bake):
     lo.data.materials.clear()
     lo.data.materials.append(mat)
     bpy.data.objects.remove(hi)
-    # origin at the joint
-    j = Vector(joint(TREE[k][1]))
+    # origin at the joint (a native right-hand part's is on the right)
+    j = Vector(joint(TREE[k][1], SIDE_OF.get(k, "L")))
     lo.data.transform(Matrix.Translation(-j))
     lo.location = j
     print(f"== {k}: game {len(lo.data.polygons)} tris {size}px, print {len(F)} tris, {time.time() - t0:.0f}s", flush=True)
@@ -267,13 +267,19 @@ def build_part(k, work, out, mats, size_override, do_bake):
 def assemble(objs):
     """Duplicate sided parts as mirrored right-hand copies and parent everything joint to joint."""
     placed = {}
+    native_for = {like: k for k, like in NATIVE_RIGHT.items() if k in objs}
     for k, ob in objs.items():
+        if k in NATIVE_RIGHT:
+            continue        # placed as its left part's right-hand copy, below
         if k in SIDED:
             ob.name = f"{k}_L"
-            r = bpy.data.objects.new(f"{k}_R", ob.data)
-            bpy.context.scene.collection.objects.link(r)
-            r.location = Vector(joint(TREE[k][1], "R"))
-            r.scale = (-1, 1, 1)
+            if k in native_for:     # the right side has its own part (the Paladin's pauldron with the long cape)
+                r = objs[native_for[k]]
+            else:
+                r = bpy.data.objects.new(f"{k}_R", ob.data)
+                bpy.context.scene.collection.objects.link(r)
+                r.location = Vector(joint(TREE[k][1], "R"))
+                r.scale = (-1, 1, 1)
             placed[(k, "L")], placed[(k, "R")] = ob, r
             side = LOADOUT.get(k)
             if side:        # the other side's copy is a spare: in the file, hidden, for swapping guns over

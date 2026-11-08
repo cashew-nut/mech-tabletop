@@ -21,7 +21,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from layout import M, TREE, SIDED, RESEAT, joint, from_mm  # noqa: E402
+from layout import M, TREE, SIDED, RESEAT, NATIVE_RIGHT, joint, from_mm  # noqa: E402
 
 CLEAR = 0.10          # peg-to-hole clearance (radius), mm
 WALL = 0.40           # minimum wall round a hole, mm
@@ -410,6 +410,58 @@ def fit(parts, grid, child, parent):
             "passes_through": sorted(set(touched) - {female})}
 
 
+def native_right(parts, log, k, like):
+    """Fit the native right-hand part `k` (cut from the figure's own right side) with the pegs and holes of the left part
+    `like`, mirrored, so it plugs into the sockets the mirrored left part would use; then trim it wherever another part
+    of the walker sits (the mirrored arm runs through the Meshy right cape). Returns its log entry.
+    The native part need not be solid where the left part's peg roots were (Meshy's right pauldron sits a little further
+    out), so each mirrored peg gets a round boss, 0.5 mm wider than the peg, reaching back into the part until the part is
+    solid around it (at most 3 mm)."""
+    m = parts[k]
+    pegs, added = [], []
+    for child, e in log.items():
+        if not e.get("peg_radius") or like not in (child, e["parent"]):
+            continue
+        axis, centre = np.array(e["axis"]), np.array(e["centre"])
+        r, L, mag = e["peg_radius"], e["peg_length"], e["_mag"]
+        add, sub = peg_shapes(r, L, mag, axis, centre)
+        if e["peg_on"] == like:
+            R = frame(axis, np.array([0.0, -1.0, 0.0]) if abs(axis[1]) < 0.8 else np.array([0.0, 0.0, 1.0]))
+            root = mirror(d_shape(r, -1.2, 0.0, R, centre))
+            frac = (root ^ m).volume() / root.volume()
+            back = -1.2
+            for z in np.arange(-0.6, -2.41, -0.3):
+                slab = mirror(d_shape(r, z - 0.6, z, R, centre))
+                back = z - 0.6
+                if (slab ^ m).volume() / slab.volume() > 0.9:
+                    break
+            m = m + mirror(disc(r + 0.5, back, 0.0, R, centre)) + mirror(add)
+            added.append((child, mirror(add)))
+            pegs.append({"joint": child, "peg": "on " + k, "root_in_part": round(frac, 3), "boss_mm": round(float(-back), 2)})
+        else:
+            m = m - mirror(sub)
+            pegs.append({"joint": child, "hole": "in " + k})
+    trimmed = {}
+    for j, o in parts.items():
+        if j in (k, like) or j in NATIVE_RIGHT:
+            continue
+        for shape in ([mirror(o)] if j in SIDED else [o]):
+            v = (m ^ shape).volume()
+            if v > 1e-4:
+                m = m - shape
+                trimmed[j] = round(trimmed.get(j, 0) + v, 2)
+    keep = sorted(m.decompose(), key=lambda p: -p.volume())      # the trims can cut a scrap loose: one solid
+    parts[k] = keep[0]
+    for (child, peg), p in zip(added, [p for p in pegs if "peg" in p]):
+        p["peg_kept"] = round((peg ^ keep[0]).volume() / peg.volume(), 3)     # 1.0: the trims left the peg whole
+    for scrap in keep[1:]:
+        bb = scrap.bounding_box()
+        print(f"  {k}: dropped a {scrap.volume():.2f} mm3 scrap at {np.round((np.array(bb[:3]) + bb[3:]) / 2, 1).tolist()}", flush=True)
+    ref = log[like]
+    return {"parent": ref["parent"], "peg_on": k, "mirror_of": like, "pegs": pegs, "trimmed_mm3": trimmed,
+            "dropped_mm3": round(sum(p.volume() for p in keep[1:]), 2), "mirrored_for_right": False, "native_right": True}
+
+
 def main(work):
     work = Path(work)
     info = json.loads((work / "split.json").read_text())
@@ -418,6 +470,9 @@ def main(work):
     src, dst = work / "parts", work / "kit"
     dst.mkdir(exist_ok=True)
     parts = {k: load(src / f"{k}.npz") for k in TREE if (src / f"{k}.npz").exists()}
+    # native right-hand parts sit out the joint search (their pegs are the left part's, mirrored, below), so no other
+    # joint's peg channel is cleared through them on the way
+    native = {k: parts.pop(k) for k in NATIVE_RIGHT if k in parts}
     log = {}
     for child, (_, _, parents) in TREE.items():
         if parents is None or child not in parts:
@@ -443,17 +498,24 @@ def main(work):
             log[child] = reseat(parts, log, child, like)
             print(f"{child:8s} re-seated on {like}'s socket: turned {log[child]['turned_deg']} deg, "
                   f"moved {log[child]['moved_mm']} mm, dropped {log[child]['dropped_mm3']} mm3", flush=True)
-    for e in log.values():
-        e.pop("_mag", None)
     if CLEAR_MIRRORED:
         # the right-hand parts are the left ones mirrored, so trim the centre parts wherever a mirrored part would sit
-        # (True: every sided part; a tuple names the sided parts to clear for, the Seer's arm)
-        mirrored = [k for k in parts if k in SIDED and (CLEAR_MIRRORED is True or k in CLEAR_MIRRORED)]
+        # (True: every sided part; a tuple names the sided parts to clear for, the Seer's arm). A sided part with a
+        # native right-hand stand-in is not mirrored, so nothing is trimmed for it.
+        mirrored = [k for k in parts if k in SIDED and (CLEAR_MIRRORED is True or k in CLEAR_MIRRORED)
+                    and k not in NATIVE_RIGHT.values()]
         for c in [k for k in parts if k not in SIDED]:
             before = parts[c].volume()
             for k in mirrored:
                 parts[c] = parts[c] - mirror(parts[k])
             print(f"  {c:9s} trimmed {before - parts[c].volume():.2f} mm3 for the mirrored right side", flush=True)
+    for k, m in native.items():
+        parts[k] = m
+        log[k] = native_right(parts, log, k, NATIVE_RIGHT[k])
+        print(f"{k:8s} native right, {NATIVE_RIGHT[k]}'s pegs mirrored: {log[k]['pegs']}; trimmed {log[k]['trimmed_mm3']}",
+              flush=True)
+    for e in log.values():
+        e.pop("_mag", None)
     import manifold3d as mf
     for k, m in parts.items():
         keep = [p for p in m.decompose() if p.volume() > CRUMB]   # slivers a hole sheared off, loose crumbs
