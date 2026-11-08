@@ -90,9 +90,29 @@ KNUCKLES = {
     "pauldron": ("pauldron_mount", (0.0, -1.0, 0.0), 0.04),
 }
 KNUCKLES = {k: (j, a, r * KG) for k, (j, a, r) in KNUCKLES.items()}
-# Knuckle sleeve: radius, and length into the parent / into the child, as fractions of the ball's radius. The hole
-# (with its magnet) is in the parent, so the sleeve runs deep on that side; the child side carries only the peg root.
-SLEEVE = (1.0, 2.2, 0.7)
+# Knuckle housing: radius, and reach up the parent's bone / down the child's, as fractions of the ball's radius. The hole
+# (with its magnet) is in the parent, so the housing runs deep on that side; the child side is the bare lower half of the
+# ball (no sleeve), so the joint reads as a ball in a socket.
+#
+# Polish pass (2026-11-08). The first knuckles were a polished gold ball inside a gold can as wide as the ball, with a
+# domed lid: next to Meshy's filigree they read as tin cans, and in the game their bright, flat gold bloomed. The hole and
+# its 0.4 mm wall still need a housing about as wide as the ball up the parent's bone, so the envelope stays and the look
+# changes:
+#   * the ball is aged gold, a shade under Meshy's own gilding, with a raised band split by the seam, so the cut between
+#     the two parts reads as the groove of a bearing ring;
+#   * the housing is the frame's dark metal (like the Meshy limb rods) with a gold collar at the ball and a gold band at its
+#     top, and it ends in a short taper into the limb instead of a lid;
+#   * the child's half of the ball has a slim gold collar where the limb leaves it, and no can below.
+SLEEVE = (1.0, 2.5, 0.0)
+HOUSING = {"start": 0.42, "top": 2.15, "taper": 0.97, "cone_to": 0.5, "collar": (0.60, 0.74, 1.06), "band": 0.12,
+           "seam": (0.12, 1.07), "child_collar": (-1.06, -0.80, 0.6)}
+GOLD_UV, FRAME_UV = (-2.0, -2.0), (-3.0, -3.0)
+# build.py: designed surfaces. Aged gold matched to Meshy's gilding on this figure (median gold texel, linear: 0.31, 0.24,
+# 0.14; its brightest quarter 0.43, 0.34, 0.20; roughness about 0.31), a little rougher so a large smooth ball does not
+# flare; the frame metal is Meshy's dark rods.
+KNUCKLE_FINISH = ((0.34, 0.26, 0.145), 0.40, 0.85)
+FRAME_FINISH = ((0.03, 0.032, 0.035), 0.38, 0.75)
+DESIGNED_WEAR = True        # build.py: cavity darkening and a faint mottle on the designed surfaces, like Meshy's own texture
 
 # part: (kit component it publishes as, joint its origin sits on, parent part(s) it plugs into)
 TREE = {
@@ -272,31 +292,51 @@ def _knuckle_labels(child, side):
     return lc, lp
 
 
+def _tag(m, uv):
+    return m.set_properties(2, lambda p, old: uv)
+
+
+def housing(mf, r, z0, z1, rh=None, collar=True, cone=True, n=64):
+    """A knuckle housing along local z from z0 to z1 (print mm, r the ball's radius): dark frame metal, a gold collar at its
+    foot, a gold band at its top and a short taper into the limb. The wrist spear's sleeve uses it too."""
+    h = HOUSING
+    rh = r if rh is None else rh
+    r1 = rh * h["taper"]
+    parts = [_tag(mf.Manifold.cylinder(z1 - z0, rh, r1, n).translate((0, 0, z0)), FRAME_UV)]
+    if collar:
+        c0, c1, cr = h["collar"]
+        parts.append(_tag(mf.Manifold.cylinder((c1 - c0) * r, cr * rh, cr * rh, n).translate((0, 0, c0 * r)), GOLD_UV))
+    b = h["band"] * r
+    parts.append(_tag(mf.Manifold.cylinder(b, r1 * 1.06, r1 * 1.06, n).translate((0, 0, z1 - b)), GOLD_UV))
+    if cone:
+        parts.append(_tag(mf.Manifold.cylinder(0.35 * r, r1, h["cone_to"] * r, n).translate((0, 0, z1)), FRAME_UV))
+    return parts
+
+
+def knuckle_parts(mf, r):
+    """One knuckle in its own frame, print mm: the ball's centre at the origin, +z along the bone from the child into the
+    parent (the parent's half is z > 0). Tagged: gold UV (-2, -2), frame metal UV (-3, -3)."""
+    h = HOUSING
+    sh, sr = h["seam"]
+    lo, hi, cr = h["child_collar"]
+    parts = [_tag(mf.Manifold.sphere(r, 64), GOLD_UV),
+             _tag(mf.Manifold.cylinder(2 * sh * r, sr * r, sr * r, 64).translate((0, 0, -sh * r)), GOLD_UV),     # seam band
+             _tag(mf.Manifold.cylinder((hi - lo) * r, cr * r, cr * r, 48).translate((0, 0, lo * r)), GOLD_UV)]  # child collar
+    parts += housing(mf, r, h["start"] * r, h["top"] * r)
+    return parts
+
+
+def knuckle_solid(mf, c, a, r):
+    """The knuckle at centre c (print mm) with its bone axis a (from the child into the parent), tagged as knuckle_parts."""
+    k = mf.Manifold.batch_boolean(knuckle_parts(mf, r), mf.OpType.Add)
+    M = np.concatenate([_align(np.array([0.0, 0.0, 1.0]), _unit(a)), np.asarray(c, float)[:, None]], 1)
+    return k.transform(M.tolist())
+
+
 def extra_solids(mf, to_mm):
-    """The ball knuckles (with sleeves along the bone) as one solid, in print mm. Their faces get UV (-2, -2)."""
-    out = []
-    for child, side, c, a, R in knuckles():
-        c = to_mm(c)
-        r = R * S * PRINT_SCALE
-        ball = mf.Manifold.sphere(r, 48)
-        rs, up, dn = SLEEVE[0] * r, SLEEVE[1] * r, SLEEVE[2] * r
-        sl = mf.Manifold.cylinder(up + dn - rs * 0.6, rs, -1.0, 40).translate((0, 0, -dn))
-        cap = mf.Manifold.sphere(rs, 40).scale((1, 1, 0.6)).translate((0, 0, up - rs * 0.6))   # domed end, not a can
-        bands = [mf.Manifold.cylinder(0.12 * r, rs * 1.1, -1.0, 40).translate((0, 0, z * r)) for z in (0.95, 1.55)]
-        k = mf.Manifold.batch_boolean([ball, sl, cap] + bands, mf.OpType.Add)
-        # rotate local z onto the bone axis
-        zc = np.array([0.0, 0.0, 1.0])
-        v = np.cross(zc, a)
-        s, cth = np.linalg.norm(v), zc @ a
-        if s < 1e-8:
-            Rm = np.eye(3) if cth > 0 else np.diag([1.0, -1.0, -1.0])
-        else:
-            vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-            Rm = np.eye(3) + vx + vx @ vx * ((1 - cth) / s ** 2)
-        M = np.concatenate([Rm, c[:, None]], 1)
-        out.append(k.transform(M.tolist()))
-    solid = mf.Manifold.batch_boolean(out, mf.OpType.Add)
-    return solid.set_properties(2, lambda p, old: (-2.0, -2.0))
+    """The ball knuckles (with their housings along the bone) as one solid, in print mm, tagged gold and frame metal."""
+    out = [knuckle_solid(mf, to_mm(c), a, R * S * PRINT_SCALE) for child, side, c, a, R in knuckles()]
+    return mf.Manifold.batch_boolean(out, mf.OpType.Add)
 
 
 def _rot(axis, deg):
