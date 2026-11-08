@@ -290,6 +290,30 @@ old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. 
 now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
 An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.
 
+### Brute polish (2026-11-08)
+
+The cut kept every shape and texel of Meshy's Brute but lost what makes the concept read: the glowing furnace, the hot
+eyes, and red lacquer that looks different from brass and black iron. `brute_polish.py` (wired in at the end of
+`brute.py`) puts that back; the commands are the usual Brute ones above (split, joints, build), and nothing moves a joint,
+peg or magnet (joints.py gives the same pegs and magnets as before).
+
+- **Finishes.** Meshy's metal/roughness map is about 0.45 / 0.45 everywhere, so in the game the whole walker shone alike
+  and the back mirrored the foundry stage's red rim light. `surface_textures` writes WORK/tex_mr_polish.png from the colour:
+  paint (red, white stencils, ochre panels) metal 0 rough 0.58, brass 0.9 / 0.34, blackened iron 0.6 / 0.6, with Meshy's
+  own roughness kept as wear. build.py loads it in place of tex_1 for any model with `surface_textures`.
+- **Glow.** `glow_weight` marks the furnace window under the "07" plate and the eye slits (`GLOW_BOXES`, Meshy units);
+  build.py stores it as a `glow` vertex attribute, bakes an extra emissive map for the parts that have any (torso, helm),
+  and exports it with `GLOW_STRENGTH` 3 (KHR_materials_emissive_strength). The web needs no change: three's glTF loader
+  reads it and the stage's bloom does the rest.
+- **Antennae.** Meshy's 0.3 to 0.6 mm wire antennae (eight on the walker) were unprintable and read as stray hairs, but
+  the concept has them. `design` re-makes each as a rod tapering 0.9 to 0.6 mm with a knob, on the wire's own line and
+  height. One wire beside the chimney was split between the back and the torso (the two would have clashed by 8 mm3): an
+  antenna now has one owner and is cleared out of every other part.
+- **Sharper maps.** `NORMAL_SIZE = 1024`, `ORM_SIZE = 512` (build.py's defaults stay 512 and 256 for the other models).
+- **Published:** the 8 body parts only, compressed with the Brute's recipe (`KTX2_NORMAL=etc1s KTX2_BASE_Q=150`): 3.6 to
+  4.9 MB. The guns are rebaked in the .blend but not republished (Luke: the cannon arm and the gatling are "essentially
+  perfect"); `publish-composite.mjs DIR brute` stops at the guns if DIR has only the body parts, after writing them.
+
 ### The Brute's claw and rail cannon on the elbow socket
 
 The Industrial Claw and the Rail Cannon keep the sculpts every walker uses (`item_industrial-claw`, `item_rail-cannon`),

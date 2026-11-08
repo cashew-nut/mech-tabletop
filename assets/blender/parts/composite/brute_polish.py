@@ -13,9 +13,11 @@ of Meshy's colour, but it lost that read:
   build.py bakes an emissive map from the painted window (bright texels burn white-gold, the bars stay dark) and the
   game's bloom does the rest.
 * **Needle antennae.** Meshy grew 0.3 to 0.6 mm wire antennae on the pauldron tops and the rear pack (eight on the
-  walker once the pauldron is mirrored). They are far too thin to print and read as stray hairs in the game.
-  `design` cuts every thin column under NEEDLE_D mm from the parts that carry them; the chimney, the cone-topped
-  stacks and the crown spike (1 mm and up) stay.
+  walker once the pauldron is mirrored). They are far too thin to print and read as stray hairs in the game, but the
+  concept has them: they are part of the foundry silhouette. `design` re-makes every thin column under NEEDLE_D mm as
+  a blackened rod tapering 0.9 to 0.6 mm with a knob on top, on the same line and to the same height (one owner per
+  antenna, cleared out of the other parts); the chimney, the cone-topped stacks and the crown spike (1 mm and up)
+  are left as they are.
 
 Nothing here moves a joint, a peg or a magnet: the antennae are re-made before joints.py runs, far from any joint, and the
 texture changes only touch the bake.
@@ -84,9 +86,9 @@ def needles(m):
     return out
 
 
-def _rod(mf, a, b, r, tip=False):
-    """A cylinder from a to b (print mm), with a round end at b if `tip`; its faces are tagged as cut faces
-    (UV -1, -1), so they bake as the walker's blackened gunmetal."""
+def _rod(mf, a, b, r, tip=False, r_top=None):
+    """A cylinder from a to b (print mm), tapering to r_top, with a small knob at b if `tip`; its faces are tagged as
+    cut faces (UV -1, -1), so they bake as the walker's blackened gunmetal."""
     v = b - a
     L = float(np.linalg.norm(v))
     ax = v / L
@@ -98,14 +100,16 @@ def _rod(mf, a, b, r, tip=False):
     else:
         vx = np.array([[0, -w[2], w[1]], [w[2], 0, -w[0]], [-w[1], w[0], 0]])
         R = np.eye(3) + vx + vx @ vx * ((1 - c) / s ** 2)
-    rod = mf.Manifold.cylinder(L, r, -1.0, 20)
+    rt = r if r_top is None else r_top
+    rod = mf.Manifold.cylinder(L, r, rt, 20)
     if tip:
-        rod = rod + mf.Manifold.sphere(r * 1.25, 20).translate([0.0, 0.0, L])
+        rod = rod + mf.Manifold.sphere(rt * 1.4, 16).translate([0.0, 0.0, L])
     return rod.transform(np.concatenate([R, a[:, None]], 1).tolist()).set_properties(
         2, lambda q, old: (-1.0, -1.0))
 
 
-ANTENNA_D = 1.0         # mm: each wire antenna is re-made as a rod this thick, on the wire's own line
+ANTENNA_D = (0.9, 0.6)  # mm: each wire antenna is re-made as a rod this thick at its foot and at its tip
+                        # (1.0 mm straight rods read as black pipes in the game; the concept's antennae taper)
 SINK = 0.6              # mm the rod runs down into the mount it stands on
 
 
@@ -134,7 +138,7 @@ def _merge(found):
 
 
 def design(solid, mf):
-    """Re-make the wire antennae (thinner than NEEDLE_D) as ANTENNA_D mm rods with a round tip, on the same line
+    """Re-make the wire antennae (thinner than NEEDLE_D) as tapered ANTENNA_D rods with a knob on top, on the same line
     and to the same height, so the silhouette the concept has stays and the print holds. Each rod is checked: it
     may only add about a rod's own volume (a rod that would swallow a bigger shape is left alone). The rod is cut
     out of every other part (with clearance), so no two parts share it."""
@@ -147,14 +151,15 @@ def design(solid, mf):
     for k, a, top, d, ks in _merge(found):
         m = out[k]
         base = a - (top - a) / np.linalg.norm(top - a) * SINK
-        rod = _rod(mf, base, top, ANTENNA_D / 2, tip=True)
+        r0, r1 = ANTENNA_D[0] / 2, ANTENNA_D[1] / 2
+        rod = _rod(mf, base, top, r0, tip=True, r_top=r1)
         added = (rod - m).volume()
-        expect = np.pi * (ANTENNA_D / 2) ** 2 * np.linalg.norm(top - base) + 1.0
+        expect = np.pi * r0 ** 2 * np.linalg.norm(top - base) + 1.0
         if added > 1.2 * expect:
             print(f"  {k}: kept a column at ({a[0]:.1f}, {a[1]:.1f}): the rod would add {added:.1f} mm3", flush=True)
             continue
         out[k] = m + rod
-        clear = _rod(mf, base, top, ANTENNA_D / 2 + 0.15, tip=True)
+        clear = _rod(mf, base, top, r0 + 0.15, tip=True, r_top=r1 + 0.15)
         took = {}
         for o in NEEDLE_PARTS:
             if o != k and o in out:
@@ -162,7 +167,7 @@ def design(solid, mf):
                 if v > 1e-3:
                     out[o] = out[o] - clear
                     took[o] = round(v, 2)
-        print(f"  {k}: {d:.2f} mm wire at ({a[0]:.1f}, {a[1]:.1f}), z {a[2]:.1f} to {top[2]:.1f} -> {ANTENNA_D} mm rod "
+        print(f"  {k}: {d:.2f} mm wire at ({a[0]:.1f}, {a[1]:.1f}), z {a[2]:.1f} to {top[2]:.1f} -> {ANTENNA_D[0]}-{ANTENNA_D[1]} mm rod "
               f"(+{added:.1f} mm3){' from ' + '+'.join(sorted(set(ks))) if len(set(ks)) > 1 else ''}"
               f"{', cleared ' + str(took) if took else ''}", flush=True)
     for k in NEEDLE_PARTS:      # crumbs the rods and clearances leave behind
@@ -177,7 +182,8 @@ def design(solid, mf):
 # (metallic, roughness) per finish. Meshy's own roughness rides on top as wear (ROUGH_WEAR of its deviation).
 PAINT = (0.0, 0.58)       # red lacquer, white stencils, orange hazard paint
 BRASS = (0.9, 0.34)       # fittings, collars, trim
-IRON = (0.72, 0.52)       # blackened iron: frame, guns, undercarriage
+IRON = (0.6, 0.6)         # blackened iron: frame, undercarriage (0.72 / 0.52 mirrored the foundry's red rim light
+                          # all over the back)
 ROUGH_WEAR = 0.8
 
 
