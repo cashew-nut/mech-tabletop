@@ -3,7 +3,9 @@
     MODEL=seer ~/bvenv/bin/python -I seer_items_build.py PARTS ITEMS [--samples 32] [--size 1024] [--no-render]
 
 PARTS  models/seer-composite-v2 (needs seer_composite.blend: the assembled walker)
-ITEMS  seer_items.py's output folder (work/<item>/kit/<item>.npz and the Meshy textures; hosts/*.npz; fit.json). Writes into it:
+ITEMS  seer_items.py's output folder (work/<item>/kit/<item>.npz and the Meshy textures; hosts/*.npz; fit.json). When
+       seer_items.py ran on a work folder, PARTS must be the build of that folder with kit/arm.npz copied in (the socket is
+       then in the arm's own mesh and textures). Writes into it:
 
   glb/hellfire-missiles.glb  the game part: kit mm (print mm / 1.5), origin on the socket seat, +Z up out of the socket, -Y forward
   stl/hellfire-missiles.stl  the print copy (closed, peg and magnet pocket in place)
@@ -95,6 +97,9 @@ def main(a):
 
     obj = bpy.data.objects
     arm_l = obj.get("arm") or obj["arm_L"]      # v1 names the left arm `arm`, v2 `arm_L`
+    # Since the 2026-11-08 polish the socket is part of the arm (seer_items.py's kit/arm.npz, baked by build.py with the arm):
+    # the separate sleeve mesh is then only a hidden helper the socket renders frame on.
+    baked = "kit" in hp
     mat = gold()
     boss_l = load_host(items / "hosts" / "shoulder_L.npz", "hardpoint_shoulder_L", mat)
     parent_keep(boss_l, arm_l)
@@ -112,6 +117,11 @@ def main(a):
                 r.matrix_world = Matrix.Scale(-1, 4, (1, 0, 0)) @ src.matrix_world
                 parent_keep(r, arm_r)
                 (placed if nm.startswith(ITEM) else hosts).append(r)
+    if baked:
+        for h in hosts:
+            h.hide_render = True
+            h.hide_set(True)
+            h["retired"] = "framing helper: the socket is baked into the arm"
     # the right pauldron plate lies over the right shoulder drum: cut it clear of the sleeve and collar (seer_items.py's cutter;
     # a modifier, so the baked pauldron keeps its UVs and textures)
     cut_path = items / "hosts" / "pauldron_r_cut.npz"

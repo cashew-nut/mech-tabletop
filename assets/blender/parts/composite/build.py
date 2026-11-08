@@ -15,6 +15,7 @@ Then OUT/<model>_composite.blend holds every part, the right side mirrored from 
 everything below it. `render.py` makes the review renders from that file.
 """
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -38,6 +39,20 @@ NORMAL_PX = getattr(M, "NORMAL_SIZE", 512)    # game normal map size cap (the ba
 ORM_PX = getattr(M, "ORM_SIZE", 256)          # game occlusion/roughness/metal map size
 # A model may bake an emissive map (brute_polish.py): M.glow_weight(P) marks where, imgs["glow"] says what colour.
 GLOW_STRENGTH = getattr(M, "GLOW_STRENGTH", 1.0)
+FRAME = getattr(M, "FRAME_FINISH", GUNMETAL)       # designed frame metal (the Seer's bronze knuckle housings): UV (-3, -3)
+# Designed surfaces (cuts, knuckles, frame) are flat colours. With DESIGNED_WEAR they get what Meshy's own texture has:
+# darker crevices (ambient occlusion over the part's own geometry, within WEAR_AO mm) and a faint mottle, so a gold band
+# next to Meshy's gilding does not read as new plastic.
+WEAR = getattr(M, "DESIGNED_WEAR", False)
+WEAR_AO = getattr(M, "WEAR_AO", 0.6)
+# With SHARP_DESIGNED (degrees), the bake source gets sharp edges where a designed face meets another face at more than
+# that angle. A designed solid (knuckle housing, band, cut face) is a few long side triangles between hard rims: smooth
+# shading averaged the rims' normals down those triangles and baked bright streaks into the normal map. Meshy's own
+# surface keeps its smooth shading, and the game mesh is unchanged (the normal map carries the crisp rims).
+SHARP = getattr(M, "SHARP_DESIGNED", None)
+# ROUGH_FLOOR: the baked roughness never goes below this. Meshy's maps can be near mirror-smooth (the Seer's chest plate:
+# median 0.29, a quarter under 0.1), which the game's bloom turned into white glare.
+ROUGH_FLOOR = getattr(M, "ROUGH_FLOOR", None)
 
 
 def load_solid(path):
@@ -55,9 +70,10 @@ def make_mesh(name, P, T, used, faces):
     uv = P[T.ravel(), 3:5].astype(np.float32).copy()
     cap = (np.abs(P[T, 3] + 1) < 0.5).all(1)       # cut faces, pegs and holes: UV (-1, -1)
     knuckle = (np.abs(P[T, 3] + 2) < 0.5).all(1)   # designed knuckles and struts (seer.py): UV (-2, -2)
+    frame = (np.abs(P[T, 3] + 3) < 0.5).all(1)     # designed frame metal (seer.py's knuckle housings): UV (-3, -3)
     uv[:, 1] = 1 - uv[:, 1]
     me.uv_layers.new(name="UVHigh").data.foreach_set("uv", uv.ravel())
-    me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2).astype(np.int32))
+    me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2 + frame * 3).astype(np.int32))
     me.polygons.foreach_set("use_smooth", np.ones(len(faces), bool))
     if hasattr(M, "glow_weight"):       # where the emissive bake shows the glow texture (0 to 1 per vertex)
         w = np.asarray(M.glow_weight(P[used, :3]), np.float32)
@@ -66,6 +82,29 @@ def make_mesh(name, P, T, used, faces):
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     return ob, cap
+
+
+def sharpen(ob):
+    """Sharp edges (SHARP) on the bake source where a designed face meets another at more than SHARP degrees."""
+    if not SHARP:
+        return
+    me = ob.data
+    me.set_sharp_from_angle(angle=math.radians(SHARP))
+    n = len(me.polygons)
+    mat, total = np.empty(n, np.int32), np.empty(n, np.int32)
+    me.polygons.foreach_get("material_index", mat)
+    me.polygons.foreach_get("loop_total", total)
+    edge = np.empty(len(me.loops), np.int32)
+    me.loops.foreach_get("edge_index", edge)
+    designed = np.zeros(len(me.edges), bool)
+    np.logical_or.at(designed, edge, np.repeat(mat > 0, total))      # loops run polygon by polygon
+    attr = me.attributes.get("sharp_edge")
+    sharp = np.zeros(len(me.edges), bool)
+    if attr is not None:
+        attr.data.foreach_get("value", sharp)
+    else:
+        attr = me.attributes.new("sharp_edge", "BOOLEAN", "EDGE")
+    attr.data.foreach_set("value", sharp & designed)
 
 
 def write_stl(path, P, T):
@@ -91,26 +130,67 @@ def stl_bytes(V, F):
     return f"composite {NAME} part, mm".encode().ljust(80, b" ") + np.uint32(len(F)).tobytes() + rec.tobytes()
 
 
+def wear(N, L, value, mode):
+    """A designed surface's flat value with wear (WEAR): cavities darkened and a faint mottle in colour, a little roughness
+    noise. Returns the socket to emit."""
+    if not WEAR or mode in ("metal", "emit"):
+        return None
+    tc = N.new("ShaderNodeTexCoord")
+    noise = N.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 0.9            # print mm: blotches about a millimetre across
+    noise.inputs["Detail"].default_value = 6.0
+    L.new(tc.outputs["Object"], noise.inputs["Vector"])
+    mot = N.new("ShaderNodeMapRange")                     # noise 0.3..0.7 -> 0.86..1.10
+    mot.inputs["From Min"].default_value, mot.inputs["From Max"].default_value = 0.3, 0.7
+    mot.inputs["To Min"].default_value, mot.inputs["To Max"].default_value = (0.86, 1.10) if mode == "color" else (0.85, 1.2)
+    L.new(noise.outputs["Fac"], mot.inputs["Value"])
+    mul = N.new("ShaderNodeMix")
+    mul.data_type, mul.blend_type = "RGBA", "MULTIPLY"
+    mul.inputs[0].default_value = 1.0
+    mul.inputs[6].default_value = value
+    L.new(mot.outputs["Result"], mul.inputs[7])
+    if mode != "color":
+        return mul.outputs[2]
+    ao = N.new("ShaderNodeAmbientOcclusion")
+    ao.only_local = True                                  # the part's own geometry, not the game copy it is baked onto
+    ao.samples = 32
+    ao.inputs["Distance"].default_value = WEAR_AO
+    cav = N.new("ShaderNodeMapRange")                     # fully open 1.0, a closed crevice 0.35
+    cav.inputs["To Min"].default_value, cav.inputs["To Max"].default_value = 0.35, 1.0
+    L.new(ao.outputs["AO"], cav.inputs["Value"])
+    mul2 = N.new("ShaderNodeMix")
+    mul2.data_type, mul2.blend_type = "RGBA", "MULTIPLY"
+    mul2.inputs[0].default_value = 1.0
+    L.new(mul.outputs[2], mul2.inputs[6])
+    L.new(cav.outputs["Result"], mul2.inputs[7])
+    return mul2.outputs[2]
+
+
 def high_materials(imgs):
-    """Bake-source materials per channel: Meshy's textures on the surface (slot 0), gunmetal on cuts (slot 1)."""
+    """Bake-source materials per channel: Meshy's textures on the surface (slot 0), gunmetal on cuts (slot 1), the designed
+    knuckles' gold (slot 2) and frame metal (slot 3)."""
+    finish = {"cut": GUNMETAL, "knuckle": GOLD, "frame": FRAME}
     mats = {}
     for mode in ("color", "rough", "metal", "normal") + (("emit",) if "glow" in imgs else ()):
         pair = []
-        for slot in ("meshy", "cut", "knuckle"):
+        for slot in ("meshy", "cut", "knuckle", "frame"):
             m = bpy.data.materials.new(f"high_{mode}_{slot}")
             m.use_nodes = True
             N, L = m.node_tree.nodes, m.node_tree.links
             N.clear()
             out = N.new("ShaderNodeOutputMaterial")
-            if slot in ("cut", "knuckle"):
+            if slot in finish:
                 if mode == "normal":
                     L.new(N.new("ShaderNodeBsdfPrincipled").outputs["BSDF"], out.inputs["Surface"])
                 else:
                     em = N.new("ShaderNodeEmission")
-                    col, rough, metal = GUNMETAL if slot == "cut" else GOLD
+                    col, rough, metal = finish[slot]
                     v = {"color": (*col, 1), "rough": (rough,) * 3 + (1,), "metal": (metal,) * 3 + (1,),
                          "emit": (0, 0, 0, 1)}[mode]
                     em.inputs["Color"].default_value = v
+                    worn = wear(N, L, v, mode)
+                    if worn is not None:
+                        L.new(worn, em.inputs["Color"])
                     L.new(em.outputs["Emission"], out.inputs["Surface"])
                 pair.append(m)
                 continue
@@ -200,9 +280,10 @@ def unwrap(ob, size):
 def bake(hi, lo, mats, mode, size, name):
     from kit import bake as kb
     # swap the slots in place: materials.clear() would reset every face's slot to 0
-    while len(hi.data.materials) < 3:
+    while len(hi.data.materials) < 4:
         hi.data.materials.append(None)
-    hi.data.materials[0], hi.data.materials[1], hi.data.materials[2] = mats[mode]
+    for i, m in enumerate(mats[mode]):
+        hi.data.materials[i] = m
     img = kb._image(f"{name}_{mode}", size, mode not in ("color", "emit"))
     lo.data.materials.clear()
     m = bpy.data.materials.new(f"lo_{name}_{mode}")
@@ -242,6 +323,7 @@ def build_part(k, work, out, mats, size_override, do_bake):
     hi, cap = make_mesh(f"{k}_hi", P, T, used, faces)
     lo = bpy.data.objects.new(k, hi.data.copy())
     bpy.context.scene.collection.objects.link(lo)
+    sharpen(hi)
     decimate(lo, target)
     unwrap(lo, size)
     if do_bake:
@@ -254,8 +336,10 @@ def build_part(k, work, out, mats, size_override, do_bake):
             a = np.empty(size * size * 4, np.float32)
             img.pixels.foreach_get(a)
             return a.reshape(size, size, 4)[..., 0]
-        orm = np.stack([np.ones((size, size), np.float32), chan(imgs["rough"]), chan(imgs["metal"]),
-                        np.ones((size, size), np.float32)], -1)
+        rough = chan(imgs["rough"])
+        if ROUGH_FLOOR:
+            rough = np.maximum(rough, ROUGH_FLOOR)
+        orm = np.stack([np.ones((size, size), np.float32), rough, chan(imgs["metal"]), np.ones((size, size), np.float32)], -1)
         io = kb._image(f"{k}_orm", size, True)
         io.pixels.foreach_set(orm.ravel())
         tdir = out / "textures"

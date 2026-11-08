@@ -63,19 +63,21 @@ const MODELS = {
   seer: {
     faction: 'reliquary', cls: 'seer', tunes: 'reliquary/striker', itemScale: 1.2, frame: 'reliquary_frame_striker',
     kit: ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    // Compressed with compress-parts.mjs's defaults (UASTC normals): ETC1S normals show as blotches on its gold and bronze.
+    ktx2: '',
     // build part -> [kit component, the joint its origin sits on, the joint it hangs on when that differs]
     origin: { helm: ['neck', 'head'] },
     // The arc spear and the kinetic claws (seer_wrist.py) plug into the wrist socket in place of the hand: their origin is
-    // the wrist joint, and the web hides the hand on that side (fit.hardpoints wrist-socket). The Hellfire launcher stands on a gilded sleeve in the arm's shoulder drum
-    // (seer_items.py): its origin is the socket seat, given here as an offset from the shoulder joint (kit mm, Blender
-    // axes), and the sleeve (hosts/arm_sleeve.npz, the part of the socketed arm the plain arm does not have) is merged
-    // into the arm as a gold primitive. The right arm is the left mirrored, so the one socket serves both shoulders.
+    // the wrist joint, and the web hides the hand on that side (fit.hardpoints wrist-socket). The Hellfire launcher stands on a
+    // socket in the arm's shoulder drum (seer_items.py): its origin is the socket seat, given here as an offset from the
+    // shoulder joint (kit mm, Blender axes). Since the 2026-11-08 polish the socket is part of the arm's own mesh and
+    // textures (no `hosts` entry: the flat-gold sleeve primitive is gone). The right arm is the left mirrored, so the one
+    // socket serves both shoulders.
     items: {
       'arc-cannon': ['arc-cannon@seer', ['wrist', [0, 0, 0]], 'mount', 'items'],
       'kinetic-claws': ['kinetic-claws@seer', ['wrist', [0, 0, 0]], 'mount', 'items'],
-      'hellfire-missiles': ['hellfire-missiles@seer', ['shoulder', [1.396, -0.958, 1.8]], 'mount', 'items'],
+      'hellfire-missiles': ['hellfire-missiles@seer', ['shoulder', [1.396, -0.958, 1.896]], 'mount', 'items'],
     },
-    hosts: { arm: ['shoulder', ['arm_sleeve'], [0.78, 0.6, 0.25]] },
   },
   sentinel: {
     faction: 'covenant', cls: 'sentinel', tunes: 'covenant/sentinel', itemScale: 1.4, frame: 'covenant_frame_sentinel', frameFrom: 'covenant_frame_bulwark',
@@ -346,4 +348,4 @@ for (const kind of ['items', 'kit']) manifest[kind] = Object.fromEntries(Object.
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
 console.log(written.map((f) => f.replace(`${resolve('.')}/`, '')).join('\n'));
-console.log(`\nnext: KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs ${written.map((f) => f.replace(`${resolve('.')}/`, '')).join(' ')}`);
+console.log(`\nnext: ${model.ktx2 ?? 'KTX2_NORMAL=etc1s KTX2_BASE_Q=150 '}node scripts/compress-parts.mjs ${written.map((f) => f.replace(`${resolve('.')}/`, '')).join(' ')}`);
