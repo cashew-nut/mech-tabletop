@@ -17,7 +17,7 @@ of Meshy's colour, but it lost that read:
   `design` cuts every thin column under NEEDLE_D mm from the parts that carry them; the chimney, the cone-topped
   stacks and the crown spike (1 mm and up) stay.
 
-Nothing here moves a joint, a peg or a magnet: the needles are cut before joints.py runs, far from any joint, and the
+Nothing here moves a joint, a peg or a magnet: the antennae are re-made before joints.py runs, far from any joint, and the
 texture changes only touch the bake.
 """
 from pathlib import Path
@@ -84,8 +84,9 @@ def needles(m):
     return out
 
 
-def _rod(mf, a, b, r):
-    """A cylinder from a to b (print mm), its faces tagged as cut faces (UV -1, -1: baked as gunmetal)."""
+def _rod(mf, a, b, r, tip=False):
+    """A cylinder from a to b (print mm), with a round end at b if `tip`; its faces are tagged as cut faces
+    (UV -1, -1), so they bake as the walker's blackened gunmetal."""
     v = b - a
     L = float(np.linalg.norm(v))
     ax = v / L
@@ -97,33 +98,78 @@ def _rod(mf, a, b, r):
     else:
         vx = np.array([[0, -w[2], w[1]], [w[2], 0, -w[0]], [-w[1], w[0], 0]])
         R = np.eye(3) + vx + vx @ vx * ((1 - c) / s ** 2)
-    cyl = mf.Manifold.cylinder(L, r, -1.0, 24)
-    return cyl.transform(np.concatenate([R, a[:, None]], 1).tolist()).set_properties(2, lambda q, old: (-1.0, -1.0))
+    rod = mf.Manifold.cylinder(L, r, -1.0, 20)
+    if tip:
+        rod = rod + mf.Manifold.sphere(r * 1.25, 20).translate([0.0, 0.0, L])
+    return rod.transform(np.concatenate([R, a[:, None]], 1).tolist()).set_properties(
+        2, lambda q, old: (-1.0, -1.0))
+
+
+ANTENNA_D = 1.0         # mm: each wire antenna is re-made as a rod this thick, on the wire's own line
+SINK = 0.6              # mm the rod runs down into the mount it stands on
+
+
+def _merge(found):
+    """One rod per antenna: Meshy's label boundary can split a wire between two parts (the one beside the chimney
+    runs from the rear pack up into the torso). Columns whose lines pass within 1 mm of each other are one antenna:
+    it goes to the part that holds its foot, from the lowest foot to the highest tip."""
+    found = sorted(found, key=lambda f: f[1][2])
+    out = []
+    for k, a, top, d in found:
+        for q in out:
+            ax, at = q[1], q[2]
+            u = (at - ax) / np.linalg.norm(at - ax)
+            def off(p):
+                v = p - ax
+                return np.linalg.norm(v - (v @ u) * u)
+            if max(off(a), off(top)) < 1.0:
+                if top[2] > q[2][2]:
+                    q[2] = top
+                q[3] = min(q[3], d)
+                q[4].append(k)
+                break
+        else:
+            out.append([k, a, top, d, [k]])
+    return out
 
 
 def design(solid, mf):
-    """Cut the wire antennae (see NEEDLE_D). Each cut is checked: it may only take about a needle's own volume."""
+    """Re-make the wire antennae (thinner than NEEDLE_D) as ANTENNA_D mm rods with a round tip, on the same line
+    and to the same height, so the silhouette the concept has stays and the print holds. Each rod is checked: it
+    may only add about a rod's own volume (a rod that would swallow a bigger shape is left alone). The rod is cut
+    out of every other part (with clearance), so no two parts share it."""
     out = dict(solid)
+    found = []
     for k in NEEDLE_PARTS:
-        if k not in out:
-            continue
+        if k in out:
+            for a, b, r, d in needles(out[k]):
+                found.append((k, a, b - (b - a) / np.linalg.norm(b - a) * 1.0, d))  # needles() reaches 1 mm past the tip
+    for k, a, top, d, ks in _merge(found):
         m = out[k]
-        found = needles(m)
-        for a, b, r, d in found:
-            cut = _rod(mf, a, b, r)
-            took = (m ^ cut).volume()
-            expect = np.pi * (d / 2) ** 2 * np.linalg.norm(b - a)
-            if took > 3.0 * expect + 1.0:       # the cutter caught something bigger than a wire: leave it
-                print(f"  {k}: kept a column at ({a[0]:.1f}, {a[1]:.1f}): the cut would take {took:.1f} mm3", flush=True)
-                continue
-            m = m - cut
-            print(f"  {k}: cut a {d:.2f} mm antenna at ({a[0]:.1f}, {a[1]:.1f}), z {a[2]:.1f} to {b[2] - 1:.1f} "
-                  f"({took:.1f} mm3)", flush=True)
-        # crumbs the cuts may leave behind (a needle tip that leaned out of its cutter)
-        ps = sorted(m.decompose(), key=lambda p: -p.volume())
-        if len(ps) > 1:
-            m = mf.Manifold.batch_boolean([p for p in ps if p.volume() > 0.5] or ps[:1], mf.OpType.Add)
-        out[k] = m
+        base = a - (top - a) / np.linalg.norm(top - a) * SINK
+        rod = _rod(mf, base, top, ANTENNA_D / 2, tip=True)
+        added = (rod - m).volume()
+        expect = np.pi * (ANTENNA_D / 2) ** 2 * np.linalg.norm(top - base) + 1.0
+        if added > 1.2 * expect:
+            print(f"  {k}: kept a column at ({a[0]:.1f}, {a[1]:.1f}): the rod would add {added:.1f} mm3", flush=True)
+            continue
+        out[k] = m + rod
+        clear = _rod(mf, base, top, ANTENNA_D / 2 + 0.15, tip=True)
+        took = {}
+        for o in NEEDLE_PARTS:
+            if o != k and o in out:
+                v = (out[o] ^ clear).volume()
+                if v > 1e-3:
+                    out[o] = out[o] - clear
+                    took[o] = round(v, 2)
+        print(f"  {k}: {d:.2f} mm wire at ({a[0]:.1f}, {a[1]:.1f}), z {a[2]:.1f} to {top[2]:.1f} -> {ANTENNA_D} mm rod "
+              f"(+{added:.1f} mm3){' from ' + '+'.join(sorted(set(ks))) if len(set(ks)) > 1 else ''}"
+              f"{', cleared ' + str(took) if took else ''}", flush=True)
+    for k in NEEDLE_PARTS:      # crumbs the rods and clearances leave behind
+        if k in out:
+            ps = sorted(out[k].decompose(), key=lambda p: -p.volume())
+            if len(ps) > 1:
+                out[k] = mf.Manifold.batch_boolean([p for p in ps if p.volume() > 0.5] or ps[:1], mf.OpType.Add)
     return out
 
 

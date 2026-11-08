@@ -179,3 +179,9 @@ def label_points(P, _cloth=None):
     dg = seg_d(P, *GATLING[:2]) - GATLING[2]
     setl((x < -0.30) & (dg < 0.0) & (z < GATLING_TOP), "gatling")
     return lab, names
+
+# Polish pass (2026-11-08, see brute_polish.py): finishes from Meshy's colour, the furnace and eye glow, printable
+# antennae, and sharper maps than the 256 px roughness/metal and 512 px normals every model got before.
+from brute_polish import design, glow_weight, surface_textures, GLOW_STRENGTH   # noqa: E402,F401
+NORMAL_SIZE = 1024
+ORM_SIZE = 512

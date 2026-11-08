@@ -203,7 +203,7 @@ def bake(hi, lo, mats, mode, size, name):
     while len(hi.data.materials) < 3:
         hi.data.materials.append(None)
     hi.data.materials[0], hi.data.materials[1], hi.data.materials[2] = mats[mode]
-    img = kb._image(f"{name}_{mode}", size, mode != "color")
+    img = kb._image(f"{name}_{mode}", size, mode not in ("color", "emit"))
     lo.data.materials.clear()
     m = bpy.data.materials.new(f"lo_{name}_{mode}")
     m.use_nodes = True
@@ -246,6 +246,9 @@ def build_part(k, work, out, mats, size_override, do_bake):
     unwrap(lo, size)
     if do_bake:
         imgs = {mode: bake(hi, lo, mats, mode, size, k) for mode in ("color", "rough", "metal", "normal")}
+        glows = "emit" in mats and hi.data.get("glow_max", 0.0) > 0.01
+        if glows:       # only parts that carry some of the glow regions get an emissive map
+            imgs["emit"] = bake(hi, lo, mats, "emit", size, k)
 
         def chan(img):
             a = np.empty(size * size * 4, np.float32)
@@ -258,18 +261,31 @@ def build_part(k, work, out, mats, size_override, do_bake):
         tdir = out / "textures"
         tdir.mkdir(parents=True, exist_ok=True)
         paths = {}
-        for key, img in (("basecolor", imgs["color"]), ("orm", io), ("normal", imgs["normal"])):
+        for key, img in (("basecolor", imgs["color"]), ("orm", io), ("normal", imgs["normal"]),
+                         ("emissive", imgs.get("emit"))):
+            if img is None:
+                continue
             p = tdir / f"{k}_{key}.png"
             kb._save(img, p)
             paths[key] = p
-        for key, sz in (("normal", min(size, 512)), ("orm", 256)):
-            Image.open(paths[key]).convert("RGB").resize((sz, sz), Image.LANCZOS).save(paths[key])
+        for key, sz in (("normal", min(size, NORMAL_PX)), ("orm", min(size, ORM_PX)), ("emissive", min(size, 512))):
+            if key in paths:
+                Image.open(paths[key]).convert("RGB").resize((sz, sz), Image.LANCZOS).save(paths[key])
         tex = {}
         for key, p in paths.items():
             im = bpy.data.images.load(str(p), check_existing=False)
-            im.colorspace_settings.name = "sRGB" if key == "basecolor" else "Non-Color"
+            im.colorspace_settings.name = "sRGB" if key in ("basecolor", "emissive") else "Non-Color"
             tex[key] = im
         mat = kb.baked_material(f"hull_{k}_livery", tex["basecolor"], tex["orm"], tex["normal"])
+        if "emissive" in tex:       # the glTF exporter writes emissiveTexture and KHR_materials_emissive_strength
+            N, L = mat.node_tree.nodes, mat.node_tree.links
+            te = N.new("ShaderNodeTexImage")
+            te.image = tex["emissive"]
+            uvn = next(n for n in N if n.bl_idname == "ShaderNodeUVMap")
+            L.new(uvn.outputs["UV"], te.inputs["Vector"])
+            bsdf = N["Principled BSDF"]
+            L.new(te.outputs["Color"], bsdf.inputs["Emission Color"])
+            bsdf.inputs["Emission Strength"].default_value = GLOW_STRENGTH
     else:
         mat = bpy.data.materials.new(f"plain_{k}")
     lo.data.materials.clear()
@@ -337,9 +353,12 @@ def main(a):
     scene.cycles.device = "CPU"
     scene.cycles.samples = 1
     imgs = {}
-    for k, nm, cs in ((0, "base", "sRGB"), (1, "mr", "Non-Color"), (2, "nrm", "Non-Color")):
-        im = bpy.data.images.load(str(work / f"tex_{k}.jpg"))
-        im.colorspace_settings.name = cs
+    src = {"base": work / "tex_0.jpg", "mr": work / "tex_1.jpg", "nrm": work / "tex_2.jpg"}
+    if hasattr(M, "surface_textures"):     # the model's own finish map and glow texture (brute_polish.py)
+        src.update(M.surface_textures(work))
+    for nm, path in src.items():
+        im = bpy.data.images.load(str(path))
+        im.colorspace_settings.name = "sRGB" if nm in ("base", "glow") else "Non-Color"
         imgs[nm] = im
     mats = high_materials(imgs)
     objs, info = {}, {}
