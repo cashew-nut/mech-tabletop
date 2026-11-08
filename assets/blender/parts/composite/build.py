@@ -35,6 +35,10 @@ RAY = getattr(M, "RAY", PS)   # bake ray reach, relative to the Paladin's (the d
 PRINT_TOL = 0.015       # mm, manifold simplify tolerance for the print copies
 GUNMETAL = ((0.035, 0.035, 0.04), 0.42, 1.0)        # colour, roughness, metallic of cut faces, pegs and holes
 GOLD = getattr(M, "KNUCKLE_FINISH", ((0.56, 0.40, 0.18), 0.30, 1.0))   # designed knuckles and struts
+NORMAL_PX = getattr(M, "NORMAL_SIZE", 512)    # game normal map size cap (the base colour is BUDGET's size)
+ORM_PX = getattr(M, "ORM_SIZE", 256)          # game occlusion/roughness/metal map size
+# A model may bake an emissive map (brute_polish.py): M.glow_weight(P) marks where, imgs["glow"] says what colour.
+GLOW_STRENGTH = getattr(M, "GLOW_STRENGTH", 1.0)
 FRAME = getattr(M, "FRAME_FINISH", GUNMETAL)       # designed frame metal (the Seer's bronze knuckle housings): UV (-3, -3)
 # Designed surfaces (cuts, knuckles, frame) are flat colours. With DESIGNED_WEAR they get what Meshy's own texture has:
 # darker crevices (ambient occlusion over the part's own geometry, within WEAR_AO mm) and a faint mottle, so a gold band
@@ -71,6 +75,10 @@ def make_mesh(name, P, T, used, faces):
     me.uv_layers.new(name="UVHigh").data.foreach_set("uv", uv.ravel())
     me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2 + frame * 3).astype(np.int32))
     me.polygons.foreach_set("use_smooth", np.ones(len(faces), bool))
+    if hasattr(M, "glow_weight"):       # where the emissive bake shows the glow texture (0 to 1 per vertex)
+        w = np.asarray(M.glow_weight(P[used, :3]), np.float32)
+        me.attributes.new("glow", "FLOAT", "POINT").data.foreach_set("value", w)
+        me["glow_max"] = float(w.max()) if len(w) else 0.0
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     return ob, cap
@@ -125,7 +133,7 @@ def stl_bytes(V, F):
 def wear(N, L, value, mode):
     """A designed surface's flat value with wear (WEAR): cavities darkened and a faint mottle in colour, a little roughness
     noise. Returns the socket to emit."""
-    if not WEAR or mode == "metal":
+    if not WEAR or mode in ("metal", "emit"):
         return None
     tc = N.new("ShaderNodeTexCoord")
     noise = N.new("ShaderNodeTexNoise")
@@ -163,7 +171,7 @@ def high_materials(imgs):
     knuckles' gold (slot 2) and frame metal (slot 3)."""
     finish = {"cut": GUNMETAL, "knuckle": GOLD, "frame": FRAME}
     mats = {}
-    for mode in ("color", "rough", "metal", "normal"):
+    for mode in ("color", "rough", "metal", "normal") + (("emit",) if "glow" in imgs else ()):
         pair = []
         for slot in ("meshy", "cut", "knuckle", "frame"):
             m = bpy.data.materials.new(f"high_{mode}_{slot}")
@@ -177,7 +185,8 @@ def high_materials(imgs):
                 else:
                     em = N.new("ShaderNodeEmission")
                     col, rough, metal = finish[slot]
-                    v = {"color": (*col, 1), "rough": (rough,) * 3 + (1,), "metal": (metal,) * 3 + (1,)}[mode]
+                    v = {"color": (*col, 1), "rough": (rough,) * 3 + (1,), "metal": (metal,) * 3 + (1,),
+                         "emit": (0, 0, 0, 1)}[mode]
                     em.inputs["Color"].default_value = v
                     worn = wear(N, L, v, mode)
                     if worn is not None:
@@ -204,6 +213,16 @@ def high_materials(imgs):
                 em = N.new("ShaderNodeEmission")
                 if mode == "color":
                     L.new(tex(imgs["base"]).outputs["Color"], em.inputs["Color"])
+                elif mode == "emit":        # the glow texture where the model's glow_weight says so, black elsewhere
+                    at = N.new("ShaderNodeAttribute")
+                    at.attribute_name = "glow"
+                    mix = N.new("ShaderNodeMix")
+                    mix.data_type = "RGBA"
+                    mix.blend_type = "MULTIPLY"
+                    mix.inputs[0].default_value = 1.0
+                    L.new(tex(imgs["glow"]).outputs["Color"], mix.inputs[6])
+                    L.new(at.outputs["Fac"], mix.inputs[7])
+                    L.new(mix.outputs[2], em.inputs["Color"])
                 else:
                     sep = N.new("ShaderNodeSeparateColor")
                     L.new(tex(imgs["mr"]).outputs["Color"], sep.inputs["Color"])
@@ -265,7 +284,7 @@ def bake(hi, lo, mats, mode, size, name):
         hi.data.materials.append(None)
     for i, m in enumerate(mats[mode]):
         hi.data.materials[i] = m
-    img = kb._image(f"{name}_{mode}", size, mode != "color")
+    img = kb._image(f"{name}_{mode}", size, mode not in ("color", "emit"))
     lo.data.materials.clear()
     m = bpy.data.materials.new(f"lo_{name}_{mode}")
     m.use_nodes = True
@@ -309,6 +328,9 @@ def build_part(k, work, out, mats, size_override, do_bake):
     unwrap(lo, size)
     if do_bake:
         imgs = {mode: bake(hi, lo, mats, mode, size, k) for mode in ("color", "rough", "metal", "normal")}
+        glows = "emit" in mats and hi.data.get("glow_max", 0.0) > 0.01
+        if glows:       # only parts that carry some of the glow regions get an emissive map
+            imgs["emit"] = bake(hi, lo, mats, "emit", size, k)
 
         def chan(img):
             a = np.empty(size * size * 4, np.float32)
@@ -323,18 +345,31 @@ def build_part(k, work, out, mats, size_override, do_bake):
         tdir = out / "textures"
         tdir.mkdir(parents=True, exist_ok=True)
         paths = {}
-        for key, img in (("basecolor", imgs["color"]), ("orm", io), ("normal", imgs["normal"])):
+        for key, img in (("basecolor", imgs["color"]), ("orm", io), ("normal", imgs["normal"]),
+                         ("emissive", imgs.get("emit"))):
+            if img is None:
+                continue
             p = tdir / f"{k}_{key}.png"
             kb._save(img, p)
             paths[key] = p
-        for key, sz in (("normal", min(size, 512)), ("orm", 256)):
-            Image.open(paths[key]).convert("RGB").resize((sz, sz), Image.LANCZOS).save(paths[key])
+        for key, sz in (("normal", min(size, NORMAL_PX)), ("orm", min(size, ORM_PX)), ("emissive", min(size, 512))):
+            if key in paths:
+                Image.open(paths[key]).convert("RGB").resize((sz, sz), Image.LANCZOS).save(paths[key])
         tex = {}
         for key, p in paths.items():
             im = bpy.data.images.load(str(p), check_existing=False)
-            im.colorspace_settings.name = "sRGB" if key == "basecolor" else "Non-Color"
+            im.colorspace_settings.name = "sRGB" if key in ("basecolor", "emissive") else "Non-Color"
             tex[key] = im
         mat = kb.baked_material(f"hull_{k}_livery", tex["basecolor"], tex["orm"], tex["normal"])
+        if "emissive" in tex:       # the glTF exporter writes emissiveTexture and KHR_materials_emissive_strength
+            N, L = mat.node_tree.nodes, mat.node_tree.links
+            te = N.new("ShaderNodeTexImage")
+            te.image = tex["emissive"]
+            uvn = next(n for n in N if n.bl_idname == "ShaderNodeUVMap")
+            L.new(uvn.outputs["UV"], te.inputs["Vector"])
+            bsdf = N["Principled BSDF"]
+            L.new(te.outputs["Color"], bsdf.inputs["Emission Color"])
+            bsdf.inputs["Emission Strength"].default_value = GLOW_STRENGTH
     else:
         mat = bpy.data.materials.new(f"plain_{k}")
     lo.data.materials.clear()
@@ -402,9 +437,12 @@ def main(a):
     scene.cycles.device = "CPU"
     scene.cycles.samples = 1
     imgs = {}
-    for k, nm, cs in ((0, "base", "sRGB"), (1, "mr", "Non-Color"), (2, "nrm", "Non-Color")):
-        im = bpy.data.images.load(str(work / f"tex_{k}.jpg"))
-        im.colorspace_settings.name = cs
+    src = {"base": work / "tex_0.jpg", "mr": work / "tex_1.jpg", "nrm": work / "tex_2.jpg"}
+    if hasattr(M, "surface_textures"):     # the model's own finish map and glow texture (brute_polish.py)
+        src.update(M.surface_textures(work))
+    for nm, path in src.items():
+        im = bpy.data.images.load(str(path))
+        im.colorspace_settings.name = "sRGB" if nm in ("base", "glow") else "Non-Color"
         imgs[nm] = im
     mats = high_materials(imgs)
     objs, info = {}, {}
