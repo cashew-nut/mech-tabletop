@@ -90,6 +90,9 @@ KNUCKLES = {
     "pauldron": ("pauldron_mount", (0.0, -1.0, 0.0), 0.04),
 }
 KNUCKLES = {k: (j, a, r * KG) for k, (j, a, r) in KNUCKLES.items()}
+# The child's collar goes where its limb leaves the ball. That is down the knuckle's own axis everywhere but the shoulder,
+# whose knuckle points into the torso while the upper arm hangs from the ball.
+CHILD_AXIS = {"arm": _toward("elbow", "shoulder")}
 # Knuckle housing: radius, and reach up the parent's bone / down the child's, as fractions of the ball's radius. The hole
 # (with its magnet) is in the parent, so the housing runs deep on that side; the child side is the bare lower half of the
 # ball (no sleeve), so the joint reads as a ball in a socket.
@@ -100,18 +103,38 @@ KNUCKLES = {k: (j, a, r * KG) for k, (j, a, r) in KNUCKLES.items()}
 # changes:
 #   * the ball is aged gold, a shade under Meshy's own gilding, with a raised band split by the seam, so the cut between
 #     the two parts reads as the groove of a bearing ring;
-#   * the housing is the frame's dark metal (like the Meshy limb rods) with a gold collar at the ball and a gold band at its
-#     top, and it ends in a short taper into the limb instead of a lid;
+#   * the housing is darkened bronze (a near-black frame metal was tried first: on the figure it read as black cans) with a
+#     gold collar at the ball and a gold band at its top, and it ends in a short taper into the limb instead of a lid;
 #   * the child's half of the ball has a slim gold collar where the limb leaves it, and no can below.
-SLEEVE = (1.0, 2.5, 0.0)
-HOUSING = {"start": 0.42, "top": 2.15, "taper": 0.97, "cone_to": 0.5, "collar": (0.60, 0.74, 1.06), "band": 0.12,
-           "seam": (0.12, 1.07), "child_collar": (-1.06, -0.80, 0.6)}
+# SLEEVE only labels the voxels now (seer_wrist.py also cuts the hand's cap with it): within SLEEVE[0] x 1.12 of the bone,
+# from SLEEVE[2] below the cut to SLEEVE[1] above it, the cut plane decides which part a voxel goes to. 0.7 below keeps
+# whatever Meshy has round the child's half ball with the child: with 0.15, the forearm's cuff wrapped under the hand's
+# ball and the hand no longer pulled straight off (seer_wrist.py's check). Above the cut the region reaches just past the
+# housing's cone (region_top below), and design() puts the knuckle's two exact halves back afterwards (true_knuckles).
+SLEEVE = (1.0, 2.5, 0.7)
+HOUSING = {"start": 0.42, "top": 2.15, "taper": 0.97, "cone_to": 0.5, "cone": 0.35, "collar": (0.60, 0.74, 1.06),
+           "band": 0.12, "seam": (0.12, 1.07), "child_collar": (-1.06, -0.80, 0.6)}
+# The hip housings run up into the pelvis towards the waist: at full length their cone's tip reached the torso's side of
+# the waist cut and the torso caught on it when lifted off (1.1 mm3 in the straight pull, 0.15 before the polish). Under
+# the loincloths they can be short; the pelvis round them holds the hole's wall.
+HOUSING_TOP = {"thigh": 1.55}
+
+
+def housing_top(child):
+    return HOUSING_TOP.get(child, HOUSING["top"])
+
+
+def region_top(child):
+    """How far up the parent's bone (x the ball's radius) the cut plane decides a voxel's part: past the housing's cone."""
+    return housing_top(child) + HOUSING["cone"] + 0.15
 GOLD_UV, FRAME_UV = (-2.0, -2.0), (-3.0, -3.0)
 # build.py: designed surfaces. Aged gold matched to Meshy's gilding on this figure (median gold texel, linear: 0.31, 0.24,
 # 0.14; its brightest quarter 0.43, 0.34, 0.20; roughness about 0.31), a little rougher so a large smooth ball does not
-# flare; the frame metal is Meshy's dark rods.
+# flare; the housings are a darker, browner bronze, so the ball and the gold trim still read against them.
 KNUCKLE_FINISH = ((0.34, 0.26, 0.145), 0.40, 0.85)
-FRAME_FINISH = ((0.03, 0.032, 0.035), 0.38, 0.75)
+FRAME_FINISH = ((0.16, 0.11, 0.06), 0.45, 0.9)       # darkened bronze (near-black frame metal read as black cans on the figure)
+SHARP_DESIGNED = 35.0       # build.py: crisp rims on the designed solids (smooth shading streaked them)
+ROUGH_FLOOR = 0.42          # build.py: no mirror-smooth texels (the chest plate glared white under the game's bloom)
 DESIGNED_WEAR = True        # build.py: cavity darkening and a faint mottle on the designed surfaces, like Meshy's own texture
 
 # part: (kit component it publishes as, joint its origin sits on, parent part(s) it plugs into)
@@ -266,7 +289,7 @@ def label_points(P, cloth_near):
         q = P - c
         along = q @ a
         radial = np.linalg.norm(q - along[:, None] * a, axis=1)
-        inside = (np.linalg.norm(q, axis=1) < R * 1.02) | ((along < R * SLEEVE[1]) & (along > -R * SLEEVE[2])
+        inside = (np.linalg.norm(q, axis=1) < R * 1.02) | ((along < R * region_top(child)) & (along > -R * SLEEVE[2])
                                                            & (radial < R * SLEEVE[0] * 1.12))   # bands too
         setl(inside & (along < 0), lab_c)
         setl(inside & (along >= 0), lab_p)
@@ -297,7 +320,7 @@ def _tag(m, uv):
 
 
 def housing(mf, r, z0, z1, rh=None, collar=True, cone=True, n=64):
-    """A knuckle housing along local z from z0 to z1 (print mm, r the ball's radius): dark frame metal, a gold collar at its
+    """A knuckle housing along local z from z0 to z1 (print mm, r the ball's radius): bronze (frame UV), a gold collar at its
     foot, a gold band at its top and a short taper into the limb. The wrist spear's sleeve uses it too."""
     h = HOUSING
     rh = r if rh is None else rh
@@ -309,34 +332,77 @@ def housing(mf, r, z0, z1, rh=None, collar=True, cone=True, n=64):
     b = h["band"] * r
     parts.append(_tag(mf.Manifold.cylinder(b, r1 * 1.06, r1 * 1.06, n).translate((0, 0, z1 - b)), GOLD_UV))
     if cone:
-        parts.append(_tag(mf.Manifold.cylinder(0.35 * r, r1, h["cone_to"] * r, n).translate((0, 0, z1)), FRAME_UV))
+        parts.append(_tag(mf.Manifold.cylinder(h["cone"] * r, r1, h["cone_to"] * r, n).translate((0, 0, z1)), FRAME_UV))
     return parts
 
 
-def knuckle_parts(mf, r):
-    """One knuckle in its own frame, print mm: the ball's centre at the origin, +z along the bone from the child into the
-    parent (the parent's half is z > 0). Tagged: gold UV (-2, -2), frame metal UV (-3, -3)."""
+def _orient(m, axis, c):
+    """A solid built along local +z, turned so +z runs along `axis` and moved to c."""
+    M = np.concatenate([_align(np.array([0.0, 0.0, 1.0]), _unit(axis)), np.asarray(c, float)[:, None]], 1)
+    return m.transform(M.tolist())
+
+
+def knuckle_solid(mf, c, a, r, seam_axis=None, child_axis=None, top=None):
+    """The knuckle at centre c (print mm), ball radius r, tagged gold UV (-2, -2) and frame metal UV (-3, -3): the ball, the
+    seam band (square to `seam_axis`, the normal of the cut between the two parts), the child's collar (along `child_axis`,
+    the child's bone) and the housing up the parent's bone `a` (from the child into the parent). The axes are all `a` for a
+    straight joint; seer_elbow.py bends the elbow, so there the cut and the forearm's bone lean off the upper arm's. `top`:
+    the housing's length up the bone, x r (HOUSING["top"] by default)."""
     h = HOUSING
     sh, sr = h["seam"]
     lo, hi, cr = h["child_collar"]
-    parts = [_tag(mf.Manifold.sphere(r, 64), GOLD_UV),
-             _tag(mf.Manifold.cylinder(2 * sh * r, sr * r, sr * r, 64).translate((0, 0, -sh * r)), GOLD_UV),     # seam band
-             _tag(mf.Manifold.cylinder((hi - lo) * r, cr * r, cr * r, 48).translate((0, 0, lo * r)), GOLD_UV)]  # child collar
-    parts += housing(mf, r, h["start"] * r, h["top"] * r)
-    return parts
+    seam = _tag(mf.Manifold.cylinder(2 * sh * r, sr * r, sr * r, 64).translate((0, 0, -sh * r)), GOLD_UV)
+    collar = _tag(mf.Manifold.cylinder((hi - lo) * r, cr * r, cr * r, 48).translate((0, 0, lo * r)), GOLD_UV)
+    up = mf.Manifold.batch_boolean(housing(mf, r, h["start"] * r, (h["top"] if top is None else top) * r), mf.OpType.Add)
+    parts = [_tag(mf.Manifold.sphere(r, 64).translate(tuple(np.asarray(c, float))), GOLD_UV),
+             _orient(seam, a if seam_axis is None else seam_axis, c),
+             _orient(collar, a if child_axis is None else child_axis, c),
+             _orient(up, a, c)]
+    return mf.Manifold.batch_boolean(parts, mf.OpType.Add)
 
 
-def knuckle_solid(mf, c, a, r):
-    """The knuckle at centre c (print mm) with its bone axis a (from the child into the parent), tagged as knuckle_parts."""
-    k = mf.Manifold.batch_boolean(knuckle_parts(mf, r), mf.OpType.Add)
-    M = np.concatenate([_align(np.array([0.0, 0.0, 1.0]), _unit(a)), np.asarray(c, float)[:, None]], 1)
-    return k.transform(M.tolist())
+def child_axis(child, side="L"):
+    """The child's bone at its knuckle (into the parent), or None where it is the knuckle's own axis."""
+    if child not in CHILD_AXIS:
+        return None
+    a = _unit(CHILD_AXIS[child])
+    return a * (-1, 1, 1) if side == "R" else a
+
+
+def knuckle_at(mf, to_mm, child, side, c, a, R):
+    """One knuckle of knuckles() as a solid in print mm, and its centre there."""
+    cm = to_mm(c)
+    return knuckle_solid(mf, cm, a, R * S * PRINT_SCALE, child_axis=child_axis(child, side), top=housing_top(child)), cm
 
 
 def extra_solids(mf, to_mm):
     """The ball knuckles (with their housings along the bone) as one solid, in print mm, tagged gold and frame metal."""
-    out = [knuckle_solid(mf, to_mm(c), a, R * S * PRINT_SCALE) for child, side, c, a, R in knuckles()]
+    out = [knuckle_at(mf, to_mm, *k)[0] for k in knuckles()]
     return mf.Manifold.batch_boolean(out, mf.OpType.Add)
+
+
+def true_knuckles(solid, mf):
+    """Give each part its exact half of every knuckle it meets. The parts are cut from voxel regions whose smoothed
+    boundary rounds off where the cut plane meets the edge of the labelled cylinder, a few tenths of a mm inside the ball's
+    rim and the seam band, so the cut face showed through there: dark patches (cut-face metal) round the top of the child's
+    half ball. Here the child gets the knuckle's half below the plane through the ball's centre and loses the half above,
+    the parent the other way round. A right-hand child is the left one mirrored later, so only its parent (the torso,
+    the pelvis) is trued on that side."""
+    from layout import to_mm
+    for child, side, c, a, R in knuckles():
+        parent = TREE[child][2]
+        parent = parent[0] if isinstance(parent, tuple) else parent
+        if side == "R" and parent in SIDED:
+            continue
+        k, cm = knuckle_at(mf, to_mm, child, side, c, a, R)
+        a = _unit(a)
+        up = k.trim_by_plane(tuple(a), float(a @ cm))               # the parent's half (along the bone into the parent)
+        down = k.trim_by_plane(tuple(-a), float(-a @ cm))           # the child's
+        if side == "L" and child in solid:
+            solid[child] = (solid[child] - up) + down
+        if parent in solid:
+            solid[parent] = (solid[parent] - down) + up
+    return solid
 
 
 def _rot(axis, deg):
@@ -410,8 +476,10 @@ def seat_spear(solid, mf):
 
 
 def design(solid, mf):
-    """Seat the spear in the fist, then fuse every loose piece of a part to its main body with a short strut."""
+    """True the knuckles, seat the spear in the fist, then fuse every loose piece of a part to its main body with a short
+    strut."""
     from scipy.spatial import cKDTree
+    solid = true_knuckles(solid, mf)
     if "spear" in solid and "hand" in solid:
         solid = seat_spear(solid, mf)
     out = {}
@@ -453,9 +521,11 @@ def design(solid, mf):
 
 
 # part: (game triangles, texture size)
+# The arm carries the Hellfire socket in its own mesh and textures since the 2026-11-08 polish (seer_items.py), so it has a
+# bigger budget than its 1800 triangles and 512 px before.
 BUDGET = {
     "torso": (10000, 1024), "pelvis": (7000, 1024), "helm": (3000, 768), "crown": (4000, 768), "back": (5000, 768),
-    "pauldron": (6500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (3000, 768),
+    "pauldron": (6500, 1024), "arm": (2600, 768), "forearm": (2800, 768), "hand": (3000, 768),
     "thigh": (3200, 768), "shin": (3800, 768), "foot": (2500, 512), "spear": (7000, 1024),
 }
 LABEL = {
