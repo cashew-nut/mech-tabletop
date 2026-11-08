@@ -21,7 +21,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1]))
 import kit  # noqa: E402
 from kit.render import studio, shot, post  # noqa: E402
-from layout import M, NAME, PS, TREE, SIDED, joint  # noqa: E402
+from layout import M, NAME, PS, TREE, SIDED, SIDE_OF, joint  # noqa: E402
 
 LABEL = M.LABEL
 
@@ -108,7 +108,7 @@ def main(a):
             if o.parent is None:
                 continue
             k = o.name.rsplit("_", 1)[0] if o.name.endswith(("_L", "_R")) else o.name
-            side = o.name[-1] if o.name.endswith(("_L", "_R")) else "L"
+            side = o.name[-1] if o.name.endswith(("_L", "_R")) else SIDE_OF.get(k, "L")
             d = Vector(joint(TREE[k][1], side)) - centre
             d.z *= 0.5
             if d.length < 1:

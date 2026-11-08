@@ -65,6 +65,7 @@ All of it runs headless in the cloud container (4 CPU cores, no GPU). Nothing ne
 | helm | torso | |
 | back | torso | the reliquary spire and its struts |
 | pauldron | torso | the plate, the shoulder joint under it, and the cape |
+| pauldron_r | torso | the right shoulder: the figure's own black pauldron and its long cape (gold cross, white sunburst) |
 | arm | pauldron | Meshy put the shoulder ball inside the pauldron, so the upper arm hangs from it |
 | forearm | arm | |
 | hand | forearm | |
@@ -75,8 +76,15 @@ All of it runs headless in the cloud container (4 CPU cores, no GPU). Nothing ne
 | pod | torso or back | equipment: the shoulder pod (`item_carapace-gun@paladin`); a 2 mm peg, no magnet |
 
 Sided parts are modelled once, for the walker's left, and mirrored for the right, so the right side now matches the
-left (the Meshy figure's right arm hung differently). OUT/report.json lists each part's size, volume and triangle
-counts and every joint's peg, axis and magnet.
+left (the Meshy figure's right arm hung differently). The exception is the right pauldron (`NATIVE_RIGHT` in
+`paladin.py`, 2026-11-08): mirroring the left lost the figure's best feature, the long crimson cape on the right that
+the concept art has, so `pauldron_r` is cut from the figure's own right side. It carries the left pauldron's pegs,
+mirrored (into the torso's mirrored hole, and down into the mirrored arm), each on a round boss that reaches back into
+the part until it is solid, and it is trimmed wherever the mirrored arm, forearm and hand sit (the Meshy right arm hung
+in front of the cape; the mirrored one runs through its inner edge, which is hidden behind the arm). The cape's top
+front was labelled arm by cut.py, which left a hole under the gold cross: `paladin.cloth_tris` takes the red there
+as cape when it joins the cape's own cloth. OUT/report.json lists each part's size, volume and triangle counts and every
+joint's peg, axis and magnet.
 
 ## Known limits
 
@@ -112,7 +120,8 @@ counts and every joint's peg, axis and magnet.
 ## In the game
 
 `scripts/publish-composite.mjs` copies OUT/glb into `apps/web/public/parts`: the 11 body parts as
-`kit/covenant_<part>_paladin.glb` (left side only, the web mirrors the right), `blade` as `item_lance@paladin.glb` and
+`kit/covenant_<part>_paladin.glb` (left side only, the web mirrors the right) and the right pauldron as
+`kit/covenant_pauldron-right_paladin.glb` (the web uses a `-right` part instead of the mirror), `blade` as `item_lance@paladin.glb` and
 `pod` as `item_carapace-gun@paladin.glb`. Items are stored at scout scale with their origin on the grip or pod mount
 (the web grows them by 1.7), so the script moves and scales their vertices; every other part keeps its joint origin.
 It deletes the old `-right`, `cloth` and `collar` Paladin parts and edits the manifest. `data/model-kit.json`
@@ -124,7 +133,8 @@ node scripts/compress-parts.mjs   # KTX2_NORMAL=etc1s KTX2_BASE_Q=150, on the 13
 node scripts/item-bounds.mjs      # item boxes for the equipment fit
 ```
 
-The 13 files come to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar).
+The 13 files came to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar); with the shoulder and
+bracer sockets (4.2 MB) and the right pauldron with its long cape (2026-11-08) the 14 come to 5.0 MB.
 
 ## The Paladin's items (Carapace Gun, Missile Rack, Kinetic Shield)
 
@@ -143,12 +153,22 @@ pod's textured solid). `paladin_items.py` writes `fit.json` and exits 1 if a che
 `build.py` (so textures, budgets and cut-face materials are the walker's own) and writes the game GLBs, print STLs and
 `paladin_items.blend`.
 
-- **Shoulder hardpoint.** A gunmetal boss on each side of the torso (3.1 mm radius, up to the pod's old seat plane) with the
-  D hole and a magnet pocket in it: r 1.5 x 3.0 mm peg, 2 x 1 mm disc, 0.4 mm wall at least. The Carapace Gun and the Missile
-  Rack use the same socket, either side. The boss is trimmed where the back spire, helm, pauldrons and arms are, so nothing
-  of the walker moves.
-- **Bracer hardpoint.** The same boss and hole on the forearm's outer face, tilted 12 degrees to follow the forearm (the face
-  slopes in towards the elbow), seat 0.5 mm proud of the highest metal under the collar. The Kinetic Shield plugs into it.
+- **Shoulder hardpoint.** A gunmetal pedestal on each side of the torso's upper back, up to the pod's old seat plane, with the
+  D hole and a magnet pocket in it: r 1.5 x 3.0 mm peg, 2 x 1 mm disc, 0.4 mm wall at least. Since 2026-11-08 it is shaped as
+  a fitting rather than a plain 3.1 mm cylinder (which read as a tin can on the back): it flares into a 4 mm flange where it
+  meets the torso, chamfers at the seat to the collar's own radius, and carries two proud gold bands like the collars'
+  (`SHOULDER_BOSS`). The Carapace Gun and the Missile Rack use the same socket, either side. The boss is trimmed where the
+  back spire, helm, pauldrons (the native right one on the right) and arms are, so nothing of the walker moves.
+- **Bracer hardpoint.** The same hole in a boss on the forearm's outer face with a chamfered seat and a gold rim
+  (`BRACER_BOSS`), tilted 12 degrees to follow the forearm (the face slopes in towards the elbow), seat 0.5 mm proud of the
+  highest metal under the collar. The Kinetic Shield plugs into it. The native right pauldron's cape hangs past the right
+  forearm, so it gives way to the mirrored socket (`stl/pauldron_r_clear.stl` is the right pauldron to print with the
+  socketed forearm; what it loses is inside the forearm).
+- **Sockets in the game.** `hosts/<socket>.npz` holds the visible part of each socket with crease-split normals and a gold
+  flag per triangle; `scripts/publish-composite.mjs` merges them into the torso and forearm as a gunmetal and a gold
+  primitive (build.py's cut-face and knuckle colours). The gunmetal is blackened steel, rougher than the cut faces (0.9):
+  the seat is a flat disc facing up, and before 2026-11-08 (smoother, no normals) the stage's rim light glanced off it
+  and bloomed into a white halo over the shoulders.
 - **Items.** Each carries a gunmetal collar with two gold bands, then its own peg. The Carapace Gun keeps the Meshy pod but loses
   its old stem: the pod is a thin-walled lattice where no 3 mm disc fits, so the stem is cut flat and the new collar and peg
   carry it. The Missile Rack stands on its own Meshy post; the shield is stood off 2.6 mm from the forearm.

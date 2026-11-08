@@ -33,7 +33,10 @@ CLEAR_MIRRORED = True       # trim the pelvis and torso where the mirrored right
 CRUMB = 4.0                 # mm3: drops the scrap of pelvis armour that trim cuts loose (3.1 mm3)
 
 # Physical parts and the cut labels each is made of. Sided parts are built for the walker's left (+X) only and mirrored
-# for the right, so the right side's labels exist only to carve the torso and pelvis.
+# for the right, so the right side's labels exist only to carve the torso and pelvis. The exception is the right
+# pauldron (NATIVE_RIGHT below): Meshy gave the walker a plain black right pauldron with the long crimson cape (gold
+# cross, white sunburst), as in the concept art, and a red left pauldron with a short one. Mirroring the left lost the
+# cape, so the right pauldron is cut from the figure's own right side and carries the left pauldron's pegs, mirrored.
 PARTS = {
     "torso": ["torso", "collar", "cloth_upper"],
     "pelvis": ["pelvis", "cloth_lower"],
@@ -44,7 +47,7 @@ PARTS = {
     "thigh": ["thigh_L"], "shin": ["shin_L"], "foot": ["foot_L"],
     "blade": ["sword_L"], "pod": ["pod_L"],
     # right side, used only to know where the torso and pelvis end
-    "_pauldron_R": ["pauldron_R", "cloth_R"], "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"],
+    "pauldron_r": ["pauldron_R", "cloth_R"], "_arm_R": ["arm_R"], "_forearm_R": ["forearm_R"], "_hand_R": ["hand_R"],
     "_thigh_R": ["thigh_R"], "_shin_R": ["shin_R"], "_foot_R": ["foot_R"], "_blade_R": ["sword_R"], "_pod_R": ["pod_R"],
 }
 
@@ -120,11 +123,45 @@ ELBOW_SEAM, ELBOW_RAD = 0.040, 0.066        # 2.0 mm and 3.3 mm at print scale
 
 
 def cloth_tris(work, V, F, UV):
-    """Triangles that are cloth (the red tabard, capes and banner): cut.py's labels."""
+    """Triangles that are cloth (the red tabard, capes and banner): cut.py's labels, plus the front of the right cape.
+
+    cut.py only calls red triangles cloth behind the body or far out to the side (so the red pauldron panel and chest
+    panels stay armour). The big right cape's top front, where it drapes over the shoulder, is in neither zone: those
+    triangles went to the right arm, which is thrown away, and left a hole under the gold cross. The right pauldron is
+    plain black and gold, so on that side red triangles out past the chest are cape, as long as they join the cape's own
+    cloth through red (the old right arm's red plates do not, and stay with that arm). V is centred (split.py)."""
     tlab = np.load(Path(work) / "lab.npy")
     tnames = json.loads((Path(work) / "names.json").read_text())
-    return tlab == tnames.index("cloth")
+    cloth = tlab == tnames.index("cloth")
+    from PIL import Image
+    from scipy.spatial import cKDTree
+    C = V[F].mean(1)
+    cand = (C[:, 0] < -0.28) & (C[:, 2] < 0.46) & (tlab != tnames.index("back"))
+    idx = np.flatnonzero(cand)
+    tex = np.asarray(Image.open(Path(work) / "tex_0.jpg").convert("RGB"))
+    n = tex.shape[0]
+    uv = UV[F[idx]].mean(1)
+    col = tex[np.clip((uv[:, 1] * (n - 1)).astype(int), 0, n - 1), np.clip((uv[:, 0] * (n - 1)).astype(int), 0, n - 1)]
+    c = col.astype(int)
+    red = ((c[:, 0] > 90) & (c[:, 0] > 2 * c[:, 1]) & (c[:, 0] > 2 * c[:, 2])).astype(np.float32)
+    _, nn = cKDTree(C[idx]).query(C[idx], k=24)       # smoothed over 24 neighbours, as cut.py does
+    zone = np.union1d(idx[red[nn].mean(1) > 0.30], np.flatnonzero(cloth & cand))
+    # connected pieces of that red, through shared corners (merged by position)
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    used, inv = np.unique(F[zone].ravel(), return_inverse=True)
+    pid = np.unique(np.round(V[used], 6), axis=0, return_inverse=True)[1].ravel()
+    tri = pid[inv.ravel()].reshape(-1, 3)
+    e = np.concatenate([tri[:, [0, 1]], tri[:, [1, 2]]])
+    nv = pid.max() + 1
+    comp = connected_components(coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(nv, nv)), directed=False)[1][tri[:, 0]]
+    orig = cloth[zone]
+    keep = np.bincount(comp[orig], minlength=comp.max() + 1)[comp] >= 300     # pieces that hold the cape's own cloth
+    cloth[zone[keep]] = True
+    return cloth
 
+
+NATIVE_RIGHT = {"pauldron_r": "pauldron"}      # publishes as covenant_pauldron-right_paladin
 
 # part: (kit component it publishes as, joint its origin sits on, parent part it plugs into)
 TREE = {
@@ -134,6 +171,7 @@ TREE = {
     "helm": ("helm", "head", "torso"),
     "back": ("back", "chest", "torso"),
     "pauldron": ("pauldron", "shoulder", "torso"),
+    "pauldron_r": ("pauldron-right", "shoulder", "torso"),     # the right shoulder (NATIVE_RIGHT): pegs from "pauldron"
     "arm": ("arm", "shoulder", "pauldron"),   # the Meshy shoulder joint sits inside the pauldron, so the arm plugs into it
     "forearm": ("forearm", "elbow", "arm"),
     "hand": ("hand", "wrist", "forearm"),
@@ -148,12 +186,12 @@ SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot", "blade",
 # torso and pauldron).
 BUDGET = {
     "torso": (11000, 1024), "pelvis": (7000, 1024), "helm": (3500, 1024), "back": (5500, 768),
-    "pauldron": (7500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (2500, 512),
+    "pauldron": (7500, 1024), "pauldron_r": (9000, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (2500, 512),
     "thigh": (3500, 768), "shin": (4200, 768), "foot": (2500, 512), "blade": (3000, 1024), "pod": (4000, 768),
 }
 LABEL = {
     "pelvis": "Pelvis + tabard", "torso": "Torso + collar + back banner", "helm": "Helm", "back": "Reliquary spire",
-    "pauldron": "Pauldron + cape", "arm": "Upper arm", "forearm": "Forearm", "hand": "Gauntlet", "thigh": "Thigh",
+    "pauldron": "Pauldron + cape", "pauldron_r": "Right pauldron + long cape", "arm": "Upper arm", "forearm": "Forearm", "hand": "Gauntlet", "thigh": "Thigh",
     "shin": "Greave", "foot": "Sabaton", "blade": "Siege blade (equipment)", "pod": "Shoulder pod (equipment)",
 }
 # render.py's posed shot: object name -> (x, y, z) rotation in degrees about the part's own joint

@@ -4,7 +4,9 @@
 
 PARTS   models/paladin-composite-1.5x (stl/<part>.stl, report.json): the Paladin the items plug into.
 OUT     gets kit/<item>.npz (closed solids with Meshy UVs, the format build.py bakes), stl/ (print copies, plus the two
-        host parts that gained hardpoints), tex_*.jpg per item under work/<item>/, and fit.json (the checks below).
+        host parts that gained hardpoints and, with a native right pauldron, pauldron_r_clear.stl: its cape cleared of the
+        right forearm's bracer socket), hosts/ (the sockets for the web), tex_*.jpg per item under work/<item>/, and
+        fit.json (the checks below).
 *_WORK  a `cut.py extract` folder (mesh.npz + tex_*.jpg): the Meshy generation for that item. --pod is the Paladin's own
         WORK folder after split.py (parts/pod.npz is the shoulder pod cut from the Meshy Paladin).
 
@@ -19,9 +21,16 @@ The items follow the walker's own method (README.md): the shape is Meshy's, the 
 
 Hardpoints (the host parts get a designed socket, so the peg plugs into solid metal with a 0.4 mm wall at least):
 
-  * Shoulder: a gunmetal boss on the torso's shoulder, 5.6 mm tall over the torso, with the hole and a magnet pocket at its
-    bottom. Left and right (mirrored). The Carapace Gun and the Missile Rack use the same socket, either side.
-  * Bracer: a gunmetal boss on the forearm's outer face, same hole. The Kinetic Shield plugs into it.
+  * Shoulder: a gunmetal pedestal on the torso's upper back, 6.8 mm tall, with the hole and a magnet pocket at its bottom.
+    It flares into a flange where it meets the torso, has a chamfered seat and two proud gold bands like the item collars'
+    own, so the socket and the item on it read as one fitting (a plain cylinder read as a tin can). Left and right
+    (mirrored); the right one is trimmed against the native right pauldron. The Carapace Gun and the Missile Rack use the
+    same socket, either side.
+  * Bracer: the same kind of boss on the forearm's outer face, with a gold rim under its chamfered seat, same hole. The
+    Kinetic Shield plugs into it.
+
+The sockets are also written to hosts/<socket>.npz for the web (scripts/publish-composite.mjs merges them into the torso
+and forearm): positions P, triangles T, crease-split normals N and a per-triangle finish M (0 gunmetal, 1 gold).
 
 Item frame (mm, origin at the socket centre on the seat plane): +Z is out of the host. Pegs go to -Z. The items are modelled for
 the walker's left; the web mirrors them for the right.
@@ -45,10 +54,14 @@ PEG_R, PEG_L, MAGNET = 1.5, 3.0, (1.0, 1.0)         # radius, length, (magnet ra
 WALL = 0.4
 CLEAR = 0.15                                          # mm of clearance the item keeps from the rest of the walker
 
-SHOULDER = dict(centre=(8.0, 4.0, 77.8), out=(0.0, 0.0, 1.0), boss_r=3.1, boss_z0=71.0)
+SHOULDER = dict(centre=(8.0, 4.0, 77.8), out=(0.0, 0.0, 1.0), boss_z0=71.0)
+# socket profiles, item frame (seat at z = 0): (z, radius) stations from the bottom up, and the gold bands (z0, z1), proud 0.15
+# mm like the collars' bands. The seat chamfers to the collar's own radius, so collar and socket run on flush.
+SHOULDER_BOSS = dict(stations=((-6.8, 4.0), (-5.6, 3.45), (-0.2, 3.1), (0.0, 2.9)), bands=((-5.75, -5.4), (-0.6, -0.3)))
+BRACER_BOSS = dict(stations=((-6.0, 3.3), (-0.2, 3.1), (0.0, 2.9)), bands=((-0.6, -0.3),))
 # the forearm's outer face slopes inward towards the elbow (about 12 degrees), so the bracer's axis leans with it; the seat is
 # 0.5 mm proud of the highest point of the forearm under the collar
-BRACER = dict(y=-5.5, z=48.0, tilt_deg=12.0, boss_r=3.1, boss_depth=6.0, proud=0.5)
+BRACER = dict(y=-5.5, z=48.0, tilt_deg=12.0, boss_depth=6.0, proud=0.5)
 COLLAR_R = 2.9
 RACK_SCALE = 6.5          # print mm per Meshy unit: 12.4 mm long, 8.3 wide, 10.3 tall (the pod it replaces is 15.5 x 9.2 x 11.5)
 SHIELD_SCALE = 7.9        # 15 mm tall, 8.7 wide
@@ -130,6 +143,47 @@ def mirror(m):
     return m.mirror((1, 0, 0))
 
 
+def socket_boss(stations, bands, n=72):
+    """A host socket in the item frame (seat at z = 0, out of the host along +z): gunmetal cones through the (z, r) stations,
+    with proud gold bands."""
+    zs, rs = [z for z, _ in stations], [r for _, r in stations]
+    parts = []
+    for i, ((z0, r0), (z1, r1)) in enumerate(zip(stations[:-1], stations[1:])):
+        # each cone runs 0.02 mm into the next one: cones that only touch at a face can union as separate pieces
+        e = 0.02 if i < len(stations) - 2 else 0.0
+        parts.append(mark(mf.Manifold.cylinder(z1 + e - z0, r0, r1 + (r1 - r0) * e / (z1 - z0), n).translate((0, 0, z0)), PAINT_CAP))
+    for z0, z1 in bands:
+        r0, r1 = np.interp(z0, zs, rs) + 0.15, np.interp(z1, zs, rs) + 0.15
+        parts.append(mark(mf.Manifold.cylinder(z1 - z0, float(r0), float(r1), n).translate((0, 0, z0)), PAINT_GOLD))
+    return mf.Manifold.batch_boolean(parts, mf.OpType.Add)
+
+
+def host_arrays(m, crease=35.0):
+    """A socket mesh for the web: positions P, triangles T, normals N (smooth up to `crease` degrees, split at sharper
+    edges) and the finish M per triangle (1 where the solid carries the gold mark, else 0)."""
+    mm = m.to_mesh()
+    vp = np.asarray(mm.vert_properties, np.float64)
+    T = np.asarray(mm.tri_verts, np.int64)
+    P = vp[:, :3]
+    gold = (np.abs(vp[T, 3:5] + 2.0) < 0.5).all((1, 2)) if vp.shape[1] >= 5 else np.zeros(len(T), bool)
+    A, B, C = P[T[:, 0]], P[T[:, 1]], P[T[:, 2]]
+    fn = np.cross(B - A, C - A)                                   # area weighted
+    fu = fn / (np.linalg.norm(fn, axis=1, keepdims=True) + 1e-12)
+    pid = np.unique(np.round(P, 4), axis=0, return_inverse=True)[1].ravel()
+    cv, cf = pid[T].ravel(), np.repeat(np.arange(len(T)), 3)      # corner -> position, face
+    order = np.argsort(cv, kind="stable")
+    N = np.zeros((len(cv), 3))
+    cos = np.cos(np.radians(crease))
+    for grp in np.split(order, np.flatnonzero(np.diff(cv[order])) + 1):
+        f = cf[grp]
+        N[grp] = ((fu[f] @ fu[f].T) > cos) @ fn[f]
+    N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-12
+    Pc = P[T].reshape(-1, 3)
+    _, first, inv = np.unique(np.column_stack([np.round(Pc, 4), np.round(N, 3)]), axis=0, return_index=True, return_inverse=True)
+    return dict(P=Pc[first].astype(np.float32), T=inv.ravel().reshape(-1, 3).astype(np.int32), N=N[first].astype(np.float32),
+                M=gold.astype(np.int32))
+
+
 def host_boss(sock, host, others, r, z_lo, z_hi):
     """A gunmetal boss (cylinder along the socket's out axis from z_lo to z_hi below/above the seat, item frame) fused to the host
     and trimmed where other parts of the walker are."""
@@ -199,11 +253,14 @@ def main(parts_dir, out, rack_work, shield_work, pod_work=None):
     walker = dict(P)
     for k in SIDED:
         walker[k + "_R"] = mirror(P[k])
+    if (parts_dir / "stl" / "pauldron_r.stl").exists():      # the native right pauldron and its long cape (paladin.py)
+        walker["pauldron_R"] = load_stl(parts_dir / "stl" / "pauldron_r.stl")
 
     # ---- shoulder hardpoint on the torso ------------------------------------------------------------------------------
     sock = Socket(SHOULDER["centre"], SHOULDER["out"])
     others = [walker[k] for k in ("back", "helm", "pauldron", "pauldron_R", "arm", "arm_R")]
-    boss_cyl = sock.world(cyl(SHOULDER["boss_r"], -(SHOULDER["centre"][2] - SHOULDER["boss_z0"]), 0.0))
+    assert abs(SHOULDER_BOSS["stations"][0][0] + (SHOULDER["centre"][2] - SHOULDER["boss_z0"])) < 1e-6
+    boss_cyl = sock.world(socket_boss(**SHOULDER_BOSS))
     boss_l = boss_cyl
     for o in others:
         boss_l = boss_l - o
@@ -217,6 +274,7 @@ def main(parts_dir, out, rack_work, shield_work, pod_work=None):
     report["shoulder_hardpoint"] = {"centre": list(SHOULDER["centre"]), "axis_out": list(SHOULDER["out"]),
                                     "peg": f"r {PEG_R} x {PEG_L} mm D, magnet {2 * MAGNET[0]:g} x {MAGNET[1]:g} mm",
                                     "torso_pieces": pieces(torso_mod), "torso_closed": torso_mod.status().name == "NoError"}
+    report["shoulder_hardpoint"]["pass"] = report["shoulder_hardpoint"]["torso_pieces"] == 1 and report["shoulder_hardpoint"]["torso_closed"]
 
     # ---- the items on the shoulder ------------------------------------------------------------------------------------
     def shoulder_item(name, body_item_frame, collar_h):
@@ -269,12 +327,26 @@ def main(parts_dir, out, rack_work, shield_work, pod_work=None):
     xs = surface_x(f, BRACER["y"], BRACER["z"])
     th = np.radians(BRACER["tilt_deg"])
     bs = Socket((xs + BRACER["proud"], BRACER["y"], BRACER["z"]), (np.cos(th), 0, np.sin(th)))
-    boss = bs.world(cyl(BRACER["boss_r"], -BRACER["boss_depth"], 0.0))
+    assert abs(BRACER_BOSS["stations"][0][0] + BRACER["boss_depth"]) < 1e-6
+    boss = bs.world(socket_boss(**BRACER_BOSS))
+    boss_full = boss.volume()
     for k in ("arm", "hand", "pauldron", "blade", "torso"):
         boss = boss - walker[k]
     forearm_mod = (f + boss) - bs.hole
+    forearm_mod = mf.Manifold.batch_boolean([p for p in forearm_mod.decompose() if p.volume() > 1.0], mf.OpType.Add)
     walker["forearm"] = forearm_mod
     walker["forearm_R"] = mirror(forearm_mod)
+    # The native right pauldron's long cape hangs past the right forearm and was cut clear of the plain forearm only
+    # (joints.py): it gives way to the mirrored bracer socket too, with the walker's clearance, so the right forearm still
+    # plugs in. What it loses is hidden inside the forearm.
+    cleared = None
+    if (parts_dir / "stl" / "pauldron_r.stl").exists():
+        wide = dict(BRACER_BOSS, stations=tuple((z, r + CLEAR) for z, r in BRACER_BOSS["stations"]) + ((CLEAR, 2.9 + CLEAR),))
+        pr = walker["pauldron_R"] - mirror(bs.world(socket_boss(**wide)))
+        keep = sorted(pr.decompose(), key=lambda p: -p.volume())
+        cleared = {"trimmed_mm3": round(walker["pauldron_R"].volume() - pr.volume(), 3),
+                   "dropped_mm3": round(sum(p.volume() for p in keep[1:]), 3)}
+        walker["pauldron_R"] = keep[0]
     Vs, cs, Rm = shield_frame(shield_work)
     shield = load_meshy(shield_work)
     L = (Vs - cs) @ Rm.T
@@ -300,7 +372,10 @@ def main(parts_dir, out, rack_work, shield_work, pod_work=None):
     report["kinetic-shield"] = info
     report["bracer_hardpoint"] = {"centre": [round(float(v), 3) for v in bs.c], "axis_out": [round(float(v), 4) for v in bs.out],
                                   "peg": f"r {PEG_R} x {PEG_L} mm D, magnet {2 * MAGNET[0]:g} x {MAGNET[1]:g} mm",
-                                  "forearm_pieces": pieces(forearm_mod), "forearm_closed": forearm_mod.status().name == "NoError"}
+                                  "forearm_pieces": pieces(forearm_mod), "forearm_closed": forearm_mod.status().name == "NoError",
+                                  "right_cape_cleared": cleared}
+    report["bracer_hardpoint"]["pass"] = bool(pieces(forearm_mod) == 1 and forearm_mod.status().name == "NoError"
+                                              and (not cleared or pieces(walker["pauldron_R"]) == 1))
     items["kinetic-shield"] = (shield_item, bs, shield_work, "bracer")
 
     # ---- write ------------------------------------------------------------------------------------------------------
@@ -313,13 +388,20 @@ def main(parts_dir, out, rack_work, shield_work, pod_work=None):
         for i in range(3):
             tex = Path(work) / f"tex_{i}.jpg"
             (wd / f"tex_{i}.jpg").write_bytes(tex.read_bytes())
-    for name, m in (("torso_hardpoints", torso_mod), ("forearm_bracer", forearm_mod)):
+    hosts = [("torso_hardpoints", torso_mod), ("forearm_bracer", forearm_mod)]
+    if cleared:
+        hosts.append(("pauldron_r_clear", walker["pauldron_R"]))     # the right pauldron for a forearm with the bracer socket
+    for name, m in hosts:
         (out / "stl" / f"{name}.stl").write_bytes(stl_bytes(plain(m).simplify(0.015)))
     # the host sockets, for the blend: only the part outside the host, with the hole cut
     vis = {"shoulder_L": (boss_l - P["torso"]) - hole_l, "shoulder_R": (boss_r - P["torso"]) - hole_r, "bracer_L": (boss - f) - bs.hole}
     for k, m in vis.items():
-        mm = plain(m).to_mesh()
-        np.savez(out / "hosts" / f"{k}.npz", P=np.asarray(mm.vert_properties)[:, :3], T=np.asarray(mm.tri_verts))
+        np.savez(out / "hosts" / f"{k}.npz", **host_arrays(m))
+    # how much of each socket other parts of the walker took (trimmed away where they sit), and its visible pieces
+    trims = {"shoulder_L": boss_cyl.volume() - boss_l.volume(), "shoulder_R": boss_cyl.volume() - boss_r.volume(),
+             "bracer_L": boss_full - boss.volume()}
+    report["sockets"] = {k: {"tris": int(len(m.to_mesh().tri_verts)), "pieces": pieces(m), "trimmed_mm3": round(trims[k], 2)}
+                         for k, m in vis.items()}
     ok = all(v.get("pass", True) for v in report.values() if isinstance(v, dict))
     (out / "fit.json").write_text(json.dumps(report, indent=1))
     for k, v in report.items():
