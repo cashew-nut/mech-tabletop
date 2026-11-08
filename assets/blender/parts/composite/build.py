@@ -34,6 +34,10 @@ RAY = getattr(M, "RAY", PS)   # bake ray reach, relative to the Paladin's (the d
 PRINT_TOL = 0.015       # mm, manifold simplify tolerance for the print copies
 GUNMETAL = ((0.035, 0.035, 0.04), 0.42, 1.0)        # colour, roughness, metallic of cut faces, pegs and holes
 GOLD = getattr(M, "KNUCKLE_FINISH", ((0.56, 0.40, 0.18), 0.30, 1.0))   # designed knuckles and struts
+NORMAL_PX = getattr(M, "NORMAL_SIZE", 512)    # game normal map size cap (the base colour is BUDGET's size)
+ORM_PX = getattr(M, "ORM_SIZE", 256)          # game occlusion/roughness/metal map size
+# A model may bake an emissive map (brute_polish.py): M.glow_weight(P) marks where, imgs["glow"] says what colour.
+GLOW_STRENGTH = getattr(M, "GLOW_STRENGTH", 1.0)
 
 
 def load_solid(path):
@@ -55,6 +59,10 @@ def make_mesh(name, P, T, used, faces):
     me.uv_layers.new(name="UVHigh").data.foreach_set("uv", uv.ravel())
     me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2).astype(np.int32))
     me.polygons.foreach_set("use_smooth", np.ones(len(faces), bool))
+    if hasattr(M, "glow_weight"):       # where the emissive bake shows the glow texture (0 to 1 per vertex)
+        w = np.asarray(M.glow_weight(P[used, :3]), np.float32)
+        me.attributes.new("glow", "FLOAT", "POINT").data.foreach_set("value", w)
+        me["glow_max"] = float(w.max()) if len(w) else 0.0
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     return ob, cap
@@ -86,7 +94,7 @@ def stl_bytes(V, F):
 def high_materials(imgs):
     """Bake-source materials per channel: Meshy's textures on the surface (slot 0), gunmetal on cuts (slot 1)."""
     mats = {}
-    for mode in ("color", "rough", "metal", "normal"):
+    for mode in ("color", "rough", "metal", "normal") + (("emit",) if "glow" in imgs else ()):
         pair = []
         for slot in ("meshy", "cut", "knuckle"):
             m = bpy.data.materials.new(f"high_{mode}_{slot}")
@@ -100,7 +108,8 @@ def high_materials(imgs):
                 else:
                     em = N.new("ShaderNodeEmission")
                     col, rough, metal = GUNMETAL if slot == "cut" else GOLD
-                    v = {"color": (*col, 1), "rough": (rough,) * 3 + (1,), "metal": (metal,) * 3 + (1,)}[mode]
+                    v = {"color": (*col, 1), "rough": (rough,) * 3 + (1,), "metal": (metal,) * 3 + (1,),
+                         "emit": (0, 0, 0, 1)}[mode]
                     em.inputs["Color"].default_value = v
                     L.new(em.outputs["Emission"], out.inputs["Surface"])
                 pair.append(m)
@@ -124,6 +133,16 @@ def high_materials(imgs):
                 em = N.new("ShaderNodeEmission")
                 if mode == "color":
                     L.new(tex(imgs["base"]).outputs["Color"], em.inputs["Color"])
+                elif mode == "emit":        # the glow texture where the model's glow_weight says so, black elsewhere
+                    at = N.new("ShaderNodeAttribute")
+                    at.attribute_name = "glow"
+                    mix = N.new("ShaderNodeMix")
+                    mix.data_type = "RGBA"
+                    mix.blend_type = "MULTIPLY"
+                    mix.inputs[0].default_value = 1.0
+                    L.new(tex(imgs["glow"]).outputs["Color"], mix.inputs[6])
+                    L.new(at.outputs["Fac"], mix.inputs[7])
+                    L.new(mix.outputs[2], em.inputs["Color"])
                 else:
                     sep = N.new("ShaderNodeSeparateColor")
                     L.new(tex(imgs["mr"]).outputs["Color"], sep.inputs["Color"])
