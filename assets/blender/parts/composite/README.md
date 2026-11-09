@@ -573,3 +573,29 @@ hatch, a cupola, stray rods cut away). `split.py` re-stamps each part named in t
 `design`, so `joints.py` measures against the new shapes. `paint.py` paints panel by panel (`M.paint`), designed solids carry their
 finish as a UV code, and `build.py` bakes the per-corner paint attributes, a stencil atlas (`M.stencil_atlas`) and optional glow;
 `GAME_SPLIT` gives the game mesh split normals. Notes and renders: `docs/artillery-composite/`.
+
+## The Reliquary Goliath (MODEL=goliath)
+
+Third walker from the Meshy pipeline. Settings in `goliath.py`; the figure is z -1..1, centre line x = 0, and the mesh is mirrored in x
+once after `cut.py extract` (so the Arc Cannon falls on the figure's right):
+
+```sh
+python3 -I ../meshy/cut.py extract meshy-sources/goliath/model/01a1b612-.../model.glb WORK
+python3 -c "import numpy as np; a=dict(np.load('WORK/mesh.npz')); a['V'][:,0]*=-1; a['F']=a['F'][:,::-1].copy(); np.savez('WORK/mesh.npz',**a)"
+~/bvenv/bin/python -I repair_mesh.py WORK
+MODEL=goliath ~/bvenv/bin/python -I split.py WORK && MODEL=goliath ~/bvenv/bin/python -I joints.py WORK   # ~3 min
+MODEL=goliath ~/bvenv/bin/python -I build.py WORK OUT && MODEL=goliath ~/bvenv/bin/python -I render.py OUT  # ~3 + 5 min
+```
+
+Polish pass (2026-11-09; notes and before/after in `docs/goliath-composite/`):
+
+- **Reliquary grade.** Meshy's retexture came out one dusty khaki stone (metallic 0.09), so the model read pale bone head to foot.
+  `reliquary_grade.py` sorts each texel by brightness into bone, aged gold or black frame metal, with the split set by the region it
+  lies on (`goliath.gilt`, drawn into UV space through the mesh by `uv_raster`): on the hood, chest plates and wings the plates stay
+  bone and only the ribbing turns gold; on the limbs, cannon, spires and halo nearly everything but the frame turns gold. Red goes
+  to deep crimson, teal stays teal. It writes WORK/tex_0_reliquary.jpg, tex_1_reliquary.jpg and tex_glow.png (Meshy's files stay).
+- **Soul-light.** The teal texels in the chest cage and the pack's core (`goliath.CAGE`, `CORE`) light up, and two slanted eye slits
+  (`EYES`, not painted by Meshy) are lit on the dark face under the hood. `glow_weight` gives build.py the same regions.
+- **Knuckles.** The gold-sleeve "top hats" are replaced by the Seer's polished knuckle (`seer.knuckle_solid`), with the exact halves
+  put back after the cut (`true_knuckles`). The finish is matched to this figure's gold (the Seer's pale ball and olive housing read
+  grey here); the upper arm is a bronze rod with three gold ribs, and the palm is bronze under gold claws.
