@@ -16,5 +16,11 @@
     "heavy": { "armRight": ["kinetic-claws"], "armLeft": ["arc-cannon"], "core": ["soul-lantern"] },
     "backpack": { "armRight": ["kinetic-claws", "kinetic-shield"], "armLeft": ["kinetic-claws"] },
     "support": { "armRight": ["arc-cannon", "arc-cannon"], "armLeft": ["arc-cannon"], "core": ["soul-lantern"] }
+  },
+  "scavenger": {
+    "default": { "armRight": ["autocannon"], "armLeft": ["industrial-claw"] },
+    "heavy": { "armRight": ["rail-cannon"], "armLeft": ["rocket-pod"] },
+    "twin": { "armRight": ["autocannon"], "armLeft": ["autocannon", "kinetic-shield"] },
+    "shell": { "armRight": ["shell-arm"], "armLeft": ["industrial-claw"] }
   }
 }

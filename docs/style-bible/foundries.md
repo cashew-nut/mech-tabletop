@@ -53,3 +53,14 @@ Role: long range. Frame: bulwark (size 3, 63 mm printed at 1.5x). Stride 1, boil
   cradle, and a heavy clamp hand on each arm, the left carrying an artillery shell.
 - **Back**: the howitzer cradle, a belt-fed ammunition drum and two smokestacks.
 - **Limbs**: chunky, at least 7% of the body height.
+
+## Class brief: Scavenger (last Foundries walker, 2026-11-09)
+
+Role: utility and recon. Frame: scout (size 1, 42 mm printed at 1.5x). Stride 3, boiler 4, slots 1 / 1 / 2 / 1.
+
+- **Silhouette**: a lean scrap-runner. Hunched forward hull, long digitigrade hind legs of thick hydraulic pistons with brass
+  collars and wide clamp feet, a low wide head with one glowing lens eye and a small sensor dish, patched welded scrap plate.
+  The lightest Foundries walker but still a machine, never a knight.
+- **Weapons**: an industrial salvage claw on one arm and a short autocannon on the other, one item per arm.
+- **Back**: a bundle of welded scrap plates, one short smokestack and a folded radar mast. No hanging chains.
+- **Limbs**: chunky, at least 10% of the body height (scout frame).

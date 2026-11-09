@@ -1,6 +1,6 @@
 # Composite models: the Paladin, the Brute and the Seer as real parts
 
-One pipeline, three models so far: `MODEL=paladin` (default, settings in `paladin.py`), `MODEL=brute` (`brute.py`)
+One pipeline, several models (Paladin, Brute, Seer, Sentinel, Artillery, Goliath, Scavenger); the first three: `MODEL=paladin` (default, settings in `paladin.py`), `MODEL=brute` (`brute.py`)
 and `MODEL=seer` (`seer.py`). The scripts are shared; each model module holds its labelling rules, joint tree, print
 scale, budgets, render labels, peg and magnet sizes, and any designed changes. `layout.py` picks the module.
 Solids, pegs, STLs and the .blend are in print mm; build.py writes the game GLBs at kit mm.
@@ -605,3 +605,31 @@ Polish pass (2026-11-09; notes and before/after in `docs/goliath-composite/`):
 - **Knuckles.** The gold-sleeve "top hats" are replaced by the Seer's polished knuckle (`seer.knuckle_solid`), with the exact halves
   put back after the cut (`true_knuckles`). The finish is matched to this figure's gold (the Seer's pale ball and olive housing read
   grey here); the upper arm is a bronze rod with three gold ribs, and the palm is bronze under gold claws.
+
+## The Foundries Scavenger (MODEL=scavenger)
+
+Fourth walker from the Meshy pipeline and the last Ashen Foundries class (scout frame, 28 kit mm; about 45 mm to the hull roof at
+1.5x). Settings in `scavenger.py`; the figure is z -1..1 with its centre line at x = -0.09 (`CX`). Same steps as the Sentinel:
+
+```sh
+python3 -I ../meshy/cut.py extract meshy-sources/scavenger/model/01a1c03b-.../model.glb WORK
+~/bvenv/bin/python -I repair_mesh.py WORK
+MODEL=scavenger ~/bvenv/bin/python -I split.py WORK && MODEL=scavenger ~/bvenv/bin/python -I joints.py WORK   # ~3 min
+MODEL=scavenger ~/bvenv/bin/python -I build.py WORK OUT && MODEL=scavenger ~/bvenv/bin/python -I render.py OUT  # ~2 + 3 min
+```
+
+- **Digitigrade legs.** The shin bone has two segments (knee back up to the hock, then down to the ankle); the hock stays inside the shin.
+- **Autocannon.** The figure's right forearm is re-seated on the left elbow socket like the Sentinel's gun, keeping its level pose. The two
+  elbows are not mirror images, so `RESEAT_SHIFT` (print mm, read by `joints.reseat`) first moves the mirrored gun from its own elbow onto
+  the left one. With the gun fitted, `LOADOUT_HIDES` (read by `build.py`) hides the right forearm and claw as spares.
+- **Chains dropped.** Pieces labelled `_chain` are listed in `DROP`, which `split.py` honours: they are not handed to a neighbour.
+- **Foundries knuckles.** Shoulder, elbow, knee and ankle get a designed iron ball with one worn brass seam band in an iron collar housing
+  (`foundry_knuckle`, built on `seer.housing`), with exact halves put back after the cut (`true_knuckles`).
+- **Pauldron.** Meshy's shoulder cap is a 0.6 mm sheet, so an iron backing plate (`CAP_BACKING`) makes it a 1.5 mm plate pegged into the arm.
+- **Assembly check.** `assembly_check.py OUT` (any model) puts the STLs together: no overlaps, every part slides straight onto its peg,
+  every part meets its parent. It found hooks at the Scavenger's shoulder and knee; `WIDE_CUT` widens the knuckle's cut plane there.
+- **In the game.** `node scripts/publish-composite.mjs OUT/glb scavenger`; the autocannon and the claw arm are elbow items.
+- **Waist.** A flat cut (`WAIST`) through the neck between hull and pelvis; the bones' round ends had left a knob of pelvis up the torso
+  ring, which only fitted a 1.3 mm waist peg. Now 3 mm.
+- **Finish.** `surface_textures` grades Meshy's dusty retexture to the bible: red and orange lacquer, worn brass, blackened iron, cream
+  stencils; the single lens eye glows furnace orange (`LENS`, `glow_weight`). Notes and renders: `docs/scavenger-composite/`.

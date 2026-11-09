@@ -619,6 +619,15 @@ def assemble(objs):
                 spare.hide_set(True)
         else:
             placed[(k, None)] = ob
+    # a fitted equipment part takes the place of the plain parts it stands in for on its side (the Scavenger's gun
+    # replaces the right forearm and claw): those copies become spares too
+    for k, hides in getattr(M, "LOADOUT_HIDES", {}).items():
+        for h in hides:
+            spare = placed.get((h, LOADOUT.get(k)))
+            if spare is not None:
+                spare["spare"] = True
+                spare.hide_render = True
+                spare.hide_set(True)
     bpy.context.view_layer.update()
     for (k, side), ob in placed.items():
         parent = TREE[k][2]
