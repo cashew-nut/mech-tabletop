@@ -16,11 +16,12 @@ should be carried. Like the Paladin's blade, they now continue the arm: each is 
 
   * The wrist socket is the one the hand already plugs into: a gilded ball knuckle cut through its centre, the hole and its
     magnet pocket in the forearm, the peg (r 1.15 mm D, 1 x 1 mm magnet) on the hand's half ball. Each weapon carries an exact
-    copy of the hand's half ball, sleeve and peg (cut out of the hand itself), so it seats in the same hole and the forearm
+    copy of the hand's half ball, collar and peg (cut out of the hand itself), so it seats in the same hole and the forearm
     is not changed. Swap hand, spear or claws by pulling one off and pushing the other on.
   * Spear: the Seraphim's own spear. Its bulky rear housing (the part couched under the arm in the Meshy figure, which stuck
-    up behind the arm when the fist held it) is cut off; the shaft and the blade stay. A gilded sleeve in the knuckles' style
-    runs from the half ball down onto the shaft, so the blade grows out of the wrist like the Paladin's siege blade. The
+    up behind the arm when the fist held it) is cut off; the shaft and the blade stay. A ferrule in the knuckles' style
+    (bronze, gold bands) runs from the half ball down onto the shaft, so the blade grows out of the wrist like the
+    Paladin's siege blade. The
     angle off the forearm's line is searched (smallest first) so the tip stays clear of the base, the legs and the body.
   * Claws: the Meshy claws are a gauntlet with glowing rings round the wrist and four blades. The rear of the gauntlet is cut
     off and the half ball sits inside the big rings, so the claws go on like a glove over the wrist ball; the ring cuff
@@ -51,7 +52,8 @@ BODY = ("torso", "pelvis", "thigh", "shin", "foot", "pauldron", "pauldron_r", "b
 
 # spear: where the rear housing is cut off, along the shaft from the grip (mm, towards the tip is +)
 SPEAR_KEEP_FROM = -1.5
-SLEEVE_LEN = 3.2                           # gilded sleeve from the knuckle centre down onto the shaft
+SLEEVE_LEN = 3.2                           # the ferrule from the knuckle centre down onto the shaft
+SPEAR_FERRULE = 0.85                       # its radius over the knuckle housing's (it holds no hole)
 # Luke (2026-11-02, second pass): straight on, no tilt at the wrist; the elbow is bent forward instead (seer_elbow.py), and
 # the weapons are shorter so the arm does not look too long. Only if straight on fails do the turns below get tried.
 TURNS = (0, 10, 20, 30, 40, 50, 60)        # degrees off the forearm's line, towards the front
@@ -103,8 +105,8 @@ def mark(m, uv):
 
 
 def keep_marks(m):
-    """Cut faces stay gunmetal, everything else on the knuckle copy bakes gold."""
-    return m.set_properties(2, lambda p, old: (old[0], old[1]) if abs(old[0] + 1) < 0.5 else GOLD)
+    """Cut faces stay gunmetal and frame metal stays frame metal; everything else on the knuckle copy bakes gold."""
+    return m.set_properties(2, lambda p, old: (old[0], old[1]) if abs(old[0] + 1) < 0.5 or abs(old[0] + 3) < 0.5 else GOLD)
 
 
 def plain(m):
@@ -175,8 +177,10 @@ class Wrist:
         self.R = r * layout.MM
         sl_r, sl_up, sl_dn = M.SLEEVE
         R, kc = self.R, self.knuckle_c
+        c_r = M.HOUSING["child_collar"][2]
         region = (mf.Manifold.sphere(R * 1.03, 64).translate(tuple(kc))
-                  + along(R * sl_r * 1.14, -R * sl_dn * 1.05, 0.0, kc, self.a)
+                  + along(R * sl_r * 1.14, -R * sl_dn * 1.05, 0.0, kc, self.a)          # the seam band's lower half
+                  + along(R * c_r * 1.1, -R * 1.1, 0.0, kc, self.a)                     # the collar where the hand leaves the ball
                   + along(j["peg_radius"] + 0.3, -1.5, j["peg_length"] + 0.3, self.c, self.a))
         self.cap = keep_marks(parts["hand"] ^ region)
         # what the weapon may not fill: the forearm, and the forearm's half of the ball and its sleeve swept straight out
@@ -244,14 +248,12 @@ def spear(work, parts, wr, others):
                 best = (score, turn, roll, d, Rm, t, low, hit)
     _, turn, roll, d, Rm, t, low, hit = best
     body = affine(blade, Rm, t)
-    # the gilded sleeve from the ball down onto the shaft: a round housing with a domed end and two raised bands (seer.py's
-    # knuckle sleeve), and a shaft core through it so the blade is rooted in metal
+    # the ferrule from the ball down onto the shaft, in the knuckles' style (seer.housing: bronze, a gold collar at
+    # the ball, a gold band and a short taper onto the shaft), slimmer than a knuckle's housing since it holds no hole; the
+    # shaft's cut end runs up inside it, so the blade is rooted in metal
     kc, R = wr.knuckle_c, wr.R
-    sleeve = along(sl_r, -SLEEVE_LEN, 0.0, kc, -d)
-    dome = mf.Manifold.sphere(sl_r, 48).scale((1, 1, 0.6))
-    dome = affine(dome, align(np.array([0, 0, 1.0]), d), kc + d * SLEEVE_LEN)
-    bands = [along(sl_r * 1.1, z, z + 0.12 * R, kc, d) for z in (0.95 * R, 1.55 * R)]
-    gilt = mark(mf.Manifold.batch_boolean([sleeve, dome] + bands, mf.OpType.Add), GOLD)
+    ferrule = mf.Manifold.batch_boolean(M.housing(mf, R, 0.42 * R, SLEEVE_LEN, rh=SPEAR_FERRULE * sl_r), mf.OpType.Add)
+    gilt = M._orient(ferrule, d, kc)
     item = settle(one_piece(((gilt + body) - wr.keep_out) + wr.cap, "spear"), wr)
     return item, {"turned_forward_deg": turn, "roll_deg": roll, "lowest_mm": round(low, 2), "base_top_mm": BASE_TOP,
                   "blade_axis": [round(float(v), 4) for v in d], "kept_from_grip_mm": SPEAR_KEEP_FROM}

@@ -6,9 +6,10 @@
 // build.py writes one GLB per part with its origin on its joint, in millimetres. The game wants the same parts under
 // kit names, so this renames and wraps them:
 //   pelvis, torso, helm, back, pauldron, arm, forearm, hand, thigh, shin, foot -> kit/covenant_<part>_paladin.glb
+//   pauldron_r (the figure's own right pauldron and long cape) -> kit/covenant_pauldron-right_paladin.glb
 //   blade -> item_lance@paladin.glb          pod -> item_carapace-gun@paladin.glb
 //   with ITEMS (paladin_items_build.py's output): carapace-gun, missile-rack, kinetic-shield -> item_<id>@paladin.glb, and the
-//   shoulder and bracer sockets merged into the torso and forearm as a gunmetal primitive
+//   shoulder and bracer sockets merged into the torso and forearm (a gunmetal and a gold primitive, with normals)
 // Items are stored at scout scale with their origin on the hand/core mount (the web grows them by the titan factor 1.7),
 // so their vertices are moved by the mount offset in data/model-kit.json and divided by 1.7.
 // The Brute (foundries/bulwark, grown 1.4 by the web) has no arm, forearm or hand: its parts are pelvis, torso, helm, back,
@@ -35,7 +36,9 @@ const PARTS = resolve('apps/web/public/parts');
 const MODELS = {
   paladin: {
     faction: 'covenant', cls: 'paladin', tunes: 'covenant/titan', itemScale: 1.7,
-    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'pauldron_r', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    // The right pauldron is the figure's own (black, with the long cape): the web uses it on the right instead of the mirror.
+    component: { pauldron_r: 'pauldron-right' },
     // part -> [item id, numbered mount, joint the part's origin is on (default: the mount's own joint; 'mount': the mount itself)]
     // The Carapace Gun, Missile Rack and Kinetic Shield come from paladin_items_build.py's folder (the 4th argument), cut on the
     // chest and elbow joints; their sockets (hosts/*.npz) are merged into the torso and the forearm.
@@ -60,19 +63,21 @@ const MODELS = {
   seer: {
     faction: 'reliquary', cls: 'seer', tunes: 'reliquary/striker', itemScale: 1.2, frame: 'reliquary_frame_striker',
     kit: ['pelvis', 'torso', 'helm', 'crown', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    // Compressed with compress-parts.mjs's defaults (UASTC normals): ETC1S normals show as blotches on its gold and bronze.
+    ktx2: '',
     // build part -> [kit component, the joint its origin sits on, the joint it hangs on when that differs]
     origin: { helm: ['neck', 'head'] },
     // The arc spear and the kinetic claws (seer_wrist.py) plug into the wrist socket in place of the hand: their origin is
-    // the wrist joint, and the web hides the hand on that side (fit.hardpoints wrist-socket). The Hellfire launcher stands on a gilded sleeve in the arm's shoulder drum
-    // (seer_items.py): its origin is the socket seat, given here as an offset from the shoulder joint (kit mm, Blender
-    // axes), and the sleeve (hosts/arm_sleeve.npz, the part of the socketed arm the plain arm does not have) is merged
-    // into the arm as a gold primitive. The right arm is the left mirrored, so the one socket serves both shoulders.
+    // the wrist joint, and the web hides the hand on that side (fit.hardpoints wrist-socket). The Hellfire launcher stands on a
+    // socket in the arm's shoulder drum (seer_items.py): its origin is the socket seat, given here as an offset from the
+    // shoulder joint (kit mm, Blender axes). Since the 2026-11-08 polish the socket is part of the arm's own mesh and
+    // textures (no `hosts` entry: the flat-gold sleeve primitive is gone). The right arm is the left mirrored, so the one
+    // socket serves both shoulders.
     items: {
       'arc-cannon': ['arc-cannon@seer', ['wrist', [0, 0, 0]], 'mount', 'items'],
       'kinetic-claws': ['kinetic-claws@seer', ['wrist', [0, 0, 0]], 'mount', 'items'],
-      'hellfire-missiles': ['hellfire-missiles@seer', ['shoulder', [1.396, -0.958, 1.8]], 'mount', 'items'],
+      'hellfire-missiles': ['hellfire-missiles@seer', ['shoulder', [1.396, -0.958, 1.896]], 'mount', 'items'],
     },
-    hosts: { arm: ['shoulder', ['arm_sleeve'], [0.78, 0.6, 0.25]] },
   },
   sentinel: {
     faction: 'covenant', cls: 'sentinel', tunes: 'covenant/sentinel', itemScale: 1.4, frame: 'covenant_frame_sentinel', frameFrom: 'covenant_frame_bulwark',
@@ -111,7 +116,8 @@ const { faction, cls, itemScale: ITEM_SCALE, kit: KIT, items: ITEMS, component: 
 const kitName = (k) => `${faction}_${COMPONENT[k] ?? k}_${cls}`;
 const tunes = JSON.parse(readFileSync('data/model-kit.json', 'utf8')).frameTunes[model.tunes];
 const PRINT = 1.5; // print mm per kit mm (paladin.py PRINT_SCALE)
-/** Read a numpy .npz of float32 P (n,3) and int32 T (m,3): stored (uncompressed) .npy members. */
+/** Read a numpy .npz of float32 P (n,3) and int32 T (m,3), optionally float32 N (n,3) and int32 M (m): stored (uncompressed)
+ * .npy members. */
 function readNpz(file) {
   const z = readFileSync(file);
   // The central directory has the real sizes (a streamed zip leaves them 0 in the local headers).
@@ -132,7 +138,7 @@ function readNpz(file) {
     const start = lo + 30 + z.readUInt16LE(lo + 26) + z.readUInt16LE(lo + 28);
     const hl = z.readUInt16LE(start + 8);
     const copy = new Uint8Array(z.subarray(start + 10 + hl, start + size)).buffer;
-    out[name] = name === 'P' ? new Float32Array(copy) : new Int32Array(copy);
+    out[name] = name === 'P' || name === 'N' ? new Float32Array(copy) : new Int32Array(copy);
   }
   return out;
 }
@@ -162,32 +168,55 @@ async function convert(file, name, out, fix, host) {
   return out;
 }
 
-/** Merge the sockets (npz files in print mm, Blender axes, world) into a part's mesh as a gunmetal primitive.
- * `joint` is the joint the part's origin sits on (kit mm), so the sockets land where the part's own vertices are. */
+/** Merge the sockets (npz files in print mm, Blender axes, world) into a part's mesh: a gunmetal primitive and, where the
+ * sockets mark triangles gold (M = 1, paladin_items.py), a gold one, each with the sockets' own normals (N) when they have
+ * them. Gunmetal and gold are build.py's cut-face and knuckle colours, so a socket matches the item collar on it, but the
+ * gunmetal is blackened steel (roughness 0.9, not 0.42): a socket's seat is a flat disc facing up, and a smoother one
+ * caught the stage's rim light and bloomed into a white halo over the shoulders.
+ * `joint` is the joint the part's origin sits on (kit mm), so the sockets land where the part's own vertices are.
+ * A host given a colour (the Seer's sleeve) is all that colour. */
 function addHost(doc, [joint, names, colour]) {
   const mesh = doc.getRoot().listMeshes()[0];
   const buf = doc.getRoot().listBuffers()[0];
   const j = tunes.joints[joint];
-  const pos = [];
-  const idx = [];
+  const groups = [0, 1].map(() => ({ pos: [], nor: [], idx: [] }));
+  let normals = true;
   for (const n of names) {
-    const { P, T } = readNpz(join(itemsDir, '..', 'hosts', `${n}.npz`));
-    const base = pos.length / 3;
-    for (let i = 0; i < P.length; i += 3) {
-      const [x, y, z] = [P[i] / PRINT - j[0], P[i + 1] / PRINT - j[1], P[i + 2] / PRINT - j[2]];
-      pos.push(x, z, -y); // Blender (z up) to glTF (y up)
+    const { P, T, N, M } = readNpz(join(itemsDir, '..', 'hosts', `${n}.npz`));
+    normals &&= !!N;
+    const seen = [new Map(), new Map()];
+    for (let t = 0; t < T.length / 3; t++) {
+      const g = M ? M[t] : 0;
+      const grp = groups[g];
+      for (let c = 0; c < 3; c++) {
+        const v = T[3 * t + c];
+        if (!seen[g].has(v)) {
+          seen[g].set(v, grp.pos.length / 3);
+          const [x, y, z] = [P[3 * v] / PRINT - j[0], P[3 * v + 1] / PRINT - j[1], P[3 * v + 2] / PRINT - j[2]];
+          grp.pos.push(x, z, -y); // Blender (z up) to glTF (y up)
+          if (N) grp.nor.push(N[3 * v], N[3 * v + 2], -N[3 * v + 1]);
+        }
+        grp.idx.push(seen[g].get(v));
+      }
     }
-    for (const t of T) idx.push(base + t);
   }
-  const mat = colour
-    ? doc.createMaterial('hardpoint_gold').setBaseColorFactor([...colour, 1]).setMetallicFactor(0.9).setRoughnessFactor(0.35)
-    : doc.createMaterial('hardpoint_gunmetal').setBaseColorFactor([0.09, 0.09, 0.1, 1]).setMetallicFactor(0.8).setRoughnessFactor(0.45);
-  const prim = doc
-    .createPrimitive()
-    .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(pos)).setBuffer(buf))
-    .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(idx)).setBuffer(buf))
-    .setMaterial(mat);
-  mesh.addPrimitive(prim);
+  const mats = [
+    () =>
+      colour
+        ? doc.createMaterial('hardpoint_gold').setBaseColorFactor([...colour, 1]).setMetallicFactor(0.9).setRoughnessFactor(0.35)
+        : doc.createMaterial('hardpoint_gunmetal').setBaseColorFactor([0.035, 0.035, 0.04, 1]).setMetallicFactor(1).setRoughnessFactor(0.9),
+    () => doc.createMaterial('hardpoint_gold').setBaseColorFactor([0.56, 0.4, 0.18, 1]).setMetallicFactor(1).setRoughnessFactor(0.3),
+  ];
+  groups.forEach((grp, g) => {
+    if (!grp.idx.length) return;
+    const prim = doc
+      .createPrimitive()
+      .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(grp.pos)).setBuffer(buf))
+      .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(grp.idx)).setBuffer(buf))
+      .setMaterial(mats[g]());
+    if (normals) prim.setAttribute('NORMAL', doc.createAccessor().setType('VEC3').setArray(new Float32Array(grp.nor)).setBuffer(buf));
+    mesh.addPrimitive(prim);
+  });
 }
 
 const written = [];
@@ -319,4 +348,4 @@ for (const kind of ['items', 'kit']) manifest[kind] = Object.fromEntries(Object.
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
 console.log(written.map((f) => f.replace(`${resolve('.')}/`, '')).join('\n'));
-console.log(`\nnext: KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs ${written.map((f) => f.replace(`${resolve('.')}/`, '')).join(' ')}`);
+console.log(`\nnext: ${model.ktx2 ?? 'KTX2_NORMAL=etc1s KTX2_BASE_Q=150 '}node scripts/compress-parts.mjs ${written.map((f) => f.replace(`${resolve('.')}/`, '')).join(' ')}`);

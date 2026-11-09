@@ -65,6 +65,7 @@ All of it runs headless in the cloud container (4 CPU cores, no GPU). Nothing ne
 | helm | torso | |
 | back | torso | the reliquary spire and its struts |
 | pauldron | torso | the plate, the shoulder joint under it, and the cape |
+| pauldron_r | torso | the right shoulder: the figure's own black pauldron and its long cape (gold cross, white sunburst) |
 | arm | pauldron | Meshy put the shoulder ball inside the pauldron, so the upper arm hangs from it |
 | forearm | arm | |
 | hand | forearm | |
@@ -75,8 +76,15 @@ All of it runs headless in the cloud container (4 CPU cores, no GPU). Nothing ne
 | pod | torso or back | equipment: the shoulder pod (`item_carapace-gun@paladin`); a 2 mm peg, no magnet |
 
 Sided parts are modelled once, for the walker's left, and mirrored for the right, so the right side now matches the
-left (the Meshy figure's right arm hung differently). OUT/report.json lists each part's size, volume and triangle
-counts and every joint's peg, axis and magnet.
+left (the Meshy figure's right arm hung differently). The exception is the right pauldron (`NATIVE_RIGHT` in
+`paladin.py`, 2026-11-08): mirroring the left lost the figure's best feature, the long crimson cape on the right that
+the concept art has, so `pauldron_r` is cut from the figure's own right side. It carries the left pauldron's pegs,
+mirrored (into the torso's mirrored hole, and down into the mirrored arm), each on a round boss that reaches back into
+the part until it is solid, and it is trimmed wherever the mirrored arm, forearm and hand sit (the Meshy right arm hung
+in front of the cape; the mirrored one runs through its inner edge, which is hidden behind the arm). The cape's top
+front was labelled arm by cut.py, which left a hole under the gold cross: `paladin.cloth_tris` takes the red there
+as cape when it joins the cape's own cloth. OUT/report.json lists each part's size, volume and triangle counts and every
+joint's peg, axis and magnet.
 
 ## Known limits
 
@@ -112,7 +120,8 @@ counts and every joint's peg, axis and magnet.
 ## In the game
 
 `scripts/publish-composite.mjs` copies OUT/glb into `apps/web/public/parts`: the 11 body parts as
-`kit/covenant_<part>_paladin.glb` (left side only, the web mirrors the right), `blade` as `item_lance@paladin.glb` and
+`kit/covenant_<part>_paladin.glb` (left side only, the web mirrors the right) and the right pauldron as
+`kit/covenant_pauldron-right_paladin.glb` (the web uses a `-right` part instead of the mirror), `blade` as `item_lance@paladin.glb` and
 `pod` as `item_carapace-gun@paladin.glb`. Items are stored at scout scale with their origin on the grip or pod mount
 (the web grows them by 1.7), so the script moves and scales their vertices; every other part keeps its joint origin.
 It deletes the old `-right`, `cloth` and `collar` Paladin parts and edits the manifest. `data/model-kit.json`
@@ -124,7 +133,8 @@ node scripts/compress-parts.mjs   # KTX2_NORMAL=etc1s KTX2_BASE_Q=150, on the 13
 node scripts/item-bounds.mjs      # item boxes for the equipment fit
 ```
 
-The 13 files come to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar).
+The 13 files came to 3.9 MB (the old cut was 4.5 MB with the right-hand copies, cloth and collar); with the shoulder and
+bracer sockets (4.2 MB) and the right pauldron with its long cape (2026-11-08) the 14 come to 5.0 MB.
 
 ## The Paladin's items (Carapace Gun, Missile Rack, Kinetic Shield)
 
@@ -143,12 +153,22 @@ pod's textured solid). `paladin_items.py` writes `fit.json` and exits 1 if a che
 `build.py` (so textures, budgets and cut-face materials are the walker's own) and writes the game GLBs, print STLs and
 `paladin_items.blend`.
 
-- **Shoulder hardpoint.** A gunmetal boss on each side of the torso (3.1 mm radius, up to the pod's old seat plane) with the
-  D hole and a magnet pocket in it: r 1.5 x 3.0 mm peg, 2 x 1 mm disc, 0.4 mm wall at least. The Carapace Gun and the Missile
-  Rack use the same socket, either side. The boss is trimmed where the back spire, helm, pauldrons and arms are, so nothing
-  of the walker moves.
-- **Bracer hardpoint.** The same boss and hole on the forearm's outer face, tilted 12 degrees to follow the forearm (the face
-  slopes in towards the elbow), seat 0.5 mm proud of the highest metal under the collar. The Kinetic Shield plugs into it.
+- **Shoulder hardpoint.** A gunmetal pedestal on each side of the torso's upper back, up to the pod's old seat plane, with the
+  D hole and a magnet pocket in it: r 1.5 x 3.0 mm peg, 2 x 1 mm disc, 0.4 mm wall at least. Since 2026-11-08 it is shaped as
+  a fitting rather than a plain 3.1 mm cylinder (which read as a tin can on the back): it flares into a 4 mm flange where it
+  meets the torso, chamfers at the seat to the collar's own radius, and carries two proud gold bands like the collars'
+  (`SHOULDER_BOSS`). The Carapace Gun and the Missile Rack use the same socket, either side. The boss is trimmed where the
+  back spire, helm, pauldrons (the native right one on the right) and arms are, so nothing of the walker moves.
+- **Bracer hardpoint.** The same hole in a boss on the forearm's outer face with a chamfered seat and a gold rim
+  (`BRACER_BOSS`), tilted 12 degrees to follow the forearm (the face slopes in towards the elbow), seat 0.5 mm proud of the
+  highest metal under the collar. The Kinetic Shield plugs into it. The native right pauldron's cape hangs past the right
+  forearm, so it gives way to the mirrored socket (`stl/pauldron_r_clear.stl` is the right pauldron to print with the
+  socketed forearm; what it loses is inside the forearm).
+- **Sockets in the game.** `hosts/<socket>.npz` holds the visible part of each socket with crease-split normals and a gold
+  flag per triangle; `scripts/publish-composite.mjs` merges them into the torso and forearm as a gunmetal and a gold
+  primitive (build.py's cut-face and knuckle colours). The gunmetal is blackened steel, rougher than the cut faces (0.9):
+  the seat is a flat disc facing up, and before 2026-11-08 (smoother, no normals) the stage's rim light glanced off it
+  and bloomed into a white halo over the shoulders.
 - **Items.** Each carries a gunmetal collar with two gold bands, then its own peg. The Carapace Gun keeps the Meshy pod but loses
   its old stem: the pod is a thin-walled lattice where no 3 mm disc fits, so the stem is cut flat and the new collar and peg
   carry it. The Missile Rack stands on its own Meshy post; the shield is stood off 2.6 mm from the forearm.
@@ -179,21 +199,25 @@ SEER is `models/seer-composite-v2` (its right arm is the mirror of the left). Ou
 - **Launcher.** Two stacked missiles with curved blade tips on a shared housing, 17 mm long at print scale, blades forward,
   standing on a gunmetal collar with gold bands under the back of the housing. One closed piece; r 1.3 x 2.2 mm D peg with a
   2 x 1 mm magnet.
-- **Shoulder hardpoint.** A gilded sleeve in the Seer's own joint style (domed end, two bands) sunk into the shoulder drum on
-  top of the `arm` part, with the hole and magnet pocket. The drum is a 2.2 mm half ball, too small to hold a magnet hole on its
+- **Shoulder hardpoint.** A socket in the Seer's own joint style (since the 2026-11-08 polish: a bronze body narrowing to a
+  rounded foot, a gilded lip and a gold band) sunk into the shoulder drum on top of the `arm` part, with the hole and
+  magnet pocket. The drum is a 2.2 mm half ball, too small to hold a magnet hole on its
   own, so the sleeve carries the 0.4 mm wall. Because the right arm is the mirrored left one, both shoulders have the socket
   and the one launcher fits either side. A torso mount was tried first and fails (the shoulder plate is too thin, and the back
   spires are in the way on the right).
-- **Right pauldron.** Its plate lies over the right shoulder drum (the pauldrons are not mirrors), so it gets a 2.7 mm3
-  clearance cut where the sleeve and collar come through (`stl/pauldron_r_cleared.stl`; in the blend, a boolean modifier).
+- **Right pauldron.** On v2, whose native right pauldron's plate lay over the right shoulder drum, it got a 2.7 mm3
+  clearance cut where the sleeve and collar come through (`stl/pauldron_r_cleared.stl`; in the blend, a boolean
+  modifier). Since 2026-11-02 the right pauldron is the left one mirrored and needs none.
 - **Checks** (fit.json): closed and one piece; peg fills none of the arm; hole wall inside the arm; no clash with any part on
   either side at rest, and none on the left with the arm swung 15 degrees either way.
 - Item frame: +Z up out of the socket, -Y forward; the game GLB is at kit size with its origin on the socket seat.
-  **In the game** (`node scripts/publish-composite.mjs SEER/glb seer models/seer-items/glb`, then `compress-parts.mjs` on the
-  arm and the launcher): the arm GLB carries the sleeve as a gold primitive (`hosts/arm_sleeve.npz`, the triangles of
-  `arm_hardpoints.stl` that the plain arm lacks; `extract_sleeve.py` beside it), `item_hellfire-missiles@seer.glb` has its
-  origin on the socket seat, and `fit.hardpoints.shoulder-sockets` puts one on each shoulder. In the rules it is body equipment (core, 2 slots), so it takes no arm slot. The right pauldron's
-  2.7 mm3 clearance cut is not baked into the game's pauldron (the cut is invisible at game scale).
+  **In the game** (`node scripts/publish-composite.mjs SEER/glb seer ITEMS/glb`, then `compress-parts.mjs` on the arm and
+  the launcher): until the 2026-11-08 polish the arm GLB carried the sleeve as a separate flat-gold primitive
+  (`hosts/arm_sleeve.npz`); now seer_items.py, run on the work folder, fuses the socket into the kit arm
+  (`ITEMS/kit/arm.npz`) and the arm is baked with it (see the Seer's Polish notes). `item_hellfire-missiles@seer.glb`
+  has its origin on the socket seat, and `fit.hardpoints.shoulder-sockets` puts one on each shoulder. In the rules it is
+  body equipment (core, 2 slots), so it takes no arm slot. Since the right pauldron became the left one mirrored, it
+  needs no clearance cut.
 - The serrated teeth and the thin ring behind the blades are about 0.1 mm thick at 17 mm: too thin to print cleanly. The
   missile bodies are 1.1 mm and the blades 0.3 to 1.3 mm.
 
@@ -266,6 +290,30 @@ old brute items used, and divides by 1.4, so the fit hardpoints work unchanged. 
 now (the gatling was mirrored onto the cannon's socket), so `autocannon@brute` left `fit.nativeRight`.
 An arm slot with nothing equipped shows the pauldron's gunmetal elbow socket and no forearm.
 
+### Brute polish (2026-11-08)
+
+The cut kept every shape and texel of Meshy's Brute but lost what makes the concept read: the glowing furnace, the hot
+eyes, and red lacquer that looks different from brass and black iron. `brute_polish.py` (wired in at the end of
+`brute.py`) puts that back; the commands are the usual Brute ones above (split, joints, build), and nothing moves a joint,
+peg or magnet (joints.py gives the same pegs and magnets as before).
+
+- **Finishes.** Meshy's metal/roughness map is about 0.45 / 0.45 everywhere, so in the game the whole walker shone alike
+  and the back mirrored the foundry stage's red rim light. `surface_textures` writes WORK/tex_mr_polish.png from the colour:
+  paint (red, white stencils, ochre panels) metal 0 rough 0.58, brass 0.9 / 0.34, blackened iron 0.6 / 0.6, with Meshy's
+  own roughness kept as wear. build.py loads it in place of tex_1 for any model with `surface_textures`.
+- **Glow.** `glow_weight` marks the furnace window under the "07" plate and the eye slits (`GLOW_BOXES`, Meshy units);
+  build.py stores it as a `glow` vertex attribute, bakes an extra emissive map for the parts that have any (torso, helm),
+  and exports it with `GLOW_STRENGTH` 3 (KHR_materials_emissive_strength). The web needs no change: three's glTF loader
+  reads it and the stage's bloom does the rest.
+- **Antennae.** Meshy's 0.3 to 0.6 mm wire antennae (eight on the walker) were unprintable and read as stray hairs, but
+  the concept has them. `design` re-makes each as a rod tapering 0.9 to 0.6 mm with a knob, on the wire's own line and
+  height. One wire beside the chimney was split between the back and the torso (the two would have clashed by 8 mm3): an
+  antenna now has one owner and is cleared out of every other part.
+- **Sharper maps.** `NORMAL_SIZE = 1024`, `ORM_SIZE = 512` (build.py's defaults stay 512 and 256 for the other models).
+- **Published:** the 8 body parts only, compressed with the Brute's recipe (`KTX2_NORMAL=etc1s KTX2_BASE_Q=150`): 3.6 to
+  4.9 MB. The guns are rebaked in the .blend but not republished (Luke: the cannon arm and the gatling are "essentially
+  perfect"); `publish-composite.mjs DIR brute` stops at the guns if DIR has only the body parts, after writing them.
+
 ### The Brute's claw and rail cannon on the elbow socket
 
 The Industrial Claw and the Rail Cannon keep the sculpts every walker uses (`item_industrial-claw`, `item_rail-cannon`),
@@ -323,8 +371,8 @@ What the Paladin taught, and what changed for the Seer:
   Every limb joint (neck, shoulders, elbows, wrists, hips, knees, ankles) now has a gilded ball knuckle with a sleeve
   that runs deep into the parent part, and the cut between the parts is the plane through the ball's centre, square to
   the bone. Each part gets half a ball with a flat round face; the peg grows from the child, the hole (with its magnet)
-  sits in the parent's sleeve. The sleeve has a domed end and two raised bands so it reads as a joint housing, not a
-  can. Knuckles carry UV (-2, -2) and bake as polished gold (`KNUCKLE_FINISH`).
+  sits in the parent's housing. Since the 2026-11-08 polish (below) the ball is aged gold in a dark housing with gold
+  trim; the gold carries UV (-2, -2) (`KNUCKLE_FINISH`), the housing's bronze UV (-3, -3) (`FRAME_FINISH`).
 - **Pegs never cut through a neighbour.** joints.py clears each peg's whole length, with clearance, out of every part it
   passes through, not only the parent (`passes_through` in joints.json). The Seer's fit check found pegs running through
   a third part (the right pauldron sits between the arm and the torso).
@@ -363,11 +411,70 @@ What the Paladin taught, and what changed for the Seer:
 | thigh, shin, foot | pelvis, thigh, shin | mirrored for the right |
 | spear | (raw material) | cut by `seer_wrist.py` into the wrist-socket arc spear, below |
 
+### Polish (2026-11-08)
+
+Luke asked for a careful look at each Meshy walker's rough edges (the Meshy first pass often looked better than the game
+model). On the Seer, three things let it down, and all three were ours rather than Meshy's:
+
+- **Knuckles read as tin cans.** Every joint was a polished gold ball inside a gold can as wide as the ball, so the limbs
+  were strings of bright cylinders that bloomed in the game. The size is fixed by the peg (hole plus a 0.4 mm wall), so
+  the look changed, not the envelope (`seer.knuckle_solid`, `HOUSING`): the ball is aged gold (darker, less glossy,
+  close to Meshy's own gilding texels), with a slim seam band where the parts meet; the housing up the parent's bone is
+  darkened bronze, narrowing a little, with a gold collar at the ball, a gold band at its top and a short cone into the
+  limb instead of a lid (near-black was tried first and read as black cans on the figure); the child's half of the ball has a slim gold collar where its limb leaves it (along the
+  upper arm at the shoulder, `CHILD_AXIS`). seer_elbow.py and seer_wrist.py use the same solids (the elbow's seam sits on
+  the bent cut, the spear's ferrule is a housing).
+- **Dark patches round the balls.** The parts are cut from smoothed voxel regions, and the smoothing rounded off the
+  region's edge a few tenths of a mm inside the ball's rim, so cut-face metal showed through in patches. `design()` now
+  gives each part the exact half of every knuckle it meets (`true_knuckles`, split on the plane through the ball's
+  centre). The labelled region below the cut is back to 0.7 of the ball's radius (it had been cut to nothing with the old
+  child-side can): shallower, the forearm's cuff wrapped under the hand's ball and the hand no longer pulled straight off.
+  The hip housings are shorter (`HOUSING_TOP`): at full length their tip reached the torso's side of the waist cut and
+  the torso caught on it when lifted off.
+- **The designed surfaces looked like new plastic, and streaked.** Flat colours next to Meshy's worn gilding. With
+  `DESIGNED_WEAR` build.py bakes the cut faces, gold and bronze with darker crevices (ambient occlusion over the part's own
+  shape) and a faint mottle in colour and roughness (`wear()`). And every designed solid is a few long side triangles
+  between hard rims: smooth shading averaged the rims' normals down those triangles, and the bake turned that into
+  bright streaks down every knuckle. With `SHARP_DESIGNED` the bake source gets sharp edges wherever a designed face
+  meets another at more than 35 degrees (`sharpen()`; Meshy's own surface stays smooth).
+- **The chest glared.** Meshy's roughness map is near mirror-smooth in places (the chest plate: median 0.29, a quarter
+  under 0.1), and the game's bloom turned its highlights into white glare. `ROUGH_FLOOR = 0.42` keeps the baked
+  roughness at or above that: the highlights spread into a sheen, closer to how Meshy's own viewer lit it.
+- **Blocky normals in the game.** With ETC1S normal maps (`KTX2_NORMAL=etc1s KTX2_BASE_Q=150`, what the other walkers
+  use) the chest showed square blocks in its shading. The Seer's parts are compressed with the script's defaults
+  instead (UASTC normal maps, colour at quality 200): about 6.3 MB for the twelve body parts instead of 3.9 MB, and the
+  shading matches the uncompressed parts.
+- **The Hellfire sockets were flower pots.** The game drew the shoulder sleeves as a separate untextured bright-gold mesh
+  that bloomed, with green environment stripes. The sleeve is now in the joints' style (bronze tapered body, gilded lip,
+  gold band, rounded foot), and it is part of the arm itself: `seer_items.py` run on the work folder writes the arm with
+  its socket fused on (`ITEMS/kit/arm.npz`), so the arm's bake carries it and `publish-composite.mjs` no longer merges a
+  gold primitive into the arm.
+
+The rebuild, from the Meshy files (about 45 minutes):
+
+```sh
+python3 -I ../meshy/cut.py extract Meshy_AI_The_Gilded_Seraphim_..._texture.glb WORK
+python3 -I ../meshy/cut.py extract meshy-sources/hellfire/01a1938a-a9f8-....glb HF
+python3 -I ../meshy/cut.py extract meshy-sources/kinetic-claws/01a1938a-aa42-....glb CLAWS
+MODEL=seer ~/bvenv/bin/python split.py WORK && MODEL=seer ~/bvenv/bin/python joints.py WORK
+MODEL=seer ~/bvenv/bin/python -I seer_elbow.py WORK BENT --deg 25
+MODEL=seer ~/bvenv/bin/python -I seer_items.py BENT ITEMS --hellfire HF       # writes ITEMS/kit/arm.npz, the arm with its socket
+MODEL=seer ~/bvenv/bin/python -I seer_wrist.py BENT WRIST --claws CLAWS
+cp ITEMS/kit/arm.npz BENT/kit/arm.npz && rm BENT/kit/spear.npz              # the spear is raw material for seer_wrist.py
+MODEL=seer ~/bvenv/bin/python -I build.py BENT OUT                          # every part, seer_composite.blend
+MODEL=seer ~/bvenv/bin/python -I build.py WORK HAND hand                    # the game hand, unbent (turned below)
+node scripts/turn-part.mjs HAND/glb/hand.glb OUT/glb/hand.glb BENT/bend.json
+MODEL=seer ~/bvenv/bin/python -I seer_wrist_build.py OUT WRIST --bend BENT/bend.json
+MODEL=seer ~/bvenv/bin/python -I seer_items_build.py OUT ITEMS
+MODEL=seer ~/bvenv/bin/python -I render.py OUT
+```
+
 ### The Seer in the game
 
 ```sh
-node scripts/publish-composite.mjs ../models/seer-composite/glb seer     # from the build output
-KTX2_NORMAL=etc1s KTX2_BASE_Q=150 node scripts/compress-parts.mjs <the files this prints>
+node scripts/publish-composite.mjs ../models/seer-composite/glb seer ITEMS_GLB   # build output; ITEMS_GLB holds the spear,
+                                                                              # claws and launcher GLBs (seer_wrist_build.py, seer_items_build.py)
+node scripts/compress-parts.mjs <the files this prints>      # the defaults: UASTC normal maps (see Polish, above)
 node scripts/item-bounds.mjs
 ```
 

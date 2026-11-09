@@ -27,6 +27,10 @@ NAME = getattr(M, "NAME", MODEL)
 PS = getattr(M, "GAME_SCALE", getattr(M, "PRINT_SCALE", 1.0))
 TREE, SIDED, LABEL = M.TREE, M.SIDED, M.LABEL
 RESEAT = getattr(M, "RESEAT", {})      # part: the part whose socket it takes over (the Brute's gatling)
+# part: the sided part it stands in for on the walker's right. Built from the figure's own right side, not mirrored, and
+# fitted with the left part's pegs mirrored, so it plugs into the same sockets (the Paladin's right pauldron and its cape).
+NATIVE_RIGHT = getattr(M, "NATIVE_RIGHT", {})
+SIDE_OF = {k: "R" for k in NATIVE_RIGHT}
 LOADOUT = getattr(M, "LOADOUT", {})    # part: the side it is fitted on by default (the other copy is a hidden spare)
 
 if hasattr(M, "to_mm"):       # the model's own S and BASE are already print mm (the Brute)

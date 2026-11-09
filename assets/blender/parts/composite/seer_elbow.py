@@ -11,18 +11,20 @@ Luke (2026-11-02): with the wrist weapons straight on, the arms looked too long 
 weapons to join straight on with the arm turned forward at the elbow (the gold knuckle under the upper arm), and approved
 a 25 degree sketch.
 
-The elbow is a gilded ball knuckle (seer.py): a ball at the joint with a sleeve along each bone, cut through its centre
-square to the bone. The ball is round about its own centre, so the forearm can swing about that centre and the ball
+The elbow is a gilded ball knuckle (seer.py): a ball at the joint with a housing up the upper arm's bone, cut through its
+centre square to the bone. The ball is round about its own centre, so the forearm can swing about that centre and the ball
 still closes; only the cut moves. Here:
 
   * the forearm loses its old peg (everything above its old cut plane), then it and the hand turn by --deg about the
     lateral axis through the ball's centre, towards the front;
   * the new cut is the plane through the centre half way between the two bones (normal: the sum of the two bone axes),
     so each side keeps a half ball; the arm is filled back with its knuckle (which also fills the old hole) and both
-    are trimmed to the new plane, and anything of either side across it (a thin edge of the sleeves) goes to the other;
-  * a new D peg (the same r 1.3 x 2.6 mm with a 2 x 1 mm magnet) goes on the forearm along the upper arm's bone, so its
-    hole and magnet pocket run straight up the arm's sleeve as before (along the cut's normal the hole's 0.4 mm wall broke
-    out of the sleeve's side); the wall must lie in the arm, and the forearm pulls off straight along the peg (checked).
+    are trimmed to the new plane, and anything of either side across it goes to the other. The knuckle's seam band
+    moves onto the new cut and the forearm's collar turns with the forearm (seer.knuckle_solid's seam and child axes);
+  * a new D peg (the forearm's own size from joints.json, r 1.3 mm with a 2 x 1 mm magnet) goes on the forearm along the
+    upper arm's bone, so its hole and magnet pocket run straight up the arm's housing as before (along the cut's normal the
+    hole's 0.4 mm wall broke out of the housing's side); the wall must lie in the arm, and the forearm pulls off straight
+    along the peg (checked).
 
 The hand turns with the forearm unchanged, so its socket still fits; joints.json gets its new centre and axis, and every
 later step (seer_wrist.py, the web's wrist joint) reads the bent wrist from bend.json.
@@ -41,7 +43,6 @@ import layout  # noqa: E402
 from joints import load, save, peg_shapes, CLEAR, WALL  # noqa: E402
 
 M = layout.M
-GOLD = (-2.0, -2.0)
 
 
 def unit(v):
@@ -77,16 +78,10 @@ def half(c, n, keep_above, size=200.0):
     return box.transform(np.concatenate([align(np.array([0, 0, 1.0]), unit(n)), np.asarray(c, float)[:, None]], 1).tolist())
 
 
-def knuckle(c, a, r):
-    """seer.extra_solids' knuckle for one joint (ball, sleeve with a domed end and two bands), print mm, gold."""
-    ball = mf.Manifold.sphere(r, 48)
-    rs, up, dn = M.SLEEVE[0] * r, M.SLEEVE[1] * r, M.SLEEVE[2] * r
-    sl = mf.Manifold.cylinder(up + dn - rs * 0.6, rs, -1.0, 40).translate((0, 0, -dn))
-    cap = mf.Manifold.sphere(rs, 40).scale((1, 1, 0.6)).translate((0, 0, up - rs * 0.6))
-    bands = [mf.Manifold.cylinder(0.12 * r, rs * 1.1, -1.0, 40).translate((0, 0, z * r)) for z in (0.95, 1.55)]
-    k = mf.Manifold.batch_boolean([ball, sl, cap] + bands, mf.OpType.Add)
-    k = k.transform(np.concatenate([align(np.array([0, 0, 1.0]), unit(a)), np.asarray(c, float)[:, None]], 1).tolist())
-    return k.set_properties(2, lambda p, old: GOLD)
+def along_axis(c, a, z0, z1, r, n=64):
+    """A cylinder of radius r along the axis a through c, from z0 to z1 (mm along a)."""
+    cyl = mf.Manifold.cylinder(z1 - z0, r, r, n).translate((0, 0, z0))
+    return cyl.transform(np.concatenate([align(np.array([0, 0, 1.0]), unit(a)), np.asarray(c, float)[:, None]], 1).tolist())
 
 
 def one(m, crumb=0.3):
@@ -115,10 +110,17 @@ def main(work, bent, deg):
     fore0 = fore - old_peg_zone
     fore1 = about(fore0, R, c)
     hand1 = about(hand, R, c)
-    # the knuckle, both halves, about the same centre (the forearm's sleeve now runs along the turned bone)
-    k_arm = knuckle(c, a_up, R_k) ^ half(c, n, True)
-    ball_low = (mf.Manifold.sphere(R_k, 48).translate(tuple(c))
-                + knuckle(c, a_low, R_k) ^ half(c, a_low, False)).set_properties(2, lambda p, old: GOLD) ^ half(c, n, False)
+    # The straight cut's seam band (seer.py's knuckle: a gold ring split by the cut) sits square to the upper arm's bone on
+    # the arm and, turned with the forearm, square to the forearm's on the other side. The joint is cut again on the
+    # bisector, so both old halves come off (outside the ball) and the knuckle is put back with its band on the new cut.
+    sh, sr = M.HOUSING["seam"]
+    ball = mf.Manifold.sphere(R_k * 0.999, 64).translate(tuple(c))
+    arm = arm - (along_axis(c, a_up, -(sh + 0.02) * R_k, (sh + 0.02) * R_k, (sr + 0.06) * R_k) - ball)
+    fore1 = fore1 - (along_axis(c, a_low, -(sh + 0.02) * R_k, (sh + 0.02) * R_k, (sr + 0.06) * R_k) - ball)
+    # the knuckle, both halves, about the same centre: the housing up the upper arm, the collar on the turned forearm
+    kn = M.knuckle_solid(mf, c, a_up, R_k, seam_axis=n, child_axis=a_low)
+    k_arm = kn ^ half(c, n, True)
+    ball_low = kn ^ half(c, n, False)
     near = mf.Manifold.sphere(R_k * 1.6, 48).translate(tuple(c))
     above, below = half(c, n, True), half(c, n, False)
     # sliver exchange across the new plane, close to the ball only
