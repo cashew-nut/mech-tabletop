@@ -567,3 +567,9 @@ Second new walker from the Meshy pipeline. Settings in `artillery.py`; the figur
 Same steps as the Sentinel (`cut.py extract`, `repair_mesh.py`, then `split.py`, `joints.py`, `build.py`, `render.py` with `MODEL=artillery`;
 about 4 + 1 + 2 + 3 minutes). Meshy's invented third leg is dropped (`REAR_LEG`), the head is a dome stand-in (`HELM`), and the howitzer
 stays with the torso. Notes: `docs/artillery-composite/`.
+
+Polish pass (2026-11-09): `artillery_polish.py` holds the `design` hook (designed clawed feet, a level rear plate with lames and a
+hatch, a cupola, stray rods cut away). `split.py` re-stamps each part named in the model's `CHANGED` into the voxel grid after
+`design`, so `joints.py` measures against the new shapes. `paint.py` paints panel by panel (`M.paint`), designed solids carry their
+finish as a UV code, and `build.py` bakes the per-corner paint attributes, a stencil atlas (`M.stencil_atlas`) and optional glow;
+`GAME_SPLIT` gives the game mesh split normals. Notes and renders: `docs/artillery-composite/`.

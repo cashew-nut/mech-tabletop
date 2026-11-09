@@ -73,3 +73,35 @@ shell, two guns, empty arms). An Artillery arm holds one item (`armItemLimit: 1`
   models and textures (the Artillery is now in the Brute's colours too); no Artillery-specific gun forearms exist yet.
 - The Shell Arm is Artillery-only gear (`chassis` in `data/equipment.json`), 6 points, a first-pass stat line that has not been simulated.
 - Not changed: the Artillery's body card art (`AF-ART-ARM-T1`) and the printable parts.
+
+## Polish pass (2026-11-09)
+
+A hand pass over the rough edges, with the design changes in `assets/blender/parts/composite/artillery_polish.py` (the `design`
+hook) and a new panel paint in `paint.py` and `artillery.py`. Every part is still one closed piece at 1.5x and every joint keeps
+its peg and magnet. Outputs are in the project folder `models/artillery-polish/` and `renders/artillery-polish/`.
+
+| File | What |
+| --- | --- |
+| `polish-assembled.jpg` | front, three-quarter, side and back after the pass |
+| `polish-parts.jpg`, `polish-exploded.jpg` | each part alone, and pulled apart |
+| `polish-game-before-after.jpg` | in the game, before (left) and after (right), front and rear three-quarter |
+
+- **Feet.** The rubble lumps Meshy made are replaced by designed feet: an ankle cuff cut from the shin's own outline, an instep with
+  an ankle drum and brass caps, a red instep plate with rivets, three clawed toes (at -27, 0 and 27 degrees) and a rear spur.
+  The foot is 746 mm³ (was 979) and keeps the shin peg.
+- **Rear plate.** The lopsided slab and the hip lump on the pelvis are cut off level (`REAR_Y`) and replaced by an iron backing,
+  three overlapping red lames with brass rivets, and a brass hatch with an iron boss and six bolts. The plate is cut clear of the
+  torso, back pack and both thighs, so nothing collides when posed.
+- **Stray rods.** The cable on the pauldron and the chains on the barrel and shell arm are cut away (`STRIP` boxes).
+- **Cupola.** The dome stand-in is now an octagonal commander's cupola: brass rim, hatch with hinge and handle, a visor block with
+  a glowing slit and a periscope. The helm peg is unchanged (2.3 mm, 1x1 mm magnet), still the weakest joint.
+- **Paint.** The camouflage blotches are gone. Each part is split into panels at its creases (bent panels split again by normal
+  direction) and each panel gets one finish: the largest flat outward plates are red (up to a share per part, `RED_SHARE`),
+  rings and knobs are brass, the howitzer barrel is dark steel with brass bands, the smokestacks have brass lips and sooty mouths,
+  creases are iron, and raised edges are worn to brass. Meshy's own shading is kept as surface detail on top. Designed parts carry
+  their finish in their UVs, so they bake clean. Stencils: "107" on the chest plate and "III" on the shoulder.
+- **Game normals.** The game meshes now use split normals at 45 degrees, so flat designed plates stay flat (the rear lames showed
+  diagonal streaks with smooth normals).
+- **In the game.** Re-published and compressed as before (`publish-composite.mjs`, then `--items` for the shell arm, then
+  `compress-parts.mjs` with `KTX2_NORMAL=etc1s KTX2_BASE_Q=150`); the class frame was not touched. The red panels use the
+  livery red, so the faction paint still recolours them.
