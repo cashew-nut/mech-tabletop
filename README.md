@@ -23,6 +23,7 @@ Phase 7 of the plan: polish. Rules are at v0.7; see the [balance report](docs/ba
 | [`scripts/render-walkers.mjs`](scripts/render-walkers.mjs) | `npm run render -- renders` saves preview images of each class with a showcase loadout, using headless Chromium (needs Playwright installed globally). |
 | [`apps/web/viewer.html`](apps/web/viewer.html) | Old walker-viewer link, now a redirect to the builder's **Part view** (button above the 3D model, or `/?parts=1`). It shows the walker you are building, with its current equipment and models: turntable, part toggles, and an **Explode** button that slides every part off its parent along the joint tree, with a line at each joint. |
 | [`docs/cards.md`](docs/cards.md) | Collectible cards: `data/parts.json` splits each class into six body part cards, `data/cards.json` holds the printable card records, `cards/` has the Paladin, Sentinel and Artillery art and the 63 x 88 mm sheet. |
+| [`docs/deploy.md`](docs/deploy.md) | How the web app is published to GitHub Pages (phone and desktop are one build), with the exact steps. |
 | [`scripts/validate-data.mjs`](scripts/validate-data.mjs) | Checks the data and that every example lance is legal. |
 
 ```sh
