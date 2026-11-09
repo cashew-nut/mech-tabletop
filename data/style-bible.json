@@ -78,6 +78,17 @@
       "weapons": "a long Arc Cannon forearm on the right arm and a clawed left hand holding a Soul Lantern on a hooked staff",
       "back": "two tall gilded spires, a tattered dark crimson banner and hanging chains with small lanterns",
       "parts": "legs, torso with pelvis, hooded helm with halo crown, pauldron wing spars, arms, and the back with its spires and banner"
+    },
+    "scavenger": {
+      "faction": "foundries",
+      "role": "utility and recon",
+      "frame": "scout",
+      "printHeightMm": 42,
+      "minLimb": "10%",
+      "silhouette": "a lean scrap-runner: the lightest Foundries walker but still a machine, not a knight. A hunched, forward-leaning riveted hull, long digitigrade hind legs of thick hydraulic pistons with big brass collars and wide splayed clamp feet, a low wide head with one big glowing lens eye and a small sensor dish, a patched mismatched look of welded scrap plates in rust red and orange lacquer over blackened iron, all limbs chunky",
+      "weapons": "a big industrial salvage claw (two hydraulic pincers on a thick piston arm) on the right arm, and a short heavy-barrelled autocannon on the left arm",
+      "back": "a bundle of welded scrap plates, one short smokestack and a folded radar mast, no hanging chains",
+      "parts": "legs, torso with pelvis, helm with its lens eye, pauldrons, arms, the scrap-pack back, and the signature weapon"
     }
   }
 }
