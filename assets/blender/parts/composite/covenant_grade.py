@@ -1,6 +1,7 @@
-"""Grade a Meshy retexture to the Iron Covenant finish before it is baked (numpy, scipy, pillow; no Blender).
+"""Grade a Meshy retexture to the Iron Covenant finish, and light its painted lamps (numpy, scipy, pillow; no Blender).
 
-    python3 -I covenant_grade.py WORK [--preview OUT.jpg]      # or MODEL=sentinel split.py WORK, which calls it (sentinel.prepare)
+    ~/bvenv/bin/python -I covenant_grade.py WORK [--preview OUT.jpg]   # the grade only; build.py calls surface_textures
+                                                                     # through the model (sentinel.py), lamps included
 
 Meshy's retexture of the Sentinel came out dusty: khaki trim (about 104, 88, 69 once baked) that is only half metal and
 rough (0.63), brick-pink cloth, and warm grey-brown plate speckled with dust. The concept art, the part sheets and the
@@ -10,8 +11,13 @@ and brightness, and moves each class to the Paladin's baked values (gold 154, 12
 black at roughness 0.42), keeping each texel's brightness relative to its class so filigree, wear and shading survive.
 The dark plate's dust is calmed by pulling each texel part of the way to its neighbourhood's mean.
 
-The originals are kept as tex_0_meshy.jpg and tex_1_meshy.jpg the first time; every run grades from them, so it can be run
-again safely. Nothing here knows about parts: build.py bakes the graded textures as it would Meshy's.
+Meshy also painted the concept's lights: the eyes under the brow and the furnace window behind the chest grille are cream
+texels. `glow_map` turns bright texels into furnace light (deep red-orange to amber) and `lamp_mask` keeps it to the
+lamps the model names (sentinel.py's glow regions, found through the mesh's UVs), so the gold trim elsewhere stays unlit;
+a lit texel's own colour goes to dark amber glass, so its light reads as amber rather than as pale paint.
+
+Meshy's own tex_0.jpg and tex_1.jpg are never changed: the graded copies are tex_0_covenant.jpg and tex_1_covenant.jpg
+and the light is tex_glow.png, all in WORK and made again whenever they are missing.
 """
 import sys
 from pathlib import Path
@@ -98,28 +104,71 @@ def grade(base, mr):
     return np.clip(out, 0, 1), np.clip(mr2, 0, 1), stats
 
 
-def grade_work(work):
+GLOW_LUM = (0.42, 0.80)   # luminance of the Meshy texel: no light below, full light above
+# Light colour from cool to hot: deep red-orange to amber (the hottest stays amber, as the concept's eyes and grille; the
+# Brute's foundry ramp ends white-gold, which read as cream paint on the Sentinel's pale painted window)
+GLOW_RAMP = ((0.0, 0.35, 0.7, 1.0),
+             ((0.12, 0.02, 0.0), (0.80, 0.24, 0.02), (1.0, 0.48, 0.08), (1.0, 0.68, 0.28)))
+LAMP_BASE = np.array([0.20, 0.08, 0.025])   # a lit pane's own colour (dark amber glass), so its light reads as colour
+LAMP_DARKEN = 0.85                          # how far a fully lit texel goes to LAMP_BASE
+
+
+def glow_map(base):
+    """Furnace light from Meshy's painted lamps: the brighter the texel, the hotter. Returns (light rgb, heat 0..1)."""
+    t = np.clip((lum(base) - GLOW_LUM[0]) / (GLOW_LUM[1] - GLOW_LUM[0]), 0, 1) ** 1.3
+    ts, cs = np.array(GLOW_RAMP[0]), np.array(GLOW_RAMP[1])
+    g = np.stack([np.interp(t, ts, cs[:, i]) for i in range(3)], -1)
+    return np.where(t[..., None] > 0, g, 0.0), t
+
+
+def lamp_mask(work, where, n):
+    """0..1 per texel: the texels of the figure's lamps. `where(points)` (figure units, as WORK/mesh.npz) weighs each
+    triangle by its centre, and the weighed triangles are drawn into the texture's UV space (grown 1 texel for seams)."""
+    from PIL import ImageDraw
+    from scipy import ndimage as ndi
+    d = np.load(Path(work) / "mesh.npz")
+    V, F, UV = d["V"], d["F"], d["UV"]
+    w = np.asarray(where(V[F].mean(1)))
+    im = Image.new("L", (n, n), 0)
+    dr = ImageDraw.Draw(im)
+    for i in np.nonzero(w > 0.01)[0]:
+        dr.polygon([(float(u) * n, float(v) * n) for u, v in UV[F[i]]], fill=int(round(255 * min(w[i], 1.0))))
+    return ndi.grey_dilation(np.asarray(im), size=3).astype(np.float32) / 255
+
+
+def surface_textures(work, lamps=None):
+    """The graded base colour and metal/roughness for build.py, and with `lamps` (where the figure's lamps are, see
+    lamp_mask) their light, tex_glow.png, with each lit texel's own colour darkened to amber glass: {image key: path}."""
     work = Path(work)
-    for k in (0, 1):
-        orig = work / f"tex_{k}_meshy.jpg"
-        if not orig.exists():
-            orig.write_bytes((work / f"tex_{k}.jpg").read_bytes())
-    base = np.asarray(Image.open(work / "tex_0_meshy.jpg").convert("RGB")).astype(np.float32) / 255
-    mr = np.asarray(Image.open(work / "tex_1_meshy.jpg").convert("RGB")).astype(np.float32) / 255
+    paths = {"base": work / "tex_0_covenant.jpg", "mr": work / "tex_1_covenant.jpg"}
+    if lamps is not None:
+        paths["glow"] = work / "tex_glow.png"
+    if all(p.exists() for p in paths.values()):
+        return paths
+    base = np.asarray(Image.open(work / "tex_0.jpg").convert("RGB")).astype(np.float32) / 255
+    mr = np.asarray(Image.open(work / "tex_1.jpg").convert("RGB")).astype(np.float32) / 255
     b2, mr2, stats = grade(base, mr)
-    Image.fromarray((b2 * 255 + 0.5).astype(np.uint8)).save(work / "tex_0.jpg", quality=96)
-    Image.fromarray((mr2 * 255 + 0.5).astype(np.uint8)).save(work / "tex_1.jpg", quality=96)
+    if lamps is not None:
+        g, t = glow_map(base)
+        k = (lamp_mask(work, lamps, base.shape[0]) * t)[..., None]
+        b2 = b2 * (1 - LAMP_DARKEN * k) + LAMP_BASE * (LAMP_DARKEN * k)
+        Image.fromarray((np.clip(g * (k > 0), 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8)).save(paths["glow"])
+        stats["lamp texels"] = int((k > 0.05).sum())
+    Image.fromarray((np.clip(b2, 0, 1) * 255 + 0.5).astype(np.uint8)).save(paths["base"], quality=96)
+    Image.fromarray((mr2 * 255 + 0.5).astype(np.uint8)).save(paths["mr"], quality=96)
     print("graded the Meshy textures to the Covenant finish:", stats, flush=True)
-    return b2
+    return paths
 
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    b2 = grade_work(a[0])
+    w = Path(a[0])
+    for p in (w / "tex_0_covenant.jpg", w / "tex_1_covenant.jpg", w / "tex_glow.png"):
+        p.unlink(missing_ok=True)
+    out = surface_textures(w)
     if "--preview" in a:
-        orig = Image.open(Path(a[0]) / "tex_0_meshy.jpg").convert("RGB").resize((1024, 1024))
-        new = Image.fromarray((b2 * 255 + 0.5).astype(np.uint8)).resize((1024, 1024))
-        sheet = Image.new("RGB", (2048, 1024))
-        sheet.paste(orig, (0, 0))
-        sheet.paste(new, (1024, 0))
+        tiles = [Image.open(w / "tex_0.jpg").convert("RGB"), Image.open(out["base"]).convert("RGB")]
+        sheet = Image.new("RGB", (1024 * len(tiles), 1024))
+        for i, t in enumerate(tiles):
+            sheet.paste(t.resize((1024, 1024)), (1024 * i, 0))
         sheet.save(a[a.index("--preview") + 1], quality=88)
