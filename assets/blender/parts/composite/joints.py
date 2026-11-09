@@ -339,7 +339,10 @@ def reseat(parts, log, part, like):
     toward = np.array(e["centre"])
     keep_pose = getattr(M, "RESEAT_POSE", {}).get(part) == "mirror"
     if keep_pose:
-        Rm, t, ang, moved = np.eye(3), np.zeros(3), 0.0, 0.0
+        # the mirrored part sits on the left elbow as it sat on the right one; RESEAT_SHIFT (print mm) moves it there
+        # when the two elbows are not mirror images (the Scavenger's gun elbow sits further in than its claw elbow)
+        Rm, t, ang = np.eye(3), np.array(getattr(M, "RESEAT_SHIFT", {}).get(part, (0.0, 0.0, 0.0)), float), 0.0
+        moved = float(np.linalg.norm(t))
     else:
         a_src, b_src, _ = gun_frame(m, toward)
         a_dst, b_dst, _ = gun_frame(parts[like], toward)

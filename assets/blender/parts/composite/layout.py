@@ -1,7 +1,7 @@
 """Shared names and joint positions for the composite models (no Blender needed).
 
-The model comes from the MODEL environment variable: `paladin` (default, paladin.py), `brute` (brute.py), `seer`, `sentinel`, `artillery` or `goliath`
-(seer.py). Each model module holds its labelling rules, joint tree, budgets and render labels; the pipeline scripts are
+The model comes from the MODEL environment variable: `paladin` (default, paladin.py), `brute` (brute.py), `seer`, `sentinel`, `artillery`, `goliath` or
+`scavenger` (the module of that name). Each model module holds its labelling rules, joint tree, budgets and render labels; the pipeline scripts are
 shared.
 
 Units: solids, pegs, magnet pockets and the .blend are in print mm. PS is print mm per kit mm (1 for the Paladin,

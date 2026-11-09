@@ -1,6 +1,7 @@
 # Scavenger concept art (Ashen Foundries scout, 2026-11-09)
 
-Gate B: three hero rolls for the last Ashen Foundries walker. Luke picks one before any turnaround, part sheet or 3D.
+Gate B: three hero rolls for the last Ashen Foundries walker. Luke picked roll 3 (2026-11-09); gates C and D and the 3D model
+follow below.
 
 Made with Meshy image-to-image (nano-banana, 3 credits each, 9 in all, balance 52 to 43) from `docs/style-bible/foundries.md`
 through `tools/meshy/prompts.py scavenger hero --variant 0|1|2`. References: the Foundries hero, class and close-up strips from
@@ -37,3 +38,22 @@ the turnaround must show them apart. Small sensor dish and stack need to be pegg
 
 **Next after approval.** Turnaround and part sheet (6 credits), mesh (20), retexture (10): 36 credits, balance 43 to 7. That
 leaves no room for a 3D re-roll, so the silhouette check before texturing matters.
+
+## Gate C: turnaround and part sheet (Luke picked roll 3)
+
+Meshy multi-view and part sheet from `hero-roll3.jpg` (3 credits each). Originals in `meshy-sources/scavenger/turnaround/` and
+`meshy-sources/scavenger/partsheet/`.
+
+| File | What |
+| --- | --- |
+| `turnaround-front.png`, `turnaround-side.png`, `turnaround-back.png` | the three views fed to the mesh call |
+| `partsheet.jpg` | the parts laid out apart: shoulder plates, joint collars, torso with the lens, pelvis plate, legs, claw arm, autocannon |
+
+## Gate D: mesh and silhouette check
+
+One multi-image-to-3D call (mesh only, 20 credits) from the three turnaround views, then `tools/meshy/silhouette.py`:
+`mesh-vs-turnaround.jpg` overlays the mesh on each view. The silhouette matched, so it went to one retexture (10 credits). Mesh and
+textured model are in `meshy-sources/scavenger/model/`.
+
+Credits for the Scavenger: 9 (hero rolls) + 6 (turnaround and part sheet) + 20 (mesh) + 10 (retexture) = 45, balance 7. The composite
+cut is in `docs/scavenger-composite/`.

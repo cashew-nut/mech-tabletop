@@ -174,6 +174,8 @@ def main(work):
             if v > 0.25 * main_v:
                 final[k].append(p)
                 continue
+            if k in getattr(M, "DROP", ()):      # dropped geometry (the Scavenger's chains) stays dropped
+                continue
             to = neighbour(p, keys.index(k))
             if to is not None and to in final:
                 final[to].append(p)
