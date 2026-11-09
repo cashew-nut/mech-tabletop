@@ -84,6 +84,33 @@ All pass the strict checks (hole walls inside the part, no break-outs, mirrored 
 **Borrowed from the Seer:** `fit.itemModels.goliath = ["seer"]`, so the Kinetic Claws, Spear and the like use the Seer's models on the
 Goliath wrist socket. They fit but are not built for the Goliath hand's peg, so they are not magnet-exact for printing.
 
+## Polish pass (2026-11-09)
+
+Luke asked for each Meshy walker to be fine-tuned against its Meshy first pass (the concept, turnaround and part sheet in
+`docs/concept-art/goliath/`). The Goliath's rough edges, and what changed:
+
+| File | What |
+| --- | --- |
+| `polish-assembled-before-after.jpg` | the assembled walker, before and after |
+| `polish-game-before-after.jpg` | in the game (reliquary backdrop, showcase loadout), before and after, three angles |
+| `polish-vs-concept.jpg` | the approved hero art beside the polished model |
+| `polish-parts.jpg`, `polish-exploded.jpg`, `polish-pose.jpg` | each part alone, pulled apart, and posed |
+
+- **Colour.** The retexture was pale bone everywhere; the concept is aged gold and bronze over black, with bone only on the hood,
+  chest plates and wings. `reliquary_grade.py` grades Meshy's texture to that (style bible palette), part by part, keeping its carving.
+- **Knuckles.** The gold sleeves read as gold top hats and bloomed in the game. Every joint now uses the Seer's polished knuckle (aged
+  gold ball with a seam band, deep bronze housing with gold collar and band), so the two Reliquary walkers match.
+- **Upper arms and hands.** The fat gold rod is a slimmer bronze rod with three gold ribs; the claw hand has a bronze palm.
+- **Light.** The chest cage and the pack's core glow teal in the game, and the hood has two teal eye slits, as in the concept.
+
+Joints after the re-cut (all strict checks pass, every part one closed solid): thigh 2.2 mm with 3 x 2 magnet, torso and back 3.0 mm with
+3 x 2, hood, pauldron, shoulder, elbow, wrist 1.75 mm with 2 x 1, knee now 2.0 mm with a 3 x 2 magnet (was 2 x 1), ankle 2.2 mm but only
+1.5 mm long (was 2.0 mm, 2.2 long), 2 x 1 magnet. Game parts grew from 3.8 to 5.6 MB (ETC1S, base quality 150). Files: project folder
+`models/goliath-polish/` and `renders/goliath-polish/`.
+
+Still bulkier than the concept: the knuckle housings (they hold the pegs and magnets) are heavier than the concept's slim joints, most of all at
+the shoulders and hips.
+
 ## Not done yet
 
 `parts.json` rows and card faces for the six Goliath body cards, Goliath-specific claw and spear item models (rebuilt on the Goliath hand

@@ -22,6 +22,9 @@ to this figure:
 * **Knuckles.** The limbs are gaunt (5 to 7 mm at print scale), so every limb joint (neck, shoulder, elbow, wrist, hip, knee,
   ankle) gets a designed ball knuckle in a gilded sleeve, as on the Seer, added to the figure before the cut.
 * **Halo.** The halo ring and the two spires grow from the back, so they are one part with the pack (the hood is the helm).
+* **Polish (2026-11-09).** Meshy's retexture is graded to the Reliquary finish (reliquary_grade.py: aged gold over black
+  frame metal, bone on the hood, chest plates and wings), the chest cage, the pack's core and two designed eye slits glow
+  teal, and the knuckles are the Seer's polished ones (aged gold ball, bronze housing) instead of gold top hats.
 """
 import numpy as np
 
@@ -106,10 +109,10 @@ def _toward(a, b):
     return _unit(np.subtract(JOINTS[b], JOINTS[a]))
 
 
-# Ball knuckles in gilded sleeves (the Seer's standard, seer.py): the Goliath's limbs are gaunt, so every limb joint gets
-# one, designed in rather than found. child part -> (joint, axis from the child into its parent, radius in figure units).
+# Ball knuckles (the Seer's standard, seer.py, and the Reliquary bible's): the Goliath's limbs are gaunt, so every limb joint
+# gets one, designed in rather than found. child part -> (joint, axis from the child into its parent, radius in figure units).
 HAND_DIR = np.array([0.0, -0.97, -0.24])   # the claws reach forward and a little down, clear of the thigh
-ARM_ROD_R = 2.2             # mm at print scale
+ARM_ROD_R = 1.9             # mm at print scale: the upper arm's bronze rod (2.2 mm in gold read as a fat gold bar)
 KG = 0.8                     # first cut at 1.0 looked like gold top hats on the gaunt limbs
 KNUCKLES = {
     "helm": ("neck", (0.0, 0.0, -1.0), 0.055),
@@ -121,9 +124,28 @@ KNUCKLES = {
     "foot": ("ankle", _toward("ankle", "knee"), 0.068),
 }
 KNUCKLES = {k: (j, a, r * KG) for k, (j, a, r) in KNUCKLES.items()}
-# Sleeve: radius, and length into the parent / into the child, as fractions of the ball's radius. The hole (with its
-# magnet) is in the parent, so the sleeve runs deep on that side; the child side carries only the peg root.
-SLEEVE = (1.0, 1.9, 0.6)
+# The child's collar goes where its limb leaves the ball: down the knuckle's own axis everywhere but the shoulder, whose
+# knuckle points into the torso while the upper arm hangs from the ball.
+CHILD_AXIS = {"arm": _toward("elbow", "shoulder")}
+# Polish pass (2026-11-09). The first knuckles were a polished gold ball in a gold sleeve with two bands and a domed lid,
+# the Seer's look before its own polish: on the Goliath they read as gold top hats down every limb and bloomed in the game.
+# They now use the Seer's polished knuckle (seer.knuckle_solid: aged gold ball split by a seam band, a darkened bronze
+# housing up the parent's bone with a gold collar and band and a short cone into the limb, a slim gold collar on the
+# child's half), so the faction's two walkers share one joint. SLEEVE only labels the voxels (see seer.py): from SLEEVE[2]
+# below the cut to region_top() above it, within SLEEVE[0] x 1.12 of the bone, the cut plane decides the part, and
+# design() puts each knuckle's exact halves back (true_knuckles).
+SLEEVE = (1.0, 2.5, 0.7)
+HOUSING_TOP = {"thigh": 1.55, "arm": 1.6}     # short where the housing runs into the waist or across the chest
+
+
+def housing_top(child):
+    import seer
+    return HOUSING_TOP.get(child, seer.HOUSING["top"])
+
+
+def region_top(child):
+    import seer
+    return housing_top(child) + seer.HOUSING["cone"] + 0.15
 
 
 def knuckles():
@@ -144,55 +166,77 @@ def _knuckle_labels(child, side):
     return lc, lp
 
 
+def _child_axis(child, side):
+    if child not in CHILD_AXIS:
+        return None
+    a = _unit(CHILD_AXIS[child])
+    return a * (-1, 1, 1) if side == "R" else a
+
+
+def knuckle_at(mf, to_mm, child, side, c, a, R):
+    """One knuckle of knuckles() as a solid in print mm (seer.knuckle_solid), and its centre there."""
+    import seer
+    cm = to_mm(c)
+    k = seer.knuckle_solid(mf, cm, a, R * S * PRINT_SCALE, child_axis=_child_axis(child, side), top=housing_top(child))
+    return k, cm
+
+
+GOLD_UV, FRAME_UV = (-2.0, -2.0), (-3.0, -3.0)
+
+
+def _tag(m, uv):
+    return m.set_properties(2, lambda p, old: uv)
+
+
 def extra_solids(mf, to_mm):
-    """The ball knuckles (with sleeves along the bone) as one solid, in print mm. Their faces get UV (-2, -2)."""
-    out = []
-    for child, side, c, a, R in knuckles():
-        c = to_mm(c)
-        r = R * S * PRINT_SCALE
-        ball = mf.Manifold.sphere(r, 48)
-        rs, up, dn = SLEEVE[0] * r, SLEEVE[1] * r, SLEEVE[2] * r
-        sl = mf.Manifold.cylinder(up + dn - rs * 0.6, rs, -1.0, 40).translate((0, 0, -dn))
-        cap = mf.Manifold.sphere(rs, 40).scale((1, 1, 0.6)).translate((0, 0, up - rs * 0.6))
-        bands = [mf.Manifold.cylinder(0.12 * r, rs * 1.1, -1.0, 40).translate((0, 0, z * r)) for z in (0.95, 1.55)]
-        k = mf.Manifold.batch_boolean([ball, sl, cap] + bands, mf.OpType.Add)
-        zc = np.array([0.0, 0.0, 1.0])
-        v = np.cross(zc, a)
-        sn, cth = np.linalg.norm(v), zc @ a
-        if sn < 1e-8:
-            Rm = np.eye(3) if cth > 0 else np.diag([1.0, -1.0, -1.0])
-        else:
-            vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-            Rm = np.eye(3) + vx + vx @ vx * ((1 - cth) / sn ** 2)
-        Mx = np.concatenate([Rm, c[:, None]], 1)
-        out.append(k.transform(Mx.tolist()))
-    # the upper arm: a gilded rod with two bands between the shoulder and elbow knuckles (both sides)
+    """The ball knuckles with their housings, the upper arms and the claw hands, as one solid in print mm, tagged gold
+    (UV -2) and frame bronze (UV -3)."""
+    out = [knuckle_at(mf, to_mm, *k)[0] for k in knuckles()]
+    # the upper arm: a bronze rod between the shoulder and elbow knuckles, ribbed with gold bands ("ribbed gilded limbs")
     A, B = to_mm(np.array(JOINTS["shoulder"])), to_mm(np.array(JOINTS["elbow"]))
     for sx in (1, -1):
         a, b = A * (sx, 1, 1), B * (sx, 1, 1)
-        out.append(_capsule(mf, a, b, ARM_ROD_R))
-        for t in (0.38, 0.62):
+        out.append(_tag(_capsule(mf, a, b, ARM_ROD_R), FRAME_UV))
+        d = (b - a) / np.linalg.norm(b - a)
+        for t in (0.34, 0.46, 0.58):
             c = a + (b - a) * t
-            d = (b - a) / np.linalg.norm(b - a)
-            out.append(_capsule(mf, c - d * 0.45, c + d * 0.45, ARM_ROD_R * 1.3))
-    # the hand: the mesh has almost none (the staff hid it), so it is a gilded palm with four long clawed fingers
+            out.append(_tag(_capsule(mf, c - d * 0.32, c + d * 0.32, ARM_ROD_R * 1.22), GOLD_UV))
+    # the hand: the mesh has almost none (the staff hid it), so it is a bronze palm with four long gold clawed fingers
     Wr = to_mm(np.array(JOINTS["wrist"]))
     d = HAND_DIR
     for sx in (1, -1):
         w = Wr * (sx, 1, 1)
         dd = d * (sx, 1, 1)
         e1 = np.array([sx, 0.0, 0.0])
-        out.append(mf.Manifold.sphere(2.7, 32).translate(tuple(w + dd * 1.5)))
+        out.append(_tag(mf.Manifold.sphere(2.7, 32).translate(tuple(w + dd * 1.5)), FRAME_UV))
         for off in (-2.1, -0.7, 0.7, 2.1):
             p0 = w + dd * 2.2 + e1 * off
             p1 = p0 + dd * 4.0 - e1 * off * 0.1
             bend = dd * np.cos(np.radians(38)) + np.array([0.0, 0.0, -np.sin(np.radians(38))])
             p2 = p1 + bend * 3.6
-            out.append(_capsule(mf, p0, p1, 0.8, r1=0.65))
-            out.append(mf.Manifold.sphere(0.65, 16).translate(tuple(p1)))
-            out.append(_capsule(mf, p1, p2, 0.65, r1=0.18))
-    solid = mf.Manifold.batch_boolean(out, mf.OpType.Add)
-    return solid.set_properties(2, lambda p, old: (-2.0, -2.0))
+            out.append(_tag(_capsule(mf, p0, p1, 0.8, r1=0.65), GOLD_UV))
+            out.append(_tag(mf.Manifold.sphere(0.65, 16).translate(tuple(p1)), GOLD_UV))
+            out.append(_tag(_capsule(mf, p1, p2, 0.65, r1=0.18), GOLD_UV))
+    return mf.Manifold.batch_boolean(out, mf.OpType.Add)
+
+
+def true_knuckles(solid, mf):
+    """Each part gets its exact half of every knuckle it meets (seer.true_knuckles): the voxel regions' smoothed edge
+    rounds off a few tenths of a mm inside the ball's rim, so cut-face metal showed through round the child's half ball."""
+    from layout import to_mm
+    for child, side, c, a, R in knuckles():
+        parent = TREE[child][2]
+        if side == "R" and parent in SIDED:
+            continue
+        k, cm = knuckle_at(mf, to_mm, child, side, c, a, R)
+        a = _unit(a)
+        up = k.trim_by_plane(tuple(a), float(a @ cm))
+        down = k.trim_by_plane(tuple(-a), float(-a @ cm))
+        if side == "L" and child in solid:
+            solid[child] = (solid[child] - up) + down
+        if parent in solid:
+            solid[parent] = (solid[parent] - down) + up
+    return solid
 
 
 def _capsule(mf, A, B, r, props=False, r1=None):
@@ -214,8 +258,8 @@ def _capsule(mf, A, B, r, props=False, r1=None):
 
 
 def design(solid, mf):
-    """Drop the floating bits that Meshy's hanging chains and lanterns leave on a part."""
-    from layout import joint
+    """True the knuckles, then drop the floating bits that Meshy's hanging chains and lanterns leave on a part."""
+    solid = true_knuckles(solid, mf)
     out = {}
     for k, m in solid.items():
         ps = sorted(m.decompose(), key=lambda p: -p.volume())
@@ -317,8 +361,84 @@ def label_points(P, _cloth=None):
         q = P - c
         along = q @ a
         radial = np.linalg.norm(q - along[:, None] * a, axis=1)
-        inside = (np.linalg.norm(q, axis=1) < R * 1.02) | ((along < R * SLEEVE[1]) & (along > -R * SLEEVE[2])
+        inside = (np.linalg.norm(q, axis=1) < R * 1.02) | ((along < R * region_top(child)) & (along > -R * SLEEVE[2])
                                                            & (radial < R * SLEEVE[0] * 1.12))
         setl(inside & (along < 0), lab_c)
         setl(inside & (along >= 0), lab_p)
     return lab, names
+
+
+# --- finish and lights (polish pass, 2026-11-09) -------------------------------------------------------------------
+# build.py: designed surfaces. The Seer's pale gold ball and olive bronze housing (seer.py) read grey next to this figure's
+# graded gold (reliquary_grade.GOLD, sRGB 148, 108, 62): in the game the housings looked like stacks of tin cans. Here the
+# ball matches the graded gold and the housing is a deep warm bronze, between the gold and the black frame.
+KNUCKLE_FINISH = ((0.33, 0.175, 0.055), 0.42, 0.9)    # aged gold, linear (sRGB about 156, 117, 66)
+FRAME_FINISH = ((0.085, 0.040, 0.014), 0.48, 0.85)    # deep bronze housings, arm rods and palms (sRGB about 82, 56, 30)
+SHARP_DESIGNED = 35.0
+ROUGH_FLOOR = 0.40
+DESIGNED_WEAR = True
+NORMAL_SIZE, ORM_SIZE = 1024, 512
+GLOW_STRENGTH = 2.2
+
+MM = S * PRINT_SCALE            # print mm per figure unit
+
+
+def _to_mm(P):      # (not to_mm: layout.py would take this model's S as print mm, see sentinel.py)
+    P = np.asarray(P, np.float64)
+    return np.stack([P[..., 0] * MM, P[..., 1] * MM, ((P[..., 2] - FOOT_Z) * S + BASE) * PRINT_SCALE], -1)
+
+
+def _from_mm(P):
+    P = np.asarray(P, np.float64)
+    return np.stack([P[..., 0] / MM, P[..., 1] / MM, (P[..., 2] / PRINT_SCALE - BASE) / S + FOOT_Z], -1)
+
+
+def _band(v, lo, hi, e):
+    return np.clip((v - lo) / e, 0, 1) * np.clip((hi - v) / e, 0, 1)
+
+
+# Where the soul-light may show, figure units (x centred, forward is -y). The chest cage's window and the pack's core are
+# teal in Meshy's texture; the concept's teal eye slits under the hood were not painted, so EYES draws two slanted slits on
+# the dark face (inner ends lower, as the hero art) and reliquary_grade lights them whatever their texel colour.
+CAGE = ((-0.115, 0.115), (0.02, 0.20), (0.02, 0.35), 0.01)
+CORE = ((-0.06, 0.06), (0.44, 0.53), (0.26, 0.39), 0.01)
+EYES = dict(x=(0.012, 0.040), z0=0.493, x0=0.012, slope=0.35, half=0.008, y=(0.15, 0.205), soft=0.003)
+
+
+def eye_weight(Q):
+    x, y, z = Q[:, 0], Q[:, 1], Q[:, 2]
+    a, k = np.abs(x), EYES
+    zl = k["z0"] + k["slope"] * (a - k["x0"])
+    return (_band(a, *k["x"], k["soft"]) * _band(z - zl, -k["half"], k["half"], k["soft"])
+            * _band(y, *k["y"], k["soft"]))
+
+
+def lamp_weight(Q):
+    """0..1 per point (figure units): the soul-light regions (cage, core, eyes)."""
+    Q = np.asarray(Q, np.float64)
+    out = eye_weight(Q)
+    for (x0, x1), (y0, y1), (z0, z1), e in (CAGE, CORE):
+        out = np.maximum(out, _band(Q[:, 0], x0, x1, e) * _band(Q[:, 1], y0, y1, e) * _band(Q[:, 2], z0, z1, e))
+    return out
+
+
+def glow_weight(P_mm):
+    """build.py: where the emissive bake shows the glow map (print mm, kit axes)."""
+    return lamp_weight(_from_mm(P_mm))
+
+
+def gilt(Q):
+    """reliquary_grade: how much of the texture turns gold at each point (figure units), by the part it falls in."""
+    import reliquary_grade as RG
+    Q = np.asarray(Q, np.float32)
+    out = np.empty(len(Q), np.float32)
+    for i in range(0, len(Q), 400000):
+        lab, names = label_points(Q[i:i + 400000])
+        out[i:i + 400000] = RG.gilt_of(names)[lab]
+    return out
+
+
+def surface_textures(work):
+    """The Reliquary grade of Meshy's texture and the soul-light map (reliquary_grade.py), for build.py."""
+    import reliquary_grade
+    return reliquary_grade.surface_textures(work, gilt, lamps=lamp_weight, eyes=eye_weight)
