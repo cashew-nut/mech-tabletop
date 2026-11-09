@@ -108,9 +108,9 @@ GLOW_LUM = (0.42, 0.80)   # luminance of the Meshy texel: no light below, full l
 # Light colour from cool to hot: deep red-orange to amber (the hottest stays amber, as the concept's eyes and grille; the
 # Brute's foundry ramp ends white-gold, which read as cream paint on the Sentinel's pale painted window)
 GLOW_RAMP = ((0.0, 0.35, 0.7, 1.0),
-             ((0.12, 0.02, 0.0), (0.80, 0.24, 0.02), (1.0, 0.48, 0.08), (1.0, 0.68, 0.28)))
+             ((0.12, 0.02, 0.0), (0.85, 0.20, 0.02), (1.0, 0.38, 0.05), (1.0, 0.52, 0.12)))
 LAMP_BASE = np.array([0.20, 0.08, 0.025])   # a lit pane's own colour (dark amber glass), so its light reads as colour
-LAMP_DARKEN = 0.85                          # how far a fully lit texel goes to LAMP_BASE
+LAMP_DARKEN = 0.9                           # how far a lit texel goes to LAMP_BASE (from a quarter of full heat up)
 
 
 def glow_map(base):
@@ -150,9 +150,10 @@ def surface_textures(work, lamps=None):
     b2, mr2, stats = grade(base, mr)
     if lamps is not None:
         g, t = glow_map(base)
-        k = (lamp_mask(work, lamps, base.shape[0]) * t)[..., None]
+        mask = lamp_mask(work, lamps, base.shape[0])
+        k = (mask * np.clip(4 * t, 0, 1))[..., None]
         b2 = b2 * (1 - LAMP_DARKEN * k) + LAMP_BASE * (LAMP_DARKEN * k)
-        Image.fromarray((np.clip(g * (k > 0), 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8)).save(paths["glow"])
+        Image.fromarray((np.clip(g * (mask[..., None] > 0), 0, 1) ** (1 / 2.2) * 255 + 0.5).astype(np.uint8)).save(paths["glow"])
         stats["lamp texels"] = int((k > 0.05).sum())
     Image.fromarray((np.clip(b2, 0, 1) * 255 + 0.5).astype(np.uint8)).save(paths["base"], quality=96)
     Image.fromarray((mr2 * 255 + 0.5).astype(np.uint8)).save(paths["mr"], quality=96)

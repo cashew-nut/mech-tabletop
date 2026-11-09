@@ -544,6 +544,23 @@ MODEL=sentinel ~/bvenv/bin/python -I render.py OUT      # ~4 min
 `~/bvenv` here is a Python 3.11 venv with `pip install bpy scikit-image manifold3d xatlas scipy pillow trimesh`, and
 `apt-get install libegl1 libgl1` for Workbench. Results and notes: `docs/sentinel-composite/`.
 
+Polish pass (2026-11-09; before and after in `docs/sentinel-composite/`):
+
+- **Level gun.** `RESEAT_POSE = {"gun": "mirror"}` makes joints.py keep the gun in the pose Meshy sculpted (level,
+  pointing forward, as in the concept) instead of turning it 66 degrees onto the forearm's line, which hung it barrel-down
+  to the ground. This works because Meshy's two upper arms are mirror images, so the mirrored gun already sits on the left
+  elbow. The gun then gets the forearm's peg and collar as before, and `pull_clear` trims whatever of it the upper arm would
+  block when the gun is pulled straight off along the peg axis.
+- **Covenant finish.** `covenant_grade.py` grades Meshy's dusty khaki and grey-brown retexture to the Paladin's black enamel,
+  bright worn gold and crimson (soft per-texel classes by hue, saturation and brightness; each class moved to the Paladin's
+  baked colour, roughness and metal; dust on the dark plate calmed). It writes WORK/tex_0_covenant.jpg and tex_1_covenant.jpg
+  (Meshy's own files are left alone) and sentinel.py's `surface_textures` hands them to build.py.
+- **Amber eyes and grille.** Meshy painted the concept's lights as cream texels: two slanted eyes under the helm's brow and
+  the furnace window behind the chest grille. `covenant_grade.lamp_mask` finds those texels through the mesh's UVs inside
+  sentinel.py's glow regions (`GRILLE`, `EYES`), `glow_map` turns them into amber light (tex_glow.png) and darkens their own
+  colour to amber glass, so they read as light rather than as pale paint; `glow_weight` gives build.py the same regions.
+  build.py now drops an emissive map that bakes black (a part that touches a glow region but has nothing lit there).
+
 ## The Foundries Artillery (MODEL=artillery)
 
 Second new walker from the Meshy pipeline. Settings in `artillery.py`; the figure is z -0.80 to 0.80 with its centre line at x = 0.09.
