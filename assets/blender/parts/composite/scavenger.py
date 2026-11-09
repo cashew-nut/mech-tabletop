@@ -207,6 +207,10 @@ def label_points(P, _cloth=None):
         radial = np.linalg.norm(q - along[:, None] * ax, axis=1)
         inside = (np.linalg.norm(q, axis=1) < R * 1.02) | ((along < R * region_top(child)) & (along > -R * SLEEVE[2])
                                                            & (radial < R * SLEEVE[0] * 1.12))
+        if child in WIDE_CUT:   # wider, but only between the two parts that meet here
+            wr, wd = WIDE_CUT[child]
+            pair = np.isin(lab, [names.index(n) for n in (lab_c, lab_p) if n in names])
+            inside |= pair & (along < R * region_top(child)) & (along > -R * wd) & (radial < R * wr)
         setl(inside & (along < 0), lab_c)
         setl(inside & (along >= 0), lab_p)
     return lab, names
@@ -241,6 +245,10 @@ KNUCKLES = {
 # The child's collar follows its own bone where that leaves the ball off the knuckle's axis.
 CHILD_AXIS = {"arm": _toward("elbow", "shoulder"), "shin": _unit(np.subtract(JOINTS["knee"], HOCK))}
 SLEEVE = (1.0, 2.5, 0.7)
+# The assembly check (docs/scavenger-composite/README.md) found two hooks that stop a part sliding straight onto its peg: a
+# flange of the upper arm curling over the torso's shoulder block, and a tongue of the thigh hanging down behind the shin's
+# knuckle. Out to this radius (x R) and this depth below the cut (x R), the cut plane decides between the two parts.
+WIDE_CUT = {"arm": (1.6, 0.7), "shin": (1.5, 1.4)}
 HOUSING_TOP = {"arm": 1.1, "shin": 1.2, "forearm": 1.3, "foot": 1.3}
 
 

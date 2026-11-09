@@ -1,5 +1,5 @@
 // Publish a composite walker (assets/blender/parts/composite) into the game, without Blender.
-//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery|goliath]   (DIR is the build.py output, e.g. models/paladin-composite)
+//   node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery|goliath|scavenger]   (DIR is the build.py output, e.g. models/paladin-composite)
 //   node scripts/publish-composite.mjs DIR/glb brute --items   (only the items present in DIR/glb: the Brute's claw and rail cannon)
 //   node scripts/compress-parts.mjs <the files this prints>   (KTX2 and quantisation; see assets/blender/parts/meshy/README.md)
 //
@@ -102,6 +102,18 @@ const MODELS = {
     kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
     items: { gun: ['arc-cannon@goliath', ['elbow', [0, 0, 0]], 'elbow'] },
   },
+  scavenger: {
+    // Its own frame, a copy of the scout frame with the joints the parts were cut on. Both arm weapons are whole forearms on the
+    // elbow socket (fit.items.<id>.classes.scavenger: forearm-gun, which hides the forearm and hand): the autocannon is its right
+    // forearm, re-seated (RESEAT in scavenger.py) and modelled for the left; the industrial claw is its own forearm and salvage
+    // claw merged, so the claw arm the figure stands with is the same model as the item.
+    faction: 'foundries', cls: 'scavenger', tunes: 'foundries/scavenger', itemScale: 1.0, frame: 'foundries_frame_scavenger', frameFrom: 'foundries_frame_scout',
+    kit: ['pelvis', 'torso', 'helm', 'back', 'pauldron', 'arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'],
+    items: {
+      gun: ['autocannon@scavenger', ['elbow', [0, 0, 0]], 'elbow'],
+      'forearm+hand': ['industrial-claw@scavenger', ['elbow', [0, 0, 0]], 'elbow', undefined, { forearm: 'elbow', hand: 'wrist' }],
+    },
+  },
 };
 
 const src = process.argv[2];
@@ -109,7 +121,7 @@ const itemsOnly = process.argv.includes('--items');
 const model = MODELS[process.argv[3] ?? 'paladin'];
 const itemsDir = process.argv[4];
 if (!src || !existsSync(src) || !model) {
-  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery|goliath] [ITEMS_DIR]');
+  console.error('usage: node scripts/publish-composite.mjs DIR/glb [paladin|brute|seer|sentinel|artillery|goliath|scavenger] [ITEMS_DIR]');
   process.exit(1);
 }
 const { faction, cls, itemScale: ITEM_SCALE, kit: KIT, items: ITEMS, component: COMPONENT = {}, origin: ORIGIN = {} } = model;

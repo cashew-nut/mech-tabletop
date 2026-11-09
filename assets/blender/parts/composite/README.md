@@ -626,6 +626,9 @@ MODEL=scavenger ~/bvenv/bin/python -I build.py WORK OUT && MODEL=scavenger ~/bve
 - **Foundries knuckles.** Shoulder, elbow, knee and ankle get a designed iron ball with one worn brass seam band in an iron collar housing
   (`foundry_knuckle`, built on `seer.housing`), with exact halves put back after the cut (`true_knuckles`).
 - **Pauldron.** Meshy's shoulder cap is a 0.6 mm sheet, so an iron backing plate (`CAP_BACKING`) makes it a 1.5 mm plate pegged into the arm.
+- **Assembly check.** `assembly_check.py OUT` (any model) puts the STLs together: no overlaps, every part slides straight onto its peg,
+  every part meets its parent. It found hooks at the Scavenger's shoulder and knee; `WIDE_CUT` widens the knuckle's cut plane there.
+- **In the game.** `node scripts/publish-composite.mjs OUT/glb scavenger`; the autocannon and the claw arm are elbow items.
 - **Waist.** A flat cut (`WAIST`) through the neck between hull and pelvis; the bones' round ends had left a knob of pelvis up the torso
   ring, which only fitted a 1.3 mm waist peg. Now 3 mm.
 - **Finish.** `surface_textures` grades Meshy's dusty retexture to the bible: red and orange lacquer, worn brass, blackened iron, cream
