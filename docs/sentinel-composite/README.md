@@ -43,11 +43,11 @@ All pass the strict checks (hole walls inside the part, no break-outs, mirrored 
 
 - **Mesh repair.** Meshy's mesh had 160 open edges and 14 three-way edges, so manifold3d refused it. `repair_mesh.py` drops the
   faulty faces and fan-fills the holes (76 faces net). Run it after `cut.py extract`, before `split.py`.
-- **Weak joints.** The elbow (forearm, gun) has only a 2 mm peg with a 1 x 1 magnet because the upper arm is a small part (7 x 7 x 10 mm).
-  The gauntlet has no magnet. A knuckle (as on the Seer) would fix both.
+- **Weak joints.** The elbow (forearm, gun) had only a 2 mm peg with a 1 x 1 magnet because the upper arm is a small part (7 x 7 x 10 mm);
+  since the second polish pass (below) it is a ball knuckle with a 6 mm peg and a 2 x 1 magnet. The gauntlet still has no magnet.
 - **Helm.** The Meshy helm is a thin hood, so the helm part is only 273 mm3.
 - **Missing from the model.** The banner pole and flag (and the part sheet's pennants on the spires) did not come out of
-  Meshy (too thin). Add them by hand if wanted.
+  Meshy (too thin). They are designed in since the second polish pass (below).
 
 ## Polish pass (2026-11-09)
 
@@ -66,6 +66,31 @@ Luke asked for each Meshy walker to be gone over by eye against its concept art 
 Nothing moved at the joints except the gun's pose; every part is still one closed solid and passes the strict checks.
 Outputs: project folder `models/sentinel-polish/` (glb, stl, the .blend, report.json); the pre-polish build stays in
 `models/sentinel-composite/`.
+
+## Second polish pass (2026-11-09): banner, pennants, heavy elbow
+
+Luke asked for the three things the first pass left open. All three are built in print mm in `sentinel_polish.py`
+(split.py's `design` hook), fused into their parts before the joints are cut, and the parts stay single closed solids.
+
+- **Banner.** A gold staff seated in the cap of the pack's left rear tower, rising to about 93 mm (the spire tips are at 79),
+  with a gold ball and cross at the tip and gold rings above and below the hoist. The flag is a rippled crimson swallowtail,
+  22 x 9 mm, with a raised gold cross crosslet and a gold hem, streaming to the walker's left and a little back, as in the
+  concept's hero and back views. 1.25 mm thick before the ripple (about 0.9 mm through the steepest fold), staff 1.7 mm across.
+- **Spire pennants.** A small crimson swallowtail with a gold hem on each spire, streaming outward (the part sheet), held by
+  two gold rings; 0.95 mm thick.
+- **Heavy elbow.** The upper arm was a 7 mm column on a 2 mm peg under a 2.1 cm3 gun. The elbow is now a ball knuckle 8.6 mm
+  across: a blackened steel ball with a gold bearing band on the seam, and a steel housing with a gold band up the upper arm.
+  The upper arm takes the top half and the housing; the forearm and the Carapace Gun each take the bottom half, so the gun
+  still fits either elbow. The seam is square to the upper arm's bone, so joints.py (`sentinel.KNUCKLES`) fits a **6 mm peg
+  with a 2 x 1 magnet** (was 2 mm with 1 x 1). Meshy's gold elbow medallion stays, tucked behind the ball. The forearm, the
+  gun and the pack all pull straight off their pegs with nothing in the way (checked by sweeping each part off its peg).
+- **Finishes.** build.py has a new designed finish, cloth (UV -4, -4, `CLOTH_FINISH`), for the flags; gold and steel use the
+  knuckle and frame finishes, matched to covenant_grade's targets, with `DESIGNED_WEAR` and `SHARP_DESIGNED` as on the Seer.
+
+Only the back, upper arm, forearm and gun changed; they are republished (KTX2 as before) and the other eight parts are untouched.
+`polish2-assembled-before-after.jpg`, `polish2-closeups-before-after.jpg` (gun arm, plain arm, banner) and
+`polish2-game-before-after.jpg` show it, before on top or on the left. Outputs: project folder `models/sentinel-polish2/`
+and `renders/sentinel-polish2/`.
 
 ## In the game
 

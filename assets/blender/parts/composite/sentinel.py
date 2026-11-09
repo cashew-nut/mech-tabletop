@@ -19,6 +19,9 @@ it into closed parts the way the Paladin, Brute and Seer were cut. What is speci
   flag in the concept art did not come out of Meshy (too thin), so the back part is the two spires and the pack.
 * **Symmetry.** Labels are symmetric (|x|), so the right half of the torso and pelvis is carved where the mirrored
   left limbs sit. Torso, pelvis, helm and back keep Meshy's own detail.
+* **Banner, pennants, heavy elbow (second polish pass, 2026-11-09; sentinel_polish.py).** The banner staff and flag and the
+  spire pennants are built in print mm and fused to the back; the elbow is a ball knuckle (KNUCKLES) whose halves go to the
+  upper arm, the forearm and the gun, so the elbow takes a much bigger peg and magnet.
 * **Finish (polish pass, 2026-11-09).** Meshy's retexture is dusty khaki and grey-brown; covenant_grade.py grades it to the
   Paladin's black enamel, bright gold and crimson before the bake (Meshy's own files are kept). Meshy painted the
   concept's lights as cream texels, the slanted eyes under the brow and the furnace window behind the chest grille;
@@ -97,15 +100,15 @@ RESEAT = {"gun": "forearm"}
 RESEAT_POSE = {"gun": "mirror"}                # keep the sculpt's level pose (the arms are mirror images): joints.py
 LOADOUT = {"gun": "R"}                         # the figure's own pose; the left copy is a hidden spare
 
-# part: (game triangles, texture size)
+# part: (game triangles, texture size). The back carries the banner and pennants, the arm the elbow housing (2026-11-09).
 BUDGET = {
-    "torso": (11000, 1024), "pelvis": (7000, 1024), "helm": (3500, 1024), "back": (6500, 1024),
-    "pauldron": (7500, 1024), "arm": (1800, 512), "forearm": (2800, 768), "hand": (2500, 512),
+    "torso": (11000, 1024), "pelvis": (7000, 1024), "helm": (3500, 1024), "back": (9500, 1024),
+    "pauldron": (7500, 1024), "arm": (2800, 768), "forearm": (3200, 768), "hand": (2500, 512),
     "thigh": (3500, 768), "shin": (4200, 768), "foot": (2500, 512), "gun": (9000, 1024),
 }
 LABEL = {
-    "pelvis": "Pelvis + tabard", "torso": "Torso + gorget", "helm": "Helm", "back": "Spires + pack",
-    "pauldron": "Pauldron", "arm": "Upper arm", "forearm": "Forearm", "hand": "Gauntlet", "thigh": "Thigh",
+    "pelvis": "Pelvis + tabard", "torso": "Torso + gorget", "helm": "Helm", "back": "Spires + pack + banner",
+    "pauldron": "Pauldron", "arm": "Upper arm + elbow", "forearm": "Forearm", "hand": "Gauntlet", "thigh": "Thigh",
     "shin": "Greave", "foot": "Sabaton", "gun": "Carapace Gun (equipment)",
 }
 EXPLODE, EXPLODE_DROP = 11.0, 4.0
@@ -206,3 +209,23 @@ def surface_textures(work):
     """Graded base colour and metal/roughness, and the lamp light (covenant_grade.py), for build.py."""
     import covenant_grade
     return covenant_grade.surface_textures(work, lamps=lambda Q: glow_weight(_to_mm(Q)))
+
+
+# --- banner, pennants and the heavy elbow (second polish pass, 2026-11-09) ------------------------------------------
+# sentinel_polish.py builds them; split.py calls design() after the cut and re-stamps CHANGED into the voxel grid, so
+# joints.py measures the elbow's peg and hole against the knuckle. Forearm last as well as first: its old voxels inside the
+# arm's half ball are freed by the forearm's pass and taken by the arm's, and the arm's below the seam by the second.
+CHANGED = ("forearm", "gun", "arm", "forearm", "back")
+# The elbow's ball knuckle: joints.py tries its centre and the upper arm's bone first (child -> joint, axis into the parent).
+KNUCKLES = {"forearm": ("elbow", tuple(np.subtract(JOINTS["shoulder"], JOINTS["elbow"])), 0.115)}
+# Designed finishes (build.py), matched to covenant_grade's targets in linear light: gold trim, blackened steel, crimson cloth.
+KNUCKLE_FINISH = ((0.33, 0.205, 0.075), 0.36, 0.9)
+FRAME_FINISH = ((0.03, 0.031, 0.034), 0.32, 0.8)   # blackened steel, so the ball catches a highlight
+CLOTH_FINISH = ((0.20, 0.010, 0.009), 0.66, 0.0)
+SHARP_DESIGNED = 35.0       # crisp rims on the designed solids (as the Seer's)
+DESIGNED_WEAR = True        # cavity darkening and a faint mottle, so the designed gold and cloth sit with Meshy's texture
+
+
+def design(solid, mf):
+    import sentinel_polish
+    return sentinel_polish.design(solid, mf)
