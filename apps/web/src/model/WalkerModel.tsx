@@ -31,6 +31,9 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
   const flags = useRef({ on: false, guides: true });
   flags.current = { on: partsOn, guides };
   goal.current = explode;
+  const resizeRef = useRef<(() => void) | null>(null);
+  const partsShown = useRef(false);
+  // Opening the part view makes the pinned viewer a little shorter to leave room for its controls.
   const [lib, setLib] = useState<PartLibrary | null>(null);
   const [kitVersion, setKitVersion] = useState(0);
   const [failed, setFailed] = useState(false);
@@ -62,15 +65,26 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
 
     const resize = () => {
       const w = el.clientWidth;
-      const h = Math.max(260, Math.min(window.innerHeight - 200, w * 0.75));
+      const vh = window.innerHeight;
+      // On a phone the viewer is pinned above the controls (see "Phone editor" in styles.css), so it takes a
+      // fixed share of the screen: a third in portrait, nearly all the height in landscape.
+      const portrait = window.matchMedia('(max-width: 860px)').matches;
+      const landscape = window.matchMedia('(max-height: 560px) and (orientation: landscape)').matches;
+      const h = landscape
+        ? Math.max(150, Math.min(vh - (partsShown.current ? 190 : 90), w * 0.75))
+        : portrait
+          ? Math.max(170, Math.min(vh * (partsShown.current ? 0.24 : 0.34), w * 0.9))
+          : Math.max(260, Math.min(vh - 200, w * 0.75));
       renderer.setSize(w, h);
       stage.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
     resize();
+    resizeRef.current = resize;
     const ro = new ResizeObserver(resize);
     ro.observe(el);
+    window.addEventListener('resize', resize);
     let frame = 0;
     let applied = 1;
     const loop = () => {
@@ -97,6 +111,8 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
+      window.removeEventListener('resize', resize);
+      resizeRef.current = null;
       controls.dispose();
       stage.dispose();
       renderer.dispose();
@@ -138,6 +154,9 @@ export default function WalkerModel({ walker, faction, onPaint }: Props) {
   }, [walker, colour, lib, kitVersion, partsOn]);
 
   const hasKit = KIT_CHASSIS.includes(walker.chassis);
+  partsShown.current = partsOn && hasKit;
+  // Opening the part view makes the pinned viewer a little shorter to leave room for its controls.
+  useEffect(() => resizeRef.current?.(), [partsOn, hasKit]);
   const toggle = (i: number, on: boolean) => {
     const pv = view.current;
     if (!pv) return;
