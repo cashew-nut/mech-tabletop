@@ -190,6 +190,30 @@ def main(work):
     if hasattr(M, "design"):
         # the model's own structural changes: struts, mounts, pieces moved between parts (see seer.py)
         solid = M.design(solid, mf)
+        for k in getattr(M, "CHANGED", ()):
+            # re-made parts (the Artillery's feet and rear plate): stamp their new shape into the voxel grid, so
+            # joints.py measures peg walls and clearances against the part as it now is
+            if k not in solid:
+                continue
+            pi = keys.index(k)
+            old = plabel == pi
+            occ[old] = False
+            bb = np.array(solid[k].bounding_box())
+            g0 = np.clip(np.floor((from_mm(bb[:3]) - lo) / H).astype(int) - 2, 0, shape - 1)
+            g1 = np.clip(np.ceil((from_mm(bb[3:]) - lo) / H).astype(int) + 3, 0, shape)
+            for kz in range(g0[2], g1[2]):
+                layer = np.zeros((shape[0], shape[1]), bool)
+                for poly in solid[k].slice(float(to_mm(np.array([0, 0, zs[kz]]))[2])).to_polygons():
+                    q = np.asarray(poly) / MM
+                    rr, cc = fillpoly((q[:, 0] - lo[0]) / H, (q[:, 1] - lo[1]) / H, layer.shape)
+                    layer[rr, cc] ^= True
+                # a voxel inside the new shape is this part's, unless another part already holds it
+                take = layer & ~(occ[:, :, kz] & (plabel[:, :, kz] != pi))
+                plabel[:, :, kz][take] = pi
+                occ[:, :, kz] |= take
+            print(f"  re-stamped {k} in the voxel grid", flush=True)
+        np.save(work / "part_grid.npy", plabel.astype(np.int8))
+        np.save(work / "occ.npy", occ)
     for k, part in solid.items():
         n = len(part.decompose())
         m = part.to_mesh()

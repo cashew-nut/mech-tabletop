@@ -53,6 +53,15 @@ SHARP = getattr(M, "SHARP_DESIGNED", None)
 # ROUGH_FLOOR: the baked roughness never goes below this. Meshy's maps can be near mirror-smooth (the Seer's chest plate:
 # median 0.29, a quarter under 0.1), which the game's bloom turned into white glare.
 ROUGH_FLOOR = getattr(M, "ROUGH_FLOOR", None)
+GAME_SPLIT = getattr(M, "GAME_SPLIT", None)   # degrees: hard edges on the game copy where faces meet more steeply
+# A model with `paint(k, s, pan)` (artillery.py) is painted panel by panel on the solid (paint.py) instead of taking Meshy's
+# colour: every vertex of the bake source carries a finish (colour, roughness, metal) and how much of Meshy's texture
+# shows through it as light and dark (rivets, grime). Designed solids (UV codes paint.code) take their finish the same way.
+PAINTED = hasattr(M, "paint")
+PAINT_GAMMA, PAINT_LO, PAINT_HI = getattr(M, "PAINT_DETAIL", (0.75, 0.45, 1.7))
+PAINT_WEAR = getattr(M, "PAINT_ROUGH_WEAR", 0.6)     # share of Meshy's roughness deviation kept as wear on a finish
+PAINT_GLOW = PAINTED and getattr(M, "PAINT_GLOW", False)   # faces painted "glow" bake into an emissive map
+STENCIL_WHITE = (0.66, 0.62, 0.53, 1.0)       # linear: the stencils' worn off-white (paint.py "white")
 
 
 def load_solid(path):
@@ -64,16 +73,55 @@ def load_solid(path):
     return P, T, used, inv.reshape(-1, 3)
 
 
-def make_mesh(name, P, T, used, faces):
+def paint_attributes(k, me, P, T, used, faces, tex):
+    """Per-vertex finish attributes on the bake source (PAINTED): pc colour (linear), pr roughness, pm metal, pd how much
+    of Meshy's texture detail shows, plm Meshy's local mean brightness. Returns the paint.py Surface."""
+    import paint as PA
+    s = PA.Surface(P, T, used, faces, tex)
+    pan = PA.panels(s)
+    fin, tone = M.paint(k, s, pan)
+    rgb, rough, metal, det = PA.finish_arrays(s, fin, tone)
+    # per face corner (paint.corner_arrays): from_pydata keeps the faces' order and corner order, so loop i is corner i
+    rgb, rough, metal, det = PA.corner_arrays(s, P, T, rgb, rough, metal, det)
+    lm = s.lm[faces.ravel()]
+    u = P[T.ravel(), 3]
+    glow = (np.round(-u) == PA.CODE0 + PA.F["glow"]).astype(np.float32)
+    me.attributes.new("pglow", "FLOAT", "CORNER").data.foreach_set("value", glow)
+    me["glow_max"] = float(glow.max()) if len(glow) else 0.0
+    st = getattr(s, "stencil", None)        # stencilled marks (artillery.py): atlas UVs on one plate
+    suv = np.zeros((len(faces) * 3, 2), np.float32)
+    son = np.zeros(len(faces) * 3, np.float32)
+    if st is not None:
+        uvv, on = st
+        on_f = on[faces].all(1)             # whole faces of the plate, so the mark stops at its edges
+        suv = uvv[faces.ravel()].astype(np.float32)
+        son = np.repeat(on_f, 3).astype(np.float32)
+    me.attributes.new("pst", "FLOAT2", "CORNER").data.foreach_set("vector", suv.ravel())
+    me.attributes.new("pston", "FLOAT", "CORNER").data.foreach_set("value", son)
+    n = len(rgb)
+    ca = me.color_attributes.new("pc", "FLOAT_COLOR", "CORNER")
+    ca.data.foreach_set("color", np.concatenate([rgb, np.ones((n, 1))], 1).astype(np.float32).ravel())
+    for nm, v in (("pr", rough), ("pm", metal), ("pd", det), ("plm", lm)):
+        me.attributes.new(nm, "FLOAT", "CORNER").data.foreach_set("value", np.asarray(v, np.float32))
+    counts = np.bincount(np.asarray(fin)[fin >= 0], minlength=len(PA.NAMES)) if (np.asarray(fin) >= 0).any() else []
+    print(f"   {k}: {pan['n']} panels, finishes " + ", ".join(f"{PA.NAMES[i]} {c}" for i, c in enumerate(counts) if c),
+          flush=True)
+    return s
+
+
+def make_mesh(name, P, T, used, faces, k=None, tex=None):
     me = bpy.data.meshes.new(name)
     me.from_pydata(P[used, :3].tolist(), [], faces.tolist())
     uv = P[T.ravel(), 3:5].astype(np.float32).copy()
     cap = (np.abs(P[T, 3] + 1) < 0.5).all(1)       # cut faces, pegs and holes: UV (-1, -1)
     knuckle = (np.abs(P[T, 3] + 2) < 0.5).all(1)   # designed knuckles and struts (seer.py): UV (-2, -2)
     frame = (np.abs(P[T, 3] + 3) < 0.5).all(1)     # designed frame metal (seer.py's knuckle housings): UV (-3, -3)
+    coded = (P[T, 3] < -9.5).any(1) if PAINTED else np.zeros(len(T), bool)   # designed solids with a paint finish
     uv[:, 1] = 1 - uv[:, 1]
     me.uv_layers.new(name="UVHigh").data.foreach_set("uv", uv.ravel())
-    me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2 + frame * 3).astype(np.int32))
+    me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2 + frame * 3 + coded * 4).astype(np.int32))
+    if PAINTED:
+        paint_attributes(k, me, P, T, used, faces, tex)
     me.polygons.foreach_set("use_smooth", np.ones(len(faces), bool))
     if hasattr(M, "glow_weight"):       # where the emissive bake shows the glow texture (0 to 1 per vertex)
         w = np.asarray(M.glow_weight(P[used, :3]), np.float32)
@@ -171,14 +219,18 @@ def high_materials(imgs):
     knuckles' gold (slot 2) and frame metal (slot 3)."""
     finish = {"cut": GUNMETAL, "knuckle": GOLD, "frame": FRAME}
     mats = {}
-    for mode in ("color", "rough", "metal", "normal") + (("emit",) if "glow" in imgs else ()):
+    for mode in ("color", "rough", "metal", "normal") + (("emit",) if "glow" in imgs or PAINT_GLOW else ()):
         pair = []
-        for slot in ("meshy", "cut", "knuckle", "frame"):
+        for slot in ("meshy", "cut", "knuckle", "frame") + (("coded",) if PAINTED else ()):
             m = bpy.data.materials.new(f"high_{mode}_{slot}")
             m.use_nodes = True
             N, L = m.node_tree.nodes, m.node_tree.links
             N.clear()
             out = N.new("ShaderNodeOutputMaterial")
+            if PAINTED and (slot == "coded" or (slot == "meshy" and mode in ("color", "rough", "metal", "emit"))):
+                painted_material(N, L, out, imgs, mode, slot == "meshy")
+                pair.append(m)
+                continue
             if slot in finish:
                 if mode == "normal":
                     L.new(N.new("ShaderNodeBsdfPrincipled").outputs["BSDF"], out.inputs["Surface"])
@@ -233,6 +285,126 @@ def high_materials(imgs):
     return mats
 
 
+def painted_material(N, L, out, imgs, mode, meshy):
+    """Bake-source nodes for a painted surface (PAINTED): the vertex finish (pc, pr, pm) with Meshy's texture as detail
+    (its brightness over the local mean, pd of it) on Meshy's surface, and AO wear on designed solids."""
+    def attr(name, socket="Fac"):
+        a = N.new("ShaderNodeAttribute")
+        a.attribute_name = name
+        return a.outputs[socket]
+
+    def math(op, a, b=None, clamp=False):
+        n = N.new("ShaderNodeMath")
+        n.operation = op
+        n.use_clamp = clamp
+        for i, v in enumerate((a, b)):
+            if v is None:
+                continue
+            if isinstance(v, (int, float)):
+                n.inputs[i].default_value = v
+            else:
+                L.new(v, n.inputs[i])
+        return n.outputs[0]
+
+    em = N.new("ShaderNodeEmission")
+    L.new(em.outputs["Emission"], out.inputs["Surface"])
+    if mode == "emit":          # the "glow" finish (vision slits) shines in its own colour
+        mul = N.new("ShaderNodeMix")
+        mul.data_type, mul.blend_type = "RGBA", "MULTIPLY"
+        mul.inputs[0].default_value = 1.0
+        L.new(attr("pc", "Color"), mul.inputs[6])
+        fc = N.new("ShaderNodeCombineColor")
+        for c in ("Red", "Green", "Blue"):
+            L.new(attr("pglow"), fc.inputs[c])
+        L.new(fc.outputs["Color"], mul.inputs[7])
+        L.new(mul.outputs[2], em.inputs["Color"])
+        return
+    if meshy:
+        uv = N.new("ShaderNodeUVMap")
+        uv.uv_map = "UVHigh"
+
+        def tex(img):
+            t = N.new("ShaderNodeTexImage")
+            t.image = img
+            L.new(uv.outputs["UV"], t.inputs["Vector"])
+            return t
+    if mode == "color":
+        if meshy:
+            bw = N.new("ShaderNodeRGBToBW")
+            L.new(tex(imgs["base"]).outputs["Color"], bw.inputs["Color"])
+            ratio = math("DIVIDE", bw.outputs["Val"], math("MAXIMUM", attr("plm"), 1e-4))
+            d = math("POWER", math("MAXIMUM", ratio, 1e-5), PAINT_GAMMA)
+            d = math("MINIMUM", math("MAXIMUM", d, PAINT_LO), PAINT_HI)
+            # 1 + pd * (d - 1)
+            f = math("ADD", math("MULTIPLY", attr("pd"), math("SUBTRACT", d, 1.0)), 1.0)
+            mul = N.new("ShaderNodeMix")
+            mul.data_type, mul.blend_type = "RGBA", "MULTIPLY"
+            mul.inputs[0].default_value = 1.0
+            L.new(attr("pc", "Color"), mul.inputs[6])
+            fc = N.new("ShaderNodeCombineColor")
+            for c in ("Red", "Green", "Blue"):
+                L.new(f, fc.inputs[c])
+            L.new(fc.outputs["Color"], mul.inputs[7])
+            out_col = mul.outputs[2]
+            if "stencil" in imgs:   # white stencil marks, sampled per pixel through the plate's own UVs (pst)
+                st = N.new("ShaderNodeTexImage")
+                st.image = imgs["stencil"]
+                st.extension = "CLIP"
+                L.new(attr("pst", "Vector"), st.inputs["Vector"])
+                fac = math("MULTIPLY", st.outputs["Color"], attr("pston"))
+                white = N.new("ShaderNodeMix")
+                white.data_type, white.blend_type = "RGBA", "MULTIPLY"
+                white.inputs[0].default_value = 1.0
+                white.inputs[6].default_value = STENCIL_WHITE
+                L.new(fc.outputs["Color"], white.inputs[7])
+                mix = N.new("ShaderNodeMix")
+                mix.data_type = "RGBA"
+                L.new(fac, mix.inputs[0])
+                L.new(out_col, mix.inputs[6])
+                L.new(white.outputs[2], mix.inputs[7])
+                out_col = mix.outputs[2]
+            L.new(out_col, em.inputs["Color"])
+        else:
+            col = attr("pc", "Color")
+            ao = N.new("ShaderNodeAmbientOcclusion")
+            ao.only_local = True
+            ao.samples = 32
+            ao.inputs["Distance"].default_value = WEAR_AO
+            cav = N.new("ShaderNodeMapRange")
+            cav.inputs["To Min"].default_value, cav.inputs["To Max"].default_value = 0.45, 1.0
+            L.new(ao.outputs["AO"], cav.inputs["Value"])
+            mul = N.new("ShaderNodeMix")
+            mul.data_type, mul.blend_type = "RGBA", "MULTIPLY"
+            mul.inputs[0].default_value = 1.0
+            L.new(col, mul.inputs[6])
+            fc = N.new("ShaderNodeCombineColor")
+            for c in ("Red", "Green", "Blue"):
+                L.new(cav.outputs["Result"], fc.inputs[c])
+            L.new(fc.outputs["Color"], mul.inputs[7])
+            L.new(mul.outputs[2], em.inputs["Color"])
+    elif mode == "rough":
+        r = attr("pr")
+        if meshy:
+            sep = N.new("ShaderNodeSeparateColor")
+            L.new(tex(imgs["mr"]).outputs["Color"], sep.inputs["Color"])
+            wear = math("MULTIPLY", math("MULTIPLY", math("SUBTRACT", sep.outputs["Green"], 0.45), PAINT_WEAR), attr("pd"))
+            r = math("ADD", r, wear)
+        r = math("MINIMUM", math("MAXIMUM", r, 0.08), 1.0)
+        fc = N.new("ShaderNodeCombineColor")
+        for c in ("Red", "Green", "Blue"):
+            L.new(r, fc.inputs[c])
+        L.new(fc.outputs["Color"], em.inputs["Color"])
+    elif mode == "metal":
+        fc = N.new("ShaderNodeCombineColor")
+        m = attr("pm")
+        for c in ("Red", "Green", "Blue"):
+            L.new(m, fc.inputs[c])
+        L.new(fc.outputs["Color"], em.inputs["Color"])
+    elif mode == "normal":       # designed solids: their own geometry, no Meshy normal map
+        N.remove(em)
+        L.new(N.new("ShaderNodeBsdfPrincipled").outputs["BSDF"], out.inputs["Surface"])
+
+
 def decimate(ob, target):
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True)
@@ -274,13 +446,41 @@ def unwrap(ob, size):
         me.uv_layers.remove(l)
     me.uv_layers.new(name="UVMap").data.foreach_set("uv", uv[nf.ravel().astype(np.int64)].astype(np.float32).ravel())
     me.polygons.foreach_set("use_smooth", np.ones(len(me.polygons), bool))
-    me.normals_split_custom_set_from_vertices(vn[vmap].tolist())
+    if GAME_SPLIT:
+        me.normals_split_custom_set(split_normals(co, vmap[nf.astype(np.int64)]).tolist())
+    else:
+        me.normals_split_custom_set_from_vertices(vn[vmap].tolist())
+
+
+def split_normals(co, faces):
+    """Per-corner normals for the game copy, smooth only across edges flatter than GAME_SPLIT degrees. A designed
+    plate (the Artillery's lames) is a few big triangles between hard rims: smooth vertex normals bent its whole face,
+    and the normal map could not take that back (diagonal streaks across the plate in the game). faces: the game
+    copy's triangles in its own order, as indices into co (before xatlas split the seams, so seams stay smooth)."""
+    A, B, C = (co[faces[:, k]] for k in range(3))
+    fn = np.cross(B - A, C - A)
+    fa = np.linalg.norm(fn, axis=1)
+    fu = fn / np.maximum(fa, 1e-12)[:, None]
+    cos = np.cos(np.radians(GAME_SPLIT))
+    nv = len(co)
+    vf = [[] for _ in range(nv)]
+    for f, tri in enumerate(faces):
+        for v in tri:
+            vf[v].append(f)
+    out = np.zeros((len(faces), 3, 3))
+    for f, tri in enumerate(faces):
+        for c, v in enumerate(tri):
+            g = np.array(vf[v])
+            w = (fu[g] @ fu[f]) > cos
+            n = (fn[g[w]]).sum(0)
+            out[f, c] = n / max(np.linalg.norm(n), 1e-12)
+    return out.reshape(-1, 3)
 
 
 def bake(hi, lo, mats, mode, size, name):
     from kit import bake as kb
     # swap the slots in place: materials.clear() would reset every face's slot to 0
-    while len(hi.data.materials) < 4:
+    while len(hi.data.materials) < len(mats[mode]):
         hi.data.materials.append(None)
     for i, m in enumerate(mats[mode]):
         hi.data.materials[i] = m
@@ -304,7 +504,7 @@ def bake(hi, lo, mats, mode, size, name):
     return img
 
 
-def build_part(k, work, out, mats, size_override, do_bake):
+def build_part(k, work, out, mats, size_override, do_bake, tex=None):
     import kit
     from kit import bake as kb
     from PIL import Image
@@ -320,7 +520,7 @@ def build_part(k, work, out, mats, size_override, do_bake):
                 "pieces": len(m.decompose()), "size_mm": [round(float(v), 1) for v in (V.max(0) - V.min(0))]}
     # bake source and game copy
     P, T, used, faces = load_solid(src)
-    hi, cap = make_mesh(f"{k}_hi", P, T, used, faces)
+    hi, cap = make_mesh(f"{k}_hi", P, T, used, faces, k, tex)
     lo = bpy.data.objects.new(k, hi.data.copy())
     bpy.context.scene.collection.objects.link(lo)
     sharpen(hi)
@@ -444,12 +644,20 @@ def main(a):
         im = bpy.data.images.load(str(path))
         im.colorspace_settings.name = "sRGB" if nm in ("base", "glow") else "Non-Color"
         imgs[nm] = im
+    if PAINTED and hasattr(M, "stencil_atlas"):
+        im = bpy.data.images.load(str(M.stencil_atlas(work / "stencil_atlas.png")), check_existing=False)
+        im.colorspace_settings.name = "Non-Color"
+        imgs["stencil"] = im
     mats = high_materials(imgs)
+    tex = None
+    if PAINTED:     # Meshy's colour as an array, for paint.py's measures (brightness under each vertex)
+        from PIL import Image
+        tex = np.asarray(Image.open(src["base"]).convert("RGB"), np.float32) / 255.0
     objs, info = {}, {}
     for k in TREE:
         if (only and k not in only) or not (work / "kit" / f"{k}.npz").exists():
             continue        # (the Brute's claw and rail come from their own builds, item_cut.py)
-        objs[k], info[k] = build_part(k, work, out, mats, size_override, do_bake)
+        objs[k], info[k] = build_part(k, work, out, mats, size_override, do_bake, tex)
         # the game copy, alone, origin at its joint
         sel = objs[k]
         bpy.ops.object.select_all(action="DESELECT")
