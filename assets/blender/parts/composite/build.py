@@ -40,6 +40,7 @@ ORM_PX = getattr(M, "ORM_SIZE", 256)          # game occlusion/roughness/metal m
 # A model may bake an emissive map (brute_polish.py): M.glow_weight(P) marks where, imgs["glow"] says what colour.
 GLOW_STRENGTH = getattr(M, "GLOW_STRENGTH", 1.0)
 FRAME = getattr(M, "FRAME_FINISH", GUNMETAL)       # designed frame metal (the Seer's bronze knuckle housings): UV (-3, -3)
+CLOTH = getattr(M, "CLOTH_FINISH", None)           # designed cloth (the Sentinel's banner and pennants): UV (-4, -4)
 # Designed surfaces (cuts, knuckles, frame) are flat colours. With DESIGNED_WEAR they get what Meshy's own texture has:
 # darker crevices (ambient occlusion over the part's own geometry, within WEAR_AO mm) and a faint mottle, so a gold band
 # next to Meshy's gilding does not read as new plastic.
@@ -61,6 +62,8 @@ PAINTED = hasattr(M, "paint")
 PAINT_GAMMA, PAINT_LO, PAINT_HI = getattr(M, "PAINT_DETAIL", (0.75, 0.45, 1.7))
 PAINT_WEAR = getattr(M, "PAINT_ROUGH_WEAR", 0.6)     # share of Meshy's roughness deviation kept as wear on a finish
 PAINT_GLOW = PAINTED and getattr(M, "PAINT_GLOW", False)   # faces painted "glow" bake into an emissive map
+# bake-source material slots, in material-index order (make_mesh)
+SLOTS = ("meshy", "cut", "knuckle", "frame") + (("coded",) if PAINTED else ()) + (("cloth",) if CLOTH else ())
 STENCIL_WHITE = (0.66, 0.62, 0.53, 1.0)       # linear: the stencils' worn off-white (paint.py "white")
 
 
@@ -117,9 +120,13 @@ def make_mesh(name, P, T, used, faces, k=None, tex=None):
     knuckle = (np.abs(P[T, 3] + 2) < 0.5).all(1)   # designed knuckles and struts (seer.py): UV (-2, -2)
     frame = (np.abs(P[T, 3] + 3) < 0.5).all(1)     # designed frame metal (seer.py's knuckle housings): UV (-3, -3)
     coded = (P[T, 3] < -9.5).any(1) if PAINTED else np.zeros(len(T), bool)   # designed solids with a paint finish
+    cloth = (np.abs(P[T, 3] + 4) < 0.5).all(1) if CLOTH else np.zeros(len(T), bool)   # designed cloth: UV (-4, -4)
     uv[:, 1] = 1 - uv[:, 1]
     me.uv_layers.new(name="UVHigh").data.foreach_set("uv", uv.ravel())
-    me.polygons.foreach_set("material_index", (cap * 1 + knuckle * 2 + frame * 3 + coded * 4).astype(np.int32))
+    mi = cap * 1 + knuckle * 2 + frame * 3 + coded * 4
+    if CLOTH:
+        mi = np.where(cloth, SLOTS.index("cloth"), mi)
+    me.polygons.foreach_set("material_index", mi.astype(np.int32))
     if PAINTED:
         paint_attributes(k, me, P, T, used, faces, tex)
     me.polygons.foreach_set("use_smooth", np.ones(len(faces), bool))
@@ -216,12 +223,12 @@ def wear(N, L, value, mode):
 
 def high_materials(imgs):
     """Bake-source materials per channel: Meshy's textures on the surface (slot 0), gunmetal on cuts (slot 1), the designed
-    knuckles' gold (slot 2) and frame metal (slot 3)."""
-    finish = {"cut": GUNMETAL, "knuckle": GOLD, "frame": FRAME}
+    knuckles' gold (slot 2) and frame metal (slot 3), then the painted finish (PAINTED) and designed cloth (CLOTH)."""
+    finish = {"cut": GUNMETAL, "knuckle": GOLD, "frame": FRAME, "cloth": CLOTH}
     mats = {}
     for mode in ("color", "rough", "metal", "normal") + (("emit",) if "glow" in imgs or PAINT_GLOW else ()):
         pair = []
-        for slot in ("meshy", "cut", "knuckle", "frame") + (("coded",) if PAINTED else ()):
+        for slot in SLOTS:
             m = bpy.data.materials.new(f"high_{mode}_{slot}")
             m.use_nodes = True
             N, L = m.node_tree.nodes, m.node_tree.links

@@ -561,6 +561,12 @@ Polish pass (2026-11-09; before and after in `docs/sentinel-composite/`):
   colour to amber glass, so they read as light rather than as pale paint; `glow_weight` gives build.py the same regions.
   build.py now drops an emissive map that bakes black (a part that touches a glow region but has nothing lit there).
 
+Second polish pass (2026-11-09, `sentinel_polish.py`, wired in as `sentinel.design`): the concept's banner (gold staff on the pack's
+left rear tower, rippled crimson swallowtail with a gold cross and hem) and the part sheet's spire pennants are fused into the back,
+and the elbow is a ball knuckle 8.6 mm across (top half and housing on the upper arm, bottom half on the forearm and the gun), so
+joints.py (`KNUCKLES`) fits a 6 mm peg with a 2 x 1 magnet there. `CHANGED` re-stamps the four parts in the voxel grid. build.py's
+new `CLOTH_FINISH` (UV -4, -4) colours designed cloth. Notes and before/after: `docs/sentinel-composite/`.
+
 ## The Foundries Artillery (MODEL=artillery)
 
 Second new walker from the Meshy pipeline. Settings in `artillery.py`; the figure is z -0.80 to 0.80 with its centre line at x = 0.09.
