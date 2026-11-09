@@ -10,13 +10,19 @@ it into closed parts the way the Paladin, Brute and Seer were cut. What is speci
 * **Print scale.** Sole to helm top is the bulwark frame's 42 kit mm (plus the 3 mm base), so S = 42 / 1.69 kit mm per unit
   (helm crest z = 0.69, sole z = -1.0); at Luke's 1.5x that is about 67 mm to the helm top and 79 mm to the spire tips.
 * **The gun arm.** The right arm is the Carapace Gun: the upper arm hangs and the whole forearm is a rotary gun held
-  level, pointing forward. Like the Brute's gatling, the gun is cut from the figure's right, mirrored, turned and
-  re-seated on the left forearm's socket (RESEAT), so it fits an elbow of either side. The body keeps one plain
-  left arm (arm, forearm, hand), mirrored for the right when the gun is not fitted.
+  level, pointing forward. Like the Brute's gatling, the gun is cut from the figure's right, mirrored and re-seated on
+  the left forearm's socket (RESEAT), so it fits an elbow of either side. Meshy's two upper arms are mirror images, so
+  the mirrored gun already sits on the left elbow: RESEAT_POSE keeps the sculpt's level pose instead of turning the gun
+  onto the forearm's line (which hung it barrel-down to the ground) and trims it so it pulls straight off its peg. The
+  body keeps one plain left arm (arm, forearm, hand), mirrored for the right when the gun is not fitted.
 * **Tabard.** The hanging cloth in front of the pelvis is part of the pelvis (as on the Paladin); the banner pole and
   flag in the concept art did not come out of Meshy (too thin), so the back part is the two spires and the pack.
 * **Symmetry.** Labels are symmetric (|x|), so the right half of the torso and pelvis is carved where the mirrored
   left limbs sit. Torso, pelvis, helm and back keep Meshy's own detail.
+* **Finish (polish pass, 2026-11-09).** Meshy's retexture is dusty khaki and grey-brown; covenant_grade.py grades it to the
+  Paladin's black enamel, bright gold and crimson before the bake (Meshy's own files are kept). Meshy painted the
+  concept's lights as cream texels, the slanted eyes under the brow and the furnace window behind the chest grille;
+  glow_weight lets the glow map show only there, so they burn amber in the game (GLOW_STRENGTH, with its bloom).
 """
 import numpy as np
 
@@ -88,6 +94,7 @@ TREE = {
 }
 SIDED = {"pauldron", "arm", "forearm", "hand", "thigh", "shin", "foot", "gun"}
 RESEAT = {"gun": "forearm"}
+RESEAT_POSE = {"gun": "mirror"}                # keep the sculpt's level pose (the arms are mirror images): joints.py
 LOADOUT = {"gun": "R"}                         # the figure's own pose; the left copy is a hidden spare
 
 # part: (game triangles, texture size)
@@ -103,7 +110,7 @@ LABEL = {
 }
 EXPLODE, EXPLODE_DROP = 11.0, 4.0
 POSE = {
-    "gun_R": (-90, 0, 0), "arm_L": (-25, 0, 0), "forearm_L": (-45, 0, 0), "helm": (0, 0, -20),
+    "arm_L": (-25, 0, 0), "forearm_L": (-45, 0, 0), "helm": (0, 0, -20),
     "thigh_L": (-18, 0, 0), "shin_L": (22, 0, 0), "foot_L": (-4, 0, 0),
 }
 
@@ -156,3 +163,46 @@ def label_points(P, _cloth=None):
     setl((x >= gx0) & (x < gx1) & (y >= gy0) & (y < gy1) & (z >= gz0) & (z < gz1), "gun")
     return lab, names
 
+
+
+# --- finish and lights (polish pass, 2026-11-09) -------------------------------------------------------------------
+MM = S * PRINT_SCALE            # print mm per figure unit
+GLOW_STRENGTH = 3.0             # emission strength (glTF KHR_materials_emissive_strength), as the Brute's furnace
+# Where the glow map may show, figure units (x centred, forward is -y). The grille box takes the recessed window only
+# (the gold V plates in front of it are nearer than y -0.03); the eye bands follow the slant of the painted eyes
+# (inner end lower) and stop short of the gold ridge down the face.
+GRILLE = ((-0.058, 0.058), (-0.03, 0.08), (0.090, 0.184), 0.004)
+EYES = dict(x=(0.006, 0.038), z0=0.5615, x0=0.0115, slope=0.64, half=0.007, y=(-0.08, 0.02), soft=0.0025)
+
+
+def _to_mm(P):
+    P = np.asarray(P, np.float64)
+    return np.stack([P[..., 0] * MM, P[..., 1] * MM, ((P[..., 2] - FOOT_Z) * S + BASE) * PRINT_SCALE], -1)
+
+
+def _from_mm(P):
+    P = np.asarray(P, np.float64)
+    return np.stack([P[..., 0] / MM, P[..., 1] / MM, (P[..., 2] / PRINT_SCALE - BASE) / S + FOOT_Z], -1)
+
+
+def _band(v, lo, hi, e):
+    return np.clip((v - lo) / e, 0, 1) * np.clip((hi - v) / e, 0, 1)
+
+
+def glow_weight(P_mm):
+    """0..1 per vertex (print mm, kit axes; the left-hand set is the figure's own left): how much light a vertex shows."""
+    Q = _from_mm(P_mm)
+    x, y, z = Q[:, 0], Q[:, 1], Q[:, 2]
+    (gx0, gx1), (gy0, gy1), (gz0, gz1), e = GRILLE
+    w = _band(x, gx0, gx1, e) * _band(y, gy0, gy1, e) * _band(z, gz0, gz1, e)
+    a, k = np.abs(x), EYES
+    zl = k["z0"] + k["slope"] * (a - k["x0"])
+    eye = (_band(a, *k["x"], k["soft"]) * _band(z - zl, -k["half"], k["half"], k["soft"])
+           * _band(y, *k["y"], k["soft"]) * (z > 0.50))
+    return np.maximum(w, eye)
+
+
+def surface_textures(work):
+    """Graded base colour and metal/roughness, and the lamp light (covenant_grade.py), for build.py."""
+    import covenant_grade
+    return covenant_grade.surface_textures(work, lamps=lambda Q: glow_weight(_to_mm(Q)))

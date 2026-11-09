@@ -331,6 +331,10 @@ def build_part(k, work, out, mats, size_override, do_bake):
         glows = "emit" in mats and hi.data.get("glow_max", 0.0) > 0.01
         if glows:       # only parts that carry some of the glow regions get an emissive map
             imgs["emit"] = bake(hi, lo, mats, "emit", size, k)
+            px = np.empty(size * size * 4, np.float32)
+            imgs["emit"].pixels.foreach_get(px)
+            if px.reshape(-1, 4)[:, :3].max() < 1 / 255:     # in a glow region but nothing there is lit
+                del imgs["emit"]
 
         def chan(img):
             a = np.empty(size * size * 4, np.float32)

@@ -315,18 +315,38 @@ def rot_between(a, b):
     return np.eye(3) + K + K @ K / (1 + c)
 
 
+def pull_clear(m, host, axis, reach=6.0, step=0.25):
+    """Trim `m` wherever `host` would block pulling it straight off along -axis (the part comes away from its socket):
+    everything the host sweeps through when moved up to `reach` mm along +axis, relative to the part."""
+    import manifold3d as mf
+    sweep = [host.translate(tuple(axis * d)) for d in np.arange(0.0, reach + 1e-6, step)]
+    return m - mf.Manifold.batch_boolean(sweep, mf.OpType.Add)
+
+
 def reseat(parts, log, part, like):
     """Mirror `part` (cut from the figure's right) to the left, move it onto the socket `like` uses on the same parent,
-    trim it where it would clash with the parent, and give it the same peg (or hole) plus a collar to carry it."""
+    trim it where it would clash with the parent, and give it the same peg (or hole) plus a collar to carry it.
+
+    By default the part is turned so its long axis follows `like`'s (the Brute's gatling lies along the cannon arm's barrel).
+    With RESEAT_POSE[part] == "mirror" it keeps the pose the sculpt gave it: the figure's two arms are mirror images, so the
+    mirrored part already sits on the left elbow as it sat on the right one (the Sentinel's gun stays level, pointing
+    forward, as in the concept art, instead of hanging along the forearm's line), and it is trimmed so it pulls straight off
+    its socket."""
     import manifold3d as mf
     e = log[like]
     host = e["parent"]
     m = mirror(parts[part])
     toward = np.array(e["centre"])
-    a_src, b_src, _ = gun_frame(m, toward)
-    a_dst, b_dst, _ = gun_frame(parts[like], toward)
-    Rm = rot_between(a_src, a_dst)
-    t = b_dst - Rm @ b_src
+    keep_pose = getattr(M, "RESEAT_POSE", {}).get(part) == "mirror"
+    if keep_pose:
+        Rm, t, ang, moved = np.eye(3), np.zeros(3), 0.0, 0.0
+    else:
+        a_src, b_src, _ = gun_frame(m, toward)
+        a_dst, b_dst, _ = gun_frame(parts[like], toward)
+        Rm = rot_between(a_src, a_dst)
+        t = b_dst - Rm @ b_src
+        ang = float(np.degrees(np.arccos(np.clip(a_src @ a_dst, -1, 1))))
+        moved = float(np.linalg.norm(b_dst - b_src))
     m = m.transform(np.concatenate([Rm, t[:, None]], 1).tolist())
     axis, centre = np.array(e["axis"]), np.array(e["centre"])
     r, L, mag = e["peg_radius"], e["peg_length"], e["_mag"]
@@ -336,13 +356,14 @@ def reseat(parts, log, part, like):
     R = frame(axis, np.array([0.0, 0.0, 1.0]))
     collar = place(mf.Manifold.cylinder(3.0, r + 1.2, -1.0, 48).translate((0, 0, -3.0 if on_gun else 0.0)), R, centre)
     m = (m - parts[host]) + (collar - parts[host])
+    if keep_pose:
+        m = pull_clear(m, parts[host], sgn * axis)
     m = m + add if on_gun else m - sub
     keep = sorted(m.decompose(), key=lambda p: -p.volume())
     parts[part] = keep[0]
     lost = sum(p.volume() for p in keep[1:])
-    ang = float(np.degrees(np.arccos(np.clip(a_src @ a_dst, -1, 1))))
-    return dict(e, reseated_from=like, turned_deg=round(ang, 1), moved_mm=round(float(np.linalg.norm(b_dst - b_src)), 2),
-                dropped_mm3=round(lost, 1), mirrored_for_right=False)
+    return dict(e, reseated_from=like, turned_deg=round(ang, 1), moved_mm=round(moved, 2),
+                dropped_mm3=round(lost, 1), mirrored_for_right=False, kept_pose=keep_pose)
 
 
 def hold(found):
