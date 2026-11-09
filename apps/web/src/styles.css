@@ -1590,6 +1590,114 @@ button.end {
   }
 }
 
+/* ---------- Phone editor: the viewer stays pinned, the controls scroll beneath it ---------- */
+
+/* Narrow screens stack everything in one column. The model panel is lifted out of the editor column so it can be
+   the first item and stick to the top while the sidebar's controls and the stats scroll past underneath. */
+@media (max-width: 860px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .editor,
+  .walker {
+    display: contents;
+  }
+  .sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    order: 1;
+  }
+  .walker > .model {
+    order: 0;
+  }
+  .walker > .errors,
+  .walker > .stats {
+    order: 2;
+  }
+  .masthead .subtitle {
+    display: none;
+  }
+  .masthead {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  .masthead-actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 2px;
+  }
+  .masthead-actions > * {
+    flex: none;
+  }
+}
+
+/* A phone on its side has little height, so the viewer takes the right-hand column and the controls the left. */
+@media (max-height: 560px) and (orientation: landscape) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 1.3fr);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .sidebar,
+  .walker > .errors,
+  .walker > .stats,
+  .editor > .empty {
+    grid-column: 1;
+    order: 0;
+  }
+  .walker > .model {
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    order: 0;
+  }
+  .walker > .stats {
+    grid-template-columns: 1fr;
+  }
+  .masthead {
+    display: none;
+  }
+}
+
+/* Either way, the pinned panel is slimmed down: no heading, one scrolling row of tools, a shadow to sit above the page. */
+@media (max-width: 860px), (max-height: 560px) and (orientation: landscape) {
+  .walker > .model {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    align-self: start;
+    padding: 6px;
+    padding-top: max(6px, env(safe-area-inset-top));
+    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.55);
+  }
+  .walker > .model .model-head {
+    flex-wrap: nowrap;
+    margin-bottom: 6px;
+  }
+  .walker > .model .model-head h3 {
+    display: none;
+  }
+  .walker > .model .model-tools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+  }
+  .walker > .model .model-tools > * {
+    flex: none;
+  }
+  .walker > .model .part-view {
+    max-height: 18vh;
+    overflow-y: auto;
+  }
+  .walker > .model .part-view > .hint,
+  .walker > .model > .hint {
+    display: none;
+  }
+}
+
 body {
   padding-bottom: env(safe-area-inset-bottom);
 }
